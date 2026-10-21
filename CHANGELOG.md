@@ -29,4 +29,4 @@ Primera versión pública.
 - Si la aplicación se ejecuta sin consola y una librería escribe un aviso, no se cae.
 
 ### Documentación
-- README en español e inglés (con «Cómo nació este proyecto», «Por qué existe», «Qué he aprendido» y «Sugerencias»); manual de usuario, guía del código y proceso de creación en PDF, en primera persona.
+- README en español e inglés (con «Cómo nació este proyecto», «Por qué existe», «Qué he aprendido», «Lo que encontré probándola» y «Sugerencias»); manual de usuario, guía del código y proceso de creación en PDF, en primera persona.

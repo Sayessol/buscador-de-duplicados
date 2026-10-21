@@ -102,6 +102,16 @@ To get there, the project touches topics that rarely show up in first exercises:
 - **What was hardest:** how to split the code so that no file ended up too long. It shows in the current structure: the logic (`core/`) separate from the interface (`ui/`) and one component per tab.
 - **What I learned most:** how versatile Python is for running scripts directly on files: with very few lines you can walk through a disk, compare contents and move files.
 
+## What I found while testing it
+
+I tested the app myself, with my own files, and these are the problems I found that changed the program:
+
+- **The `.exe` would not start.** When I downloaded the executable from the release I got the error "Failed to start embedded python interpreter". It was my antivirus (Avast), which holds the single file for a few minutes the first time it is opened. That is why every version also includes a ZIP with a folder, which does not have this problem.
+- **The "Similar photos" gallery got cut off.** With many photos, some images appeared cut off and on the right there was a gap that looked like a scrollbar but was not one. It turned out to be a Windows limit on very tall windows, and now the groups are split into pages.
+- **"Gather images" moved folders instead of photos.** I noticed it while testing and it was fixed; an automated test now checks it.
+- **My phones did not show up.** I asked whether the app could read a phone connected by USB. It cannot: Windows does not give them a normal folder path. It is noted under [known limitations](#known-limitations), with the workaround of copying the photos to the PC first.
+- **The screenshots must not show my Windows username.** I asked for the images and the GIF in the README to use a sample folder instead of a path with my name.
+
 ## How it was made: with Claude as a copilot
 
 I built it **working with [Claude](https://claude.com/claude-code) (Anthropic) as a programming copilot**, and I want that to be clear:

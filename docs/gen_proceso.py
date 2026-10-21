@@ -378,6 +378,32 @@ C += [p(
     "marcha, según vea con la práctica qué funciones le faltan. Si alguien "
     "tiene ideas para funcionalidades futuras, me encantará conocerlas.")]
 
+# ======================================================================
+C += [h1("9. Lo que encontré probándola")]
+C += [p(
+    "Probé la app yo mismo, con mis propios archivos, y estos fueron los "
+    "problemas que encontré y que cambiaron el programa:")]
+C += [lista([
+    "<b>El .exe no arrancaba.</b> Al descargar el ejecutable de la release me "
+    "salió el error «Failed to start embedded python interpreter». Era mi "
+    "antivirus (Avast), que retiene unos minutos el archivo único la primera "
+    "vez que se abre. Por eso cada versión incluye también un ZIP con carpeta, "
+    "que no tiene ese problema.",
+    "<b>La galería de «Fotos parecidas» se cortaba.</b> Con muchas fotos, algunas "
+    "imágenes aparecían cortadas y a la derecha había un hueco con aspecto de "
+    "barra de desplazamiento que no existía. Resultó ser un límite de Windows "
+    "con las ventanas muy altas, y ahora los grupos se reparten en páginas.",
+    "<b>«Reunir imágenes» movía carpetas en vez de fotos.</b> Lo vi probándola "
+    "y se corrigió; hay una prueba automática que lo comprueba.",
+    "<b>Mis móviles no aparecían.</b> Pregunté si la app podía leer un teléfono "
+    "conectado por USB. No es posible: Windows no les da una ruta de carpeta "
+    "normal. Quedó anotado en las limitaciones, con la solución de copiar "
+    "antes las fotos al PC.",
+    "<b>Las capturas no debían mostrar mi usuario de Windows.</b> Pedí que las "
+    "imágenes y el GIF del README usaran una carpeta de ejemplo, y no una "
+    "ruta con mi nombre.",
+])]
+
 
 construir(
     SALIDA,
