@@ -22,7 +22,7 @@ A Windows desktop app that **finds duplicate files and similar photos** and help
 
 <p align="center">
   <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados.exe"><b>⬇ Download for Windows (.exe)</b></a>
-  · [ZIP version](https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados-portable.zip) if your antivirus blocks the `.exe` · no Python needed
+  · <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados-portable.zip">ZIP version</a> if your antivirus blocks the <code>.exe</code> · no Python needed
 </p>
 
 It was born from a need of mine and from a 150-line script ([`docs/origen/buscar_duplicados.py`](docs/origen/buscar_duplicados.py)), and grew into a full application with a GUI, automated tests, continuous integration and a single-file `.exe`. [Here is how it started](#how-this-project-started).
