@@ -110,7 +110,7 @@ I built it **working with [Claude](https://claude.com/claude-code) (Anthropic) a
 - **I (Sayessol)** decided what to build and in which order, tested the app by hand, raised the doubts and problems I found along the way (for example, whether it moved folders instead of photos) and approved each step as we went.
 - **Claude** wrote the code, tests and documentation, proposed alternatives and explained its decisions, always within the project's rules (such as never deleting the originals). The [code guide](docs/guia-del-codigo.pdf) (in Spanish) is written precisely so one can learn from that code.
 - **That is why I do not present this code as written by me alone.** What is mine is the goal, what was decided to build, and the learning I am after.
-- **The tests are the safety net**: no change counts as done without all 117 tests passing, and CI runs them again on every push.
+- **The tests are the safety net**: no change counts as done without all 128 tests passing, and CI runs them again on every push.
 - Commits carry a `Co-Authored-By: Claude` line so the shared authorship is visible in the history.
 
 ## Download and run
@@ -176,7 +176,7 @@ Both find **exactly the same 386 groups**. It reads 66 % less data. Timings are 
 
 ## Code quality
 
-- **117 pytest tests** (15 logic and window suites + 102 unit tests), with **93 % coverage of the core and 79 % of the interface**.
+- **128 pytest tests** (15 logic and window suites + 113 unit tests), with **93 % coverage of the core and 79 % of the interface**.
 - **ruff** as linter and **mypy** to check the types of the core (`core/`, fully annotated), and everything runs on **GitHub Actions** on every push.
 - **Error log** in a file (`%APPDATA%\BuscadorDuplicados\registro\buscador.log`), with rotation, and a clear notice to the user if something unexpected fails. Tests never touch the app's real data.
 - Tests **use no mocks for the file system**: they create real files in temp folders and check the result on disk (including a check that *files* are moved, not folders).

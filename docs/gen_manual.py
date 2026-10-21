@@ -165,7 +165,10 @@ C += [lista([
     "(más resolución) y aparece marcada para conservar. Si prefieres otra, "
     "pulsa «Conservar esta» debajo de ella.",
     "<b>4.</b> Pulsa una miniatura para ver la foto en grande y comparar.",
-    "<b>5.</b> «Mover a cuarentena» mueve las fotos no marcadas.",
+    "<b>5.</b> Si hay muchos grupos, se reparten en páginas: usa «Anterior» y "
+    "«Siguiente» bajo la lista. Lo que decidas en cada página se mantiene.",
+    "<b>6.</b> «Mover a cuarentena» mueve las fotos no marcadas de <b>todas</b> "
+    "las páginas.",
 ])]
 C += [h2("5.1. Qué encuentra y qué no")]
 C += [tabla([

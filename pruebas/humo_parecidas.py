@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from pruebas.probar_perceptual import construir            # noqa: E402
-from ui import styles, icons                                # noqa: E402
+from ui import styles, icons, pestana_parecidas             # noqa: E402
 from ui.main_window import VentanaPrincipal                 # noqa: E402
 from core.quarantine import mover_a_cuarentena              # noqa: E402
 from core.seleccion import CONSERVAR                        # noqa: E402
@@ -75,6 +75,29 @@ def main():
         R["boton_cuarentena"] = str(app.parecidas.btn_cuarentena.cget("state")) == "normal"
         a_mover = sel.cantidad_a_mover()
 
+        # galería en páginas: con 1 grupo por página hay una por grupo, y al
+        # cambiar de página solo existen los widgets de la página visible.
+        p = app.parecidas
+        pestana_parecidas.GRUPOS_MAX_PAGINA = 1
+        p._construir_galeria()
+        app.update()
+        R["paginas"] = len(p._paginas) == res.total_grupos
+        R["pager_visible"] = bool(p.pager.winfo_ismapped())
+        R["pag1_tiles"] = {gi for gi, _ in p._tiles} == {0}
+        R["pag1_anterior_apagado"] = str(p.btn_pag_ant.cget("state")) == "disabled"
+        p._cambiar_pagina(1)
+        app.update()
+        R["pag2_tiles"] = {gi for gi, _ in p._tiles} == {1}
+        R["pag2_siguiente_apagado"] = str(p.btn_pag_sig.cget("state")) == "disabled"
+        p._cambiar_pagina(1)                       # ya es la última: no hace nada
+        R["no_pasa_de_la_ultima"] = p._pagina == 1
+        R["seleccion_intacta"] = sel.decision(gi_playa, g.archivos[0].ruta) == CONSERVAR
+        R["alto_galeria_ok"] = p.galeria.winfo_reqheight() < 32767
+        pestana_parecidas.GRUPOS_MAX_PAGINA = 40
+        p._construir_galeria()
+        app.update()
+        R["una_pagina_sin_pager"] = len(p._paginas) == 1 and not p.pager.winfo_ismapped()
+
         res_mov = mover_a_cuarentena(sel, str(base), str(cuarentena))
         R["movidas"] = len(res_mov.movidos)
         R["movidas_ok"] = len(res_mov.movidos) == a_mover and not res_mov.fallidos
@@ -102,7 +125,11 @@ def main():
         and R.get("toggle_ok") is True
         and R.get("todo_listo") is True
         and R.get("boton_cuarentena") is True
-        and R.get("movidas") == 5        # 4 sobrantes de playa + 1 de montaña
+        and all(R.get(k) is True for k in (
+            "paginas", "pager_visible", "pag1_tiles", "pag1_anterior_apagado",
+            "pag2_tiles", "pag2_siguiente_apagado", "no_pasa_de_la_ultima",
+            "seleccion_intacta", "alto_galeria_ok", "una_pagina_sin_pager"))
+        and R.get("movidas") == 5       # 4 sobrantes de playa + 1 de montaña
         and R.get("movidas_ok") is True
         and R.get("mejor_intacta") is True
         and R.get("log") is True

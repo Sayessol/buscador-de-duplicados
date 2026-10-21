@@ -29,6 +29,35 @@ from .thumbnails import (
 )
 
 
+# Windows no dibuja ventanas de más de 32.767 px de alto: pasado ese punto la
+# galería se corta y la barra de desplazamiento desaparece. Por eso los grupos
+# se reparten en páginas cuya altura estimada nunca se acerca a ese límite.
+COLUMNAS = 5                  # fotos por fila dentro de un grupo
+ALTO_CABECERA = 70            # px que ocupa el título de un grupo y sus márgenes
+ALTO_FILA = 400               # px de una fila de fotos (cota por arriba)
+ALTO_MAX_PAGINA = 20000       # px estimados por página (límite real: 32.767)
+GRUPOS_MAX_PAGINA = 40        # y nunca más de 40 grupos: la página se dibuja rápido
+
+
+def repartir_en_paginas(cantidades):
+    """Reparte los grupos en páginas: devuelve una lista de (primero, último + 1).
+
+    `cantidades` es el número de fotos de cada grupo. Todo grupo cabe en alguna
+    página (si uno solo supera el presupuesto, ocupa una página para él)."""
+    paginas = []
+    inicio = 0
+    alto = 0
+    for i, n in enumerate(cantidades):
+        h = ALTO_CABECERA + ALTO_FILA * -(-n // COLUMNAS)       # filas = n / 5 redondeado arriba
+        if i > inicio and (alto + h > ALTO_MAX_PAGINA or i - inicio >= GRUPOS_MAX_PAGINA):
+            paginas.append((inicio, i))
+            inicio, alto = i, 0
+        alto += h
+    if cantidades:
+        paginas.append((inicio, len(cantidades)))
+    return paginas
+
+
 class PestanaParecidas(ctk.CTkFrame):
     def __init__(self, contenedor):
         """`contenedor` es la pestaña del CTkTabview donde se coloca este componente."""
@@ -49,6 +78,8 @@ class PestanaParecidas(ctk.CTkFrame):
         self._img_cache = []  # referencias a CTkImage (si no, se recolectan)
         self._tiles = {}
         self._botones = {}
+        self._paginas = []    # [(primer grupo, último + 1)] de cada página de la galería
+        self._pagina = 0
 
         self._construir()
         self._estado_inicial()
@@ -154,9 +185,29 @@ class PestanaParecidas(ctk.CTkFrame):
         self.estado_vacio.grid(row=4, column=0, sticky="nsew", padx=6,
                                    pady=(10, 0))
 
+        # Paginador (solo se ve si los grupos no caben en una página)
+        self.pager = ctk.CTkFrame(t, fg_color="transparent")
+        self.pager.grid(row=5, column=0, sticky="ew", padx=6, pady=(8, 0))
+        self.pager.grid_columnconfigure(1, weight=1)
+        self.btn_pag_ant = ctk.CTkButton(
+            self.pager, text="‹  Anterior", width=110, fg_color="transparent",
+            border_width=1, text_color=styles.COLOR_TEXTO,
+            command=lambda: self._cambiar_pagina(-1))
+        self.btn_pag_ant.grid(row=0, column=0)
+        self.lbl_pagina = ctk.CTkLabel(
+            self.pager, text="", font=styles.fuente_base(12),
+            text_color=styles.COLOR_TEXTO_TENUE)
+        self.lbl_pagina.grid(row=0, column=1, padx=10)
+        self.btn_pag_sig = ctk.CTkButton(
+            self.pager, text="Siguiente  ›", width=110, fg_color="transparent",
+            border_width=1, text_color=styles.COLOR_TEXTO,
+            command=lambda: self._cambiar_pagina(1))
+        self.btn_pag_sig.grid(row=0, column=2)
+        self.pager.grid_remove()
+
         # Barra inferior
         barra = ctk.CTkFrame(t, fg_color=styles.COLOR_TARJETA)
-        barra.grid(row=5, column=0, sticky="ew", padx=6, pady=(10, 6))
+        barra.grid(row=6, column=0, sticky="ew", padx=6, pady=(10, 6))
         barra.grid_columnconfigure(0, weight=1)
         self.lbl_totales = ctk.CTkLabel(
             barra, text="Sin analizar todavía.", font=styles.fuente_base(12),
@@ -382,15 +433,35 @@ class PestanaParecidas(ctk.CTkFrame):
         self._img_cache.clear()
         self._tiles = {}   # (gi, ruta) -> frame del tile
         self._botones = {}      # (gi, ruta) -> botón conservar/mover
+        self._paginas = []
+        self._pagina = 0
+        self.pager.grid_remove()
 
     def _construir_galeria(self):
         self._vaciar_galeria()
-        LIMITE = 80
-        grupos = self._resultado.grupos[:LIMITE]
+        self._paginas = repartir_en_paginas(
+            [g.cantidad for g in self._resultado.grupos])
+        self._mostrar_pagina(0)
 
-        for gi, g in enumerate(grupos):
+    def _cambiar_pagina(self, paso):
+        nueva = self._pagina + paso
+        if 0 <= nueva < len(self._paginas):
+            self._mostrar_pagina(nueva)
+
+    def _mostrar_pagina(self, pagina):
+        """Dibuja los grupos de una página (los de las demás no existen como widgets)."""
+        for hijo in self.galeria.winfo_children():
+            hijo.destroy()
+        self._img_cache.clear()
+        self._tiles = {}
+        self._botones = {}
+        self._pagina = pagina
+        primero, fin = self._paginas[pagina]
+
+        for gi in range(primero, fin):
+            g = self._resultado.grupos[gi]
             card = ctk.CTkFrame(self.galeria, fg_color=styles.COLOR_TARJETA)
-            card.grid(row=gi, column=0, sticky="ew", pady=(0, 10))
+            card.grid(row=gi - primero, column=0, sticky="ew", pady=(0, 10))
             card.grid_columnconfigure(0, weight=1)
 
             cab = ctk.CTkLabel(
@@ -404,20 +475,25 @@ class PestanaParecidas(ctk.CTkFrame):
 
             for j, (h, sim) in enumerate(zip(g.huellas, g.similitud)):
                 self._tile_foto(tiras, gi, j, h, sim)
+            self._refrescar_grupo(gi)
 
-        if len(self._resultado.grupos) > LIMITE:
-            ctk.CTkLabel(
-                self.galeria, text=f"… y {len(self._resultado.grupos) - LIMITE} "
-                f"grupos más (no mostrados). Afina la carpeta o la sensibilidad.",
-                font=styles.fuente_base(11),
-                text_color=styles.COLOR_TEXTO_TENUE).grid(
-                row=LIMITE, column=0, pady=10)
+        self.galeria._parent_canvas.yview_moveto(0)
+        if len(self._paginas) > 1:
+            total = len(self._resultado.grupos)
+            self.lbl_pagina.configure(
+                text=f"Página {pagina + 1} de {len(self._paginas)}  ·  "
+                     f"grupos {primero + 1}–{fin} de {total}")
+            styles.activar_boton(self.btn_pag_ant, pagina > 0, fg="transparent")
+            styles.activar_boton(self.btn_pag_sig, pagina < len(self._paginas) - 1,
+                                 fg="transparent")
+            self.pager.grid()
+        else:
+            self.pager.grid_remove()
 
     def _tile_foto(self, parent, gi, j, huella, sim):
-        cols = 5
         tile = ctk.CTkFrame(parent, fg_color=styles.COLOR_BALDOSA, corner_radius=8,
                             border_width=2)
-        tile.grid(row=j // cols, column=j % cols, padx=6, pady=4, sticky="n")
+        tile.grid(row=j // COLUMNAS, column=j % COLUMNAS, padx=6, pady=4, sticky="n")
         self._tiles[(gi, huella.ruta)] = tile
 
         pil = self._thumbs.get(huella.ruta)
@@ -484,9 +560,10 @@ class PestanaParecidas(ctk.CTkFrame):
     def _al_cambiar_seleccion(self):
         if self._seleccion is None:
             return
-        # pintar todo la primera vez / tras cambios
-        for gi in range(min(len(self._resultado.grupos), 80)):
-            self._refrescar_grupo(gi)
+        # repintar los grupos de la página que se está viendo
+        if self._paginas:
+            for gi in range(*self._paginas[self._pagina]):
+                self._refrescar_grupo(gi)
 
         pendientes = self._seleccion.grupos_pendientes()
         a_mover = self._seleccion.cantidad_a_mover()
