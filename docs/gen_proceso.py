@@ -287,8 +287,9 @@ C += [tabla([
      "CTkLabel.configure(image=None) no la quita: hay que limpiar el Label "
      "interno de tkinter."],
     ["Con muchas fotos parecidas, la galería se cortaba y la barra de desplazamiento desaparecía.",
-     "Windows no dibuja ventanas de más de 32.767 px de alto. Ahora los grupos se reparten en páginas "
-     "(Anterior / Siguiente) y una prueba comprueba que ninguna se acerca a ese límite."],
+     "Windows no dibuja ventanas de más de 32.767 px de alto. Ahora los grupos "
+     "se reparten en páginas (Anterior / Siguiente) y una prueba comprueba "
+     "que ninguna se acerca a ese límite."],
     ["Mis pruebas de ventana escribían en el historial real de la app.",
      "Ahora usan un APPDATA temporal, y una comprobación común avisa si "
      "alguna vuelve a tocar los datos reales."],
