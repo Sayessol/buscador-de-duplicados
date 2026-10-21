@@ -96,11 +96,10 @@ Para conseguirlo, el proyecto toca temas que no suelen aparecer en los primeros 
 
 **Qué significa para quien lo revise:** no es código de una persona experta, y no lo presento como tal. Es un ejercicio de aprendizaje hecho en serio, con sus límites a la vista (ver [Limitaciones conocidas](#limitaciones-conocidas)). Las mejoras que vaya haciendo quedarán anotadas en el [CHANGELOG](CHANGELOG.md) y forman parte de ese aprendizaje.
 
-## Qué he aprendido y decisiones mías
+## Qué he aprendido
 
 - **Lo que más me costó:** cómo dividir el código para que no quedaran archivos demasiado largos. Se nota en la estructura actual: la lógica (`core/`) separada de la interfaz (`ui/`) y un componente por pestaña.
 - **Lo que más he aprendido:** la versatilidad de Python para ejecutar scripts directamente sobre los archivos: con muy pocas líneas se puede recorrer un disco, comparar contenidos y mover archivos.
-- **Decisiones mías:** que tuviera tema **claro y oscuro**, la propia **interfaz** (el script original era de consola) y el **modo Sencilla y Avanzada**.
 
 ## Cómo se ha hecho: con Claude como copiloto
 
