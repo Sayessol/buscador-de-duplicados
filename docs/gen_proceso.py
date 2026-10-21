@@ -363,7 +363,7 @@ C += [p(
 
 
 # ======================================================================
-C += [h1("8. Qué he aprendido y decisiones mías")]
+C += [h1("8. Qué he aprendido")]
 C += [lista([
     "<b>Lo que más me costó:</b> cómo dividir el código para que no quedaran "
     "archivos demasiado largos. Se nota en la estructura actual: la lógica "
@@ -372,9 +372,6 @@ C += [lista([
     "<b>Lo que más he aprendido:</b> la versatilidad de Python para ejecutar "
     "scripts directamente sobre los archivos: con muy pocas líneas se puede "
     "recorrer un disco, comparar contenidos y mover archivos.",
-    "<b>Decisiones mías:</b> que tuviera tema <b>claro y oscuro</b>, la propia "
-    "<b>interfaz</b> (el script original era de consola) y el <b>modo Sencilla "
-    "y Avanzada</b>.",
 ])]
 C += [p(
     "No hay una hoja de ruta cerrada: iré mejorando la aplicación sobre la "

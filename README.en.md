@@ -97,11 +97,10 @@ To get there, the project touches topics that rarely show up in first exercises:
 
 **What this means for a reviewer:** this is not expert-level code, and I do not present it as such. It is a learning exercise taken seriously, with its limits in plain sight (see [Known limitations](#known-limitations)). The improvements I make from now on will be listed in the [CHANGELOG](CHANGELOG.md) and are part of that learning.
 
-## What I learned and decisions of mine
+## What I learned
 
 - **What was hardest:** how to split the code so that no file ended up too long. It shows in the current structure: the logic (`core/`) separate from the interface (`ui/`) and one component per tab.
 - **What I learned most:** how versatile Python is for running scripts directly on files: with very few lines you can walk through a disk, compare contents and move files.
-- **Decisions of mine:** having a **light and dark** theme, the **interface** itself (the original script was console-only) and the **Simple and Advanced mode**.
 
 ## How it was made: with Claude as a copilot
 
