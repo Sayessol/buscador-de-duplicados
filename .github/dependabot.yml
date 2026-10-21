@@ -9,6 +9,13 @@ updates:
       interval: "monthly"
     open-pull-requests-limit: 3
     labels: ["dependencias"]
+    # Las versiones mayores de customtkinter y Pillow pueden cambiar cómo se ve la
+    # interfaz o cómo se leen las fotos, y PyInstaller cambia el .exe: se actualizan
+    # a mano, comprobando la ventana y el ejecutable, no con un aviso automático.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pyinstaller"
 
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -12,8 +12,8 @@ jobs:
   exe:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Instalar dependencias
@@ -52,7 +52,7 @@ jobs:
                     "Windows SmartScreen o tu antivirus pueden avisar porque el programa no está firmado."
           Set-Content notas.md $notas -Encoding utf8
       - name: Crear la release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             Buscador-de-duplicados.exe
