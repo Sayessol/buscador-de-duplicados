@@ -10,4 +10,4 @@ pillow==12.3.0
 customtkinter==5.2.2
 
 # --- Empaquetado a .exe (solo para desarrollo) --------------------
-pyinstaller==6.11.1
+pyinstaller==6.22.3
