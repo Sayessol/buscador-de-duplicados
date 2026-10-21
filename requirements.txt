@@ -4,7 +4,7 @@
 #
 # El módulo de "fotos parecidas" (core/perceptual.py) y las miniaturas de
 # la interfaz necesitan Pillow:
-pillow==12.3.0
+pillow==13.0.0
 
 # --- Interfaz gráfica (ui/) -----------------------------------------
 customtkinter==5.2.2
