@@ -1,0 +1,60 @@
+name: Publicar .exe
+
+# Se ejecuta al crear una etiqueta tipo v1.0.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      - name: Comprobar que la etiqueta coincide con la versión del código
+        shell: pwsh
+        run: |
+          $enCodigo = python -c "from core import __version__; print(__version__)"
+          $etiqueta = "${{ github.ref_name }}".TrimStart("v")
+          if ($enCodigo -ne $etiqueta) {
+            Write-Error "La etiqueta ($etiqueta) no coincide con core.__version__ ($enCodigo)"
+            exit 1
+          }
+      - name: Compilar el .exe de un solo archivo
+        run: python construir_exe.py
+      - name: Compilar la versión en carpeta (ZIP)
+        run: python construir_exe.py --carpeta --zip
+      - name: Renombrar los archivos de la release
+        run: |
+          Copy-Item dist/duplicados.exe Buscador-de-duplicados.exe
+          Copy-Item dist/Buscador-de-duplicados.zip Buscador-de-duplicados-portable.zip
+        shell: pwsh
+      - name: Notas de la versión (sección de CHANGELOG.md)
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $texto = Get-Content CHANGELOG.md -Raw -Encoding utf8
+          $patron = "(?ms)^## \[" + [regex]::Escape($version) + "\][^\n]*\n(.*?)(?=^## \[|\z)"
+          $m = [regex]::Match($texto, $patron)
+          if ($m.Success) { $notas = $m.Groups[1].Value.Trim() } else { $notas = "Versión $version" }
+          $notas += "`n`n---`n**Qué descargar** (no necesitas instalar Python):`n" +
+                    "- **Buscador-de-duplicados.exe**: un solo archivo, el más cómodo.`n" +
+                    "- **Buscador-de-duplicados-portable.zip**: descomprímelo en una carpeta con ruta corta " +
+                    "(por ejemplo ``C:\Apps``) y abre ``Buscador-de-duplicados.exe``. " +
+                    "Úsalo si tu antivirus bloquea o retrasa el .exe único.`n`n" +
+                    "Windows SmartScreen o tu antivirus pueden avisar porque el programa no está firmado."
+          Set-Content notas.md $notas -Encoding utf8
+      - name: Crear la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Buscador-de-duplicados.exe
+            Buscador-de-duplicados-portable.zip
+          body_path: notas.md

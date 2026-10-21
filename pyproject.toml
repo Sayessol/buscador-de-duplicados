@@ -1,0 +1,42 @@
+# Solo configuración de herramientas (linter y pruebas).
+# La app NO se instala con pip: se ejecuta con `python app.py` o con el .exe.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# docs/origen es el script original, se conserva tal cual como pieza histórica
+extend-exclude = ["build", "dist", "docs/origen"]
+
+[tool.ruff.lint]
+# E/W: estilo pycodestyle · F: errores reales (imports sin usar, nombres sin definir)
+# B: fallos típicos (bugbear)
+select = ["E", "F", "W", "B"]
+ignore = ["B905"]   # zip(strict=...) no aporta aquí
+
+[tool.pytest.ini_options]
+testpaths = ["pruebas"]
+python_files = ["test_*.py"]
+pythonpath = ["."]
+markers = ["gui: prueba con ventana (necesita escritorio de Windows)"]
+
+[tool.coverage.run]
+source = ["core", "ui"]
+# Las pruebas de ventana corren en procesos aparte (pruebas/test_suites.py): se siguen
+# para poder medir también la interfaz. Mínimos que exige el CI: núcleo 90 %, interfaz 70 %.
+parallel = true
+patch = ["subprocess"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.mypy]
+# Tipado estático: el núcleo (core/) está completamente anotado y mypy lo comprueba.
+# La interfaz (ui/) no se comprueba: CustomTkinter/Tkinter son muy dinámicos y el
+# beneficio sería mucho menor que el ruido.
+python_version = "3.12"
+files = ["core"]
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true

@@ -1,0 +1,6 @@
+# Para desarrollar: linter y pruebas (la app no lo necesita)
+-r requirements.txt
+pytest
+pytest-cov
+ruff
+mypy
