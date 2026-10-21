@@ -2,7 +2,7 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [1.0.0] - en preparación
+## [1.0.0] - 2026-10-21
 
 Primera versión pública.
 
