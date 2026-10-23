@@ -22,6 +22,9 @@ os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 from PIL import Image                                # noqa: E402
 from duplicate_finder.presentation import styles  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
 
 R = {}
 failures = []
@@ -72,7 +75,7 @@ def main():
     messagebox.showwarning = lambda *a, **k: None
     messagebox.showerror = lambda *a, **k: print("   [showerror]", a)
 
-    app = MainWindow()
+    app = MainWindow(SERVICES)
     app._mode = "advanced"
     app._apply_mode()
     app.show_tab("similar")

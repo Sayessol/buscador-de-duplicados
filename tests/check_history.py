@@ -33,8 +33,12 @@ def main():
         os.environ["APPDATA"] = str(tmp / "appdata")
 
         # import AFTER setting APPDATA
-        from duplicate_finder.application import history
-        from duplicate_finder.application.file_transfers import execute
+        from duplicate_finder.bootstrap import build_services
+        from duplicate_finder.domain.operations import KIND_GATHER
+
+        services = build_services()
+        history = services.history
+        execute = services.gather._transfers.execute
         from duplicate_finder.domain.transfers import Transfer, MOVE, COPY
 
         # --- set up a case: move 2 files to a destination ----------
@@ -48,7 +52,7 @@ def main():
                 Transfer(str(source / "b.txt"), str(destination / "sub" / "b.txt"))]
         res = execute(plan, action=MOVE)
         op_id = history.record(
-            history.KIND_GATHER, "move", str(tmp / "source"), str(destination),
+            KIND_GATHER, "move", str(tmp / "source"), str(destination),
             [(t.source, t.destination) for t in res.done], "2 test files")
 
         ops = history.list_all()
@@ -74,7 +78,7 @@ def main():
         plan_c = [Transfer(str(source / "a.txt"), str(destination / "c" / "a.txt"))]
         rc = execute(plan_c, action=COPY)
         op_c = history.record(
-            history.KIND_GATHER, "copy", str(tmp / "source"), str(destination),
+            KIND_GATHER, "copy", str(tmp / "source"), str(destination),
             [(t.source, t.destination) for t in rc.done])
         check((destination / "c" / "a.txt").exists() and (source / "a.txt").exists(),
               "copy: original and copy both exist")
@@ -88,7 +92,7 @@ def main():
         plan_x = [Transfer(str(source / "x.txt"), str(destination / "x.txt"))]
         rx = execute(plan_x, action=MOVE)
         op_x = history.record(
-            history.KIND_GATHER, "move", str(tmp / "source"), str(destination),
+            KIND_GATHER, "move", str(tmp / "source"), str(destination),
             [(t.source, t.destination) for t in rx.done])
         (source / "x.txt").write_text("something else")  # we occupy the original path
         rr = history.undo(op_x)

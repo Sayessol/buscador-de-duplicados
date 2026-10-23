@@ -14,7 +14,7 @@ by hand or by applying the preferred-folder rule.
 
 import os
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Protocol
 
 from duplicate_finder.domain.duplicates import DuplicateFile
@@ -45,7 +45,7 @@ def _is_inside(path: str, folder: str) -> bool:
     return abs_path == abs_folder or abs_path.startswith(abs_folder + os.sep)
 
 
-class _Group(Protocol):
+class GroupLike(Protocol):
     """The minimum asked of a group: a list of files (exact duplicates
     and similar photos both meet it, which is why they share this class)."""
 
@@ -53,16 +53,21 @@ class _Group(Protocol):
     def files(self) -> list[DuplicateFile]: ...
 
 
-class _Result(Protocol):
+class ResultLike(Protocol):
     """The minimum asked of a result: a list of groups."""
 
     @property
-    def groups(self) -> Sequence[_Group]: ...
+    def groups(self) -> Sequence[GroupLike]: ...
 
 
 class DuplicateSelection:
-    def __init__(self, result: _Result) -> None:
+    def __init__(
+        self, result: ResultLike, modified_time: Callable[[str], float] | None = None,
+    ) -> None:
+        """`modified_time(path)` (seconds, may raise OSError) lets "older is better" count when
+        the primary copy is chosen; without it, only the name, the depth and the path decide."""
         self.result = result
+        self._modified_time = modified_time
         # _decision[(group_index, path)] -> KEEP | MOVE
         self._decision: dict[tuple[int, str], str] = {}
         for gi, group in enumerate(result.groups):
@@ -177,20 +182,21 @@ class DuplicateSelection:
         least nested, then the oldest, then the one with the shortest path.
         """
         for gi, group in enumerate(self.result.groups):
-            best = min(group.files, key=_primary_score)
+            best = min(group.files, key=self._primary_score)
             self.keep_only(gi, best.path)
 
-
-def _primary_score(file: DuplicateFile) -> tuple[int, int, float, int]:
-    """Score to choose the "primary" copy: min() keeps the smallest
-    tuple, so each field goes from "best" (lower) to "worst".
-    """
-    path = file.path
-    name = os.path.basename(path)
-    looks_like_copy = 1 if _LOOKS_LIKE_COPY.search(name) else 0  # 0 = does not look like a copy
-    depth = os.path.normpath(path).count(os.sep)        # less nested is better
-    try:
-        mtime = os.path.getmtime(path)                        # older is better
-    except OSError:
+    def _primary_score(self, file: DuplicateFile) -> tuple[int, int, float, int]:
+        """Score to choose the "primary" copy: min() keeps the smallest
+        tuple, so each field goes from "best" (lower) to "worst".
+        """
+        path = file.path
+        name = os.path.basename(path)
+        looks_like_copy = 1 if _LOOKS_LIKE_COPY.search(name) else 0  # 0 = does not look like a copy
+        depth = os.path.normpath(path).count(os.sep)        # less nested is better
         mtime = float("inf")
-    return (looks_like_copy, depth, mtime, len(path))      # shorter path breaks the tie
+        if self._modified_time is not None:
+            try:
+                mtime = self._modified_time(path)                # older is better
+            except OSError:
+                pass
+        return (looks_like_copy, depth, mtime, len(path))      # shorter path breaks the tie

@@ -5,9 +5,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from duplicate_finder.infrastructure import settings
+from duplicate_finder.application.report import ExportReport, columns
+from duplicate_finder.application.settings import AppSettings
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.application.report import columns, export_csv
+from duplicate_finder.infrastructure.local_file_system import LocalFileSystem
+from duplicate_finder.infrastructure.settings import JsonSettingsStore
+
+settings = AppSettings(JsonSettingsStore())
+export_csv = ExportReport(LocalFileSystem())
 
 
 @pytest.fixture

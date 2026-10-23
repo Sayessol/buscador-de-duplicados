@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 
 from duplicate_finder import i18n
-from duplicate_finder.infrastructure import settings
+from duplicate_finder.application.settings import LANGUAGE_AUTO, AppSettings
+from duplicate_finder.infrastructure.settings import JsonSettingsStore
 from duplicate_finder.i18n.locales import en, es
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,7 +115,7 @@ def test_the_saved_language_wins_over_the_system():
 
 def test_without_a_saved_language_the_system_decides(monkeypatch):
     monkeypatch.setattr(i18n, "detect_system_language", lambda: "es")
-    assert i18n.resolve_language(settings.LANGUAGE_AUTO) == "es"
+    assert i18n.resolve_language(LANGUAGE_AUTO) == "es"
     assert i18n.resolve_language("fr") == "es"
 
 
@@ -131,7 +132,8 @@ def test_language_of_the_environment(monkeypatch, variable, value, expected):
 
 def test_the_language_is_saved_in_the_configuration(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))
-    assert settings.get_language() == settings.LANGUAGE_AUTO
+    settings = AppSettings(JsonSettingsStore())
+    assert settings.get_language() == LANGUAGE_AUTO
     settings.set_language("es")
     assert settings.get_language() == "es"
     settings.set_language("fr")             # not a language of the app: ignored

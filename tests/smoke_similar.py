@@ -19,7 +19,9 @@ os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 from tests.check_perceptual import build            # noqa: E402
 from duplicate_finder.presentation import styles, similar_photos_tab  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
-from duplicate_finder.application.quarantine import move_to_quarantine  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
 from duplicate_finder.domain.selection import KEEP  # noqa: E402
 
 R = {}
@@ -32,7 +34,7 @@ def main():
     build(base)
     quarantine = Path(tmp) / "QUARANTINE"
 
-    app = MainWindow()
+    app = MainWindow(SERVICES)
     app._mode = "advanced"
     app._apply_mode()
     app.geometry("1200x860")
@@ -98,7 +100,7 @@ def main():
         app.update()
         R["one_page_no_pager"] = len(p._pages) == 1 and not p.pager.winfo_ismapped()
 
-        move_res = move_to_quarantine(sel, str(base), str(quarantine))
+        move_res = SERVICES.move_to_quarantine(sel, str(base), str(quarantine))
         R["moved_photos"] = len(move_res.moved)
         R["moved_photos_ok"] = len(move_res.moved) == to_move and not move_res.failed
         R["best_intact"] = (base / "beach_original.png").exists()

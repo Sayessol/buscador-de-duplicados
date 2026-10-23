@@ -18,13 +18,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+scan = SERVICES.scan_duplicates
 from duplicate_finder.domain.selection import DuplicateSelection  # noqa: E402
-from duplicate_finder.application.quarantine import (
-    move_to_quarantine,
+from duplicate_finder.application.quarantine import (  # noqa: E402
     validate_quarantine_folder,
     InvalidQuarantine,
 )
+
+move_to_quarantine = SERVICES.move_to_quarantine
 
 failures = []
 

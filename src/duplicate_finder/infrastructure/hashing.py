@@ -39,3 +39,15 @@ def full_hash(file_path: str, block_size: int = BLOCK_SIZE) -> str:
                 break
             h.update(block)                  # accumulates into the hash
     return h.hexdigest()
+
+
+class Blake2Hasher:
+    """The `FileHasher` port with the BLAKE2b functions above."""
+
+    partial_size = PARTIAL_HASH_SIZE
+
+    def partial_hash(self, path: str) -> str:
+        return partial_hash(path)
+
+    def full_hash(self, path: str) -> str:
+        return full_hash(path)

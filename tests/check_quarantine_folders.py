@@ -21,10 +21,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from PIL import Image                                          # noqa: E402
 
-from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
-from duplicate_finder.domain.selection import DuplicateSelection, KEEP  # noqa: E402
-from duplicate_finder.application.find_similar_photos import analyze_folder  # noqa: E402
-from duplicate_finder.application.quarantine import move_to_quarantine, plan_moves  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+scan = SERVICES.scan_duplicates
+from duplicate_finder.domain.selection import KEEP  # noqa: E402
+analyze_folder = SERVICES.find_similar_photos
+from duplicate_finder.application.quarantine import plan_moves  # noqa: E402
+
+move_to_quarantine = SERVICES.move_to_quarantine
 
 failures = []
 
@@ -132,14 +137,14 @@ def _run_case(name, make_selection):
 
 def exact_selection(root):
     r = scan(str(root))
-    sel = DuplicateSelection(r)
+    sel = SERVICES.start_selection(r)
     sel.preselect_primary()
     return sel, str(root)
 
 
 def similar_selection(root):
     r = analyze_folder(str(root), hamming_threshold=12)
-    sel = DuplicateSelection(r)
+    sel = SERVICES.start_selection(r)
     for gi, g in enumerate(r.groups):
         sel.keep_only(gi, g.files[0].path)
     return sel, str(root)

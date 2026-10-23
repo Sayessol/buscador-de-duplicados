@@ -48,7 +48,12 @@ from duplicate_finder.presentation.image_viewer import ImageViewer  # noqa: E402
 from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
 from duplicate_finder.presentation.non_image_kinds_dialog import NonImageKindsWindow  # noqa: E402
 from duplicate_finder import i18n  # noqa: E402
-from duplicate_finder.application import history  # noqa: E402
+from duplicate_finder.application import history as history_module  # noqa: E402
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_QUARANTINE  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+history = SERVICES.history
 
 i18n.set_language(LANGUAGE)
 
@@ -66,7 +71,7 @@ class _FixedNow(datetime):
         return FIXED_DATE + timedelta(seconds=cls._n)
 
 
-history.datetime = _FixedNow
+history_module.datetime = _FixedNow
 
 
 def photo(seed, size=(220, 150)):
@@ -121,15 +126,15 @@ for _f in tmp.rglob('*'):
     os.utime(_f, (FIXED_DATE.timestamp(), FIXED_DATE.timestamp()))
 
 # sample history
-history.record(history.KIND_QUARANTINE, "move", str(base_dup), str(tmp / "Cuarentena"),
+history.record(KIND_QUARANTINE, "move", str(base_dup), str(tmp / "Cuarentena"),
                     [(str(base_dup / "x"), str(tmp / "Cuarentena" / "x"))] * 4,
                     "4 duplicados exactos")
-history.record(history.KIND_GATHER, "copy", str(gather_base), str(tmp / "Album"),
+history.record(KIND_GATHER, "copy", str(gather_base), str(tmp / "Album"),
                     [(str(gather_base / "y"), str(tmp / "Album" / "y"))] * 12,
                     "12 imágenes")
 
 styles.apply_theme(THEME)
-app = MainWindow()
+app = MainWindow(SERVICES)
 app.geometry("1280x860+12+6")
 
 STEPS = []
@@ -216,7 +221,9 @@ def p_gather_shot():
 
 # --- Dialogs -----------------------------------------------
 def p_kinds():
-    from duplicate_finder.application.gather import non_image_kinds, list_all
+    from duplicate_finder.application.gather import non_image_kinds
+
+    list_all = SERVICES.gather.list_all
     _img, others = list_all(str(gather_base))
     dlg = NonImageKindsWindow(app, non_image_kinds(others))
     dlg.geometry("620x420+200+140")
@@ -229,7 +236,7 @@ def p_kinds_shot():
 
 
 def p_history():
-    hv = HistoryWindow(app)
+    hv = HistoryWindow(app, history)
     hv.geometry("720x520+160+90")
     app._hv = hv
 

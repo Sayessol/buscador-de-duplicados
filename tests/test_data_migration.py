@@ -8,8 +8,16 @@ import json
 
 import pytest
 
-from duplicate_finder.application import history
-from duplicate_finder.infrastructure import settings
+from duplicate_finder.application.history import OperationHistory
+from duplicate_finder.application.settings import DEFAULT_MODE, DEFAULT_THEME, AppSettings
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_GATHER_FOLDER, KIND_QUARANTINE
+from duplicate_finder.infrastructure import history_store
+from duplicate_finder.infrastructure.history_store import JsonHistoryStore
+from duplicate_finder.infrastructure.local_file_system import LocalFileSystem
+from duplicate_finder.infrastructure.settings import JsonSettingsStore
+
+history = OperationHistory(JsonHistoryStore(), LocalFileSystem())
+settings = AppSettings(JsonSettingsStore())
 
 
 @pytest.fixture
@@ -40,7 +48,7 @@ def test_history_reads_the_version_1_file_in_the_current_format(data_folder, tmp
 
     (op,) = history.list_all()
 
-    assert op["kind"] == history.KIND_QUARANTINE and op["action"] == "move"
+    assert op["kind"] == KIND_QUARANTINE and op["action"] == "move"
     assert op["date"] == "2026-10-21T10:00:00" and op["undone"] is False
     assert op["moves"] == [{"source": str(source), "destination": str(destination)}]
     assert op["source_root"] == str(source.parent) and op["description"] == "1 file"
@@ -48,8 +56,8 @@ def test_history_reads_the_version_1_file_in_the_current_format(data_folder, tmp
 
 
 @pytest.mark.parametrize("old, new", [
-    ("cuarentena", history.KIND_QUARANTINE), ("reunir", history.KIND_GATHER),
-    ("reunir_carpeta", history.KIND_GATHER_FOLDER)])
+    ("cuarentena", KIND_QUARANTINE), ("reunir", KIND_GATHER),
+    ("reunir_carpeta", KIND_GATHER_FOLDER)])
 def test_history_converts_every_kind(data_folder, tmp_path, old, new):
     legacy = [_legacy_operation("1", "copiar", old, tmp_path / "a", tmp_path / "b")]
     (data_folder / "historial.json").write_text(json.dumps(legacy), encoding="utf-8")
@@ -65,11 +73,11 @@ def test_history_never_modifies_the_version_1_file(data_folder, tmp_path):
         encoding="utf-8")
     before = legacy_file.read_bytes()
 
-    history.record(history.KIND_GATHER, "copy", str(tmp_path), str(tmp_path / "d"), [])
+    history.record(KIND_GATHER, "copy", str(tmp_path), str(tmp_path / "d"), [])
 
     assert legacy_file.read_bytes() == before                    # the backup stays intact
     saved = json.loads((data_folder / "history.json").read_text(encoding="utf-8"))
-    assert [op["kind"] for op in saved] == [history.KIND_QUARANTINE, history.KIND_GATHER]
+    assert [op["kind"] for op in saved] == [KIND_QUARANTINE, KIND_GATHER]
     assert all("tipo" not in op and "fecha" not in op for op in saved)
 
 
@@ -90,10 +98,10 @@ def test_the_first_save_carries_the_version_1_operations_over(data_folder, tmp_p
         [_legacy_operation("old", "mover", "cuarentena", tmp_path / "a", tmp_path / "b")]),
         encoding="utf-8")
 
-    history.record(history.KIND_GATHER, "copy", str(tmp_path), str(tmp_path / "d"), [])
+    history.record(KIND_GATHER, "copy", str(tmp_path), str(tmp_path / "d"), [])
 
     assert [op["kind"] for op in history.list_all()] == [
-        history.KIND_GATHER, history.KIND_QUARANTINE]            # most recent first
+        KIND_GATHER, KIND_QUARANTINE]            # most recent first
 
 
 def test_history_drops_entries_that_are_not_operations(data_folder, tmp_path):
@@ -114,7 +122,7 @@ def test_current_format_is_left_as_it_is(tmp_path):
     op = {"id": "1", "date": "d", "kind": "gather", "action": "copy", "source_root": "r",
           "destination": "x", "description": "", "undone": False,
           "moves": [{"source": "a", "destination": "b"}]}
-    assert history._upgrade(op) is op
+    assert history_store._upgrade(op) is op
 
 
 def test_a_move_saved_by_version_1_can_still_be_undone(data_folder, tmp_path):
@@ -219,8 +227,8 @@ def test_config_ignores_values_it_does_not_know_even_with_old_keys(data_folder):
     (data_folder / "config.json").write_text(
         json.dumps({"modo": "turbo", "tema": "azul"}), encoding="utf-8")
 
-    assert settings.get_mode() == settings.DEFAULT_MODE
-    assert settings.get_theme() == settings.DEFAULT_THEME
+    assert settings.get_mode() == DEFAULT_MODE
+    assert settings.get_theme() == DEFAULT_THEME
 
 
 def test_config_keeps_the_new_key_when_both_are_present(data_folder):

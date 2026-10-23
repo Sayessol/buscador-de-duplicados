@@ -40,7 +40,10 @@ def main():
 
     from duplicate_finder.presentation import styles  # noqa: E402
     from duplicate_finder.presentation import main_window as MW  # noqa: E402
-    from duplicate_finder.application import history  # noqa: E402
+    from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+    SERVICES = build_services()
+    history = SERVICES.history
     from duplicate_finder.domain.transfers import NonImageRules  # noqa: E402
     import customtkinter as ctk
 
@@ -69,7 +72,7 @@ def main():
     from duplicate_finder.presentation import gather_images_tab as TR  # noqa: E402
     TR.NonImageKindsWindow = FakeKinds   # the dialog is used from the Gather tab
 
-    app = MW.MainWindow()
+    app = MW.MainWindow(SERVICES)
     app._mode = "advanced"
     app._apply_mode()
     app.show_tab("gather")

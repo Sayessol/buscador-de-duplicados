@@ -25,7 +25,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from PIL import Image, ImageDraw, ImageEnhance   # noqa: E402
 
-from duplicate_finder.application.find_similar_photos import analyze_folder  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+analyze_folder = SERVICES.find_similar_photos
 from duplicate_finder.domain.formatting import format_size  # noqa: E402
 
 failures = []

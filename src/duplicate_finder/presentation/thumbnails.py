@@ -9,14 +9,16 @@ interface thread.
                    and a colour according to the category.
 """
 
+import logging
 import os
 import threading
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from duplicate_finder.domain.filters import CATEGORY_EXTENSIONS
-from duplicate_finder.infrastructure.app_logging import log
 from duplicate_finder.i18n import tr
+
+log = logging.getLogger(__name__)
 
 THUMBNAIL_SIDE = 150
 ROW_THUMBNAIL_SIDE = 40          # small thumbnail for each row of the table

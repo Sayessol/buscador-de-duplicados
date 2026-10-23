@@ -33,9 +33,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.application import scan_duplicates as scanner                                    # noqa: E402
+from duplicate_finder.application.scan_duplicates import ScanDuplicates  # noqa: E402
+from duplicate_finder.infrastructure.local_file_system import LocalFileSystem  # noqa: E402
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE  # noqa: E402
+from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE, Blake2Hasher  # noqa: E402
 
 SEED = 2026
 REPETITIONS = 3
@@ -101,26 +102,24 @@ def naive_method(base: Path):
 
 def three_pass_method(base: Path):
     """Uses the app's scanner, counting the bytes it really reads."""
-    read = 0
-    partial, full = scanner.partial_hash, scanner.full_hash
 
-    def partial_counted(path, *a, **k):
-        nonlocal read
-        read += min(os.path.getsize(path), PARTIAL_HASH_SIZE)
-        return partial(path, *a, **k)
+    class CountingHasher(Blake2Hasher):
+        """The real hasher, adding up the bytes each hash reads."""
 
-    def full_counted(path, *a, **k):
-        nonlocal read
-        read += os.path.getsize(path)
-        return full(path, *a, **k)
+        read = 0
 
-    scanner.partial_hash, scanner.full_hash = partial_counted, full_counted
-    try:
-        res = scanner.scan(str(base))
-    finally:
-        scanner.partial_hash, scanner.full_hash = partial, full
+        def partial_hash(self, path):
+            self.read += min(os.path.getsize(path), PARTIAL_HASH_SIZE)
+            return super().partial_hash(path)
+
+        def full_hash(self, path):
+            self.read += os.path.getsize(path)
+            return super().full_hash(path)
+
+    hasher = CountingHasher()
+    res = ScanDuplicates(LocalFileSystem(), hasher)(str(base))
     groups = {frozenset(a.path for a in g.files) for g in res.groups}
-    return groups, read, res.total_files
+    return groups, hasher.read, res.total_files
 
 
 def main():

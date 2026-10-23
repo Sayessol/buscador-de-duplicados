@@ -4,6 +4,7 @@ It is a component with its OWN state (scan result, selection, queues, threads...
 the main window only creates it, notifies it of the Simple / Advanced mode and that it is closing.
 """
 
+import logging
 import datetime
 import os
 import queue
@@ -12,10 +13,9 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
-from duplicate_finder.application.scan_duplicates import scan, ScanCancelled
-from duplicate_finder.application.report import export_csv
+from duplicate_finder.application.scan_duplicates import ScanCancelled
+from duplicate_finder.application.services import Services
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.infrastructure.app_logging import log
 from duplicate_finder.domain.filters import (
     ScanFilter,
     parse_extensions,
@@ -26,13 +26,11 @@ from duplicate_finder.domain.filters import (
     JUNK_FOLDERS,
     CATEGORY_EXTENSIONS,
 )
-from duplicate_finder.domain.selection import DuplicateSelection
 from duplicate_finder.application.quarantine import (
-    move_to_quarantine,
     validate_quarantine_folder,
     InvalidQuarantine,
 )
-from duplicate_finder.application import history
+from duplicate_finder.domain.operations import KIND_QUARANTINE
 from duplicate_finder.domain.transfers import MOVE as MOVE_ACTION
 from . import styles
 from . import icons
@@ -45,12 +43,15 @@ from .image_viewer import open_viewer, can_be_displayed
 from .extension_breakdown_dialog import ExtensionBreakdownWindow
 from duplicate_finder.i18n import tr
 
+log = logging.getLogger(__name__)
+
 
 class ExactDuplicatesTab(ctk.CTkFrame):
-    def __init__(self, container, advanced):
+    def __init__(self, container, advanced, services: Services):
         """`container` is the CTkTabview tab where this component is placed;
         `advanced` is the mode the window starts with."""
         super().__init__(container, fg_color="transparent")
+        self._services = services
         container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
@@ -555,7 +556,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         """Runs in the SECONDARY THREAD. It does not touch a single widget: everything goes through
         the queue as tuples (kind, data)."""
         try:
-            result = scan(
+            result = self._services.scan_duplicates(
                 folder,
                 progress=lambda p: self._queue.put(("progress", p)),
                 cancelled=self._cancel_event.is_set,
@@ -625,7 +626,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             self.empty_state.tkraise()
             return
 
-        self._selection = DuplicateSelection(result)
+        self._selection = self._services.start_selection(result)
         if not self._advanced:
             self._selection.preselect_primary()
         self.table.load(self._selection)
@@ -769,7 +770,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
     def _quarantine_job(self, selection, root, quarantine_folder):
         try:
-            res = move_to_quarantine(
+            res = self._services.move_to_quarantine(
                 selection, root, quarantine_folder,
                 progress=lambda a, t, m: self._quarantine_queue.put(("progress", (a, t, m))))
             self._quarantine_queue.put(("done", (res, quarantine_folder)))
@@ -807,8 +808,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.lbl_state.configure(text=tr("exact.move_done"))
 
         if res.moved:
-            history.record(
-                history.KIND_QUARANTINE, MOVE_ACTION, self._scanned_folder,
+            self._services.history.record(
+                KIND_QUARANTINE, MOVE_ACTION, self._scanned_folder,
                 quarantine_folder, [(m.source, m.destination) for m in res.moved],
                 tr("exact.history_description", count=len(res.moved)))
 
@@ -921,7 +922,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         if not path:
             return
         try:
-            n = export_csv(self._result, path)
+            n = self._services.export_report(self._result, path)
         except OSError as e:
             messagebox.showerror(tr("exact.save_failed_title"),
                                  tr("exact.save_failed_msg", e=e))

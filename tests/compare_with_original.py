@@ -31,7 +31,10 @@ REPO_ROOT = APP_ROOT / "docs" / "origin"                 # the original script i
 sys.path.insert(0, str(APP_ROOT))
 sys.path.insert(0, str(APP_ROOT / "src"))
 
-from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+scan = SERVICES.scan_duplicates
 
 
 def _load_original_script():
