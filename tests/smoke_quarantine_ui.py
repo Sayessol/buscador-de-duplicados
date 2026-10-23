@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from PIL import Image                                # noqa: E402
-from ui import styles, icons                         # noqa: E402
+from ui import styles                         # noqa: E402
 from ui.main_window import MainWindow          # noqa: E402
 
 R = {}
@@ -75,7 +75,7 @@ def main():
     app = MainWindow()
     app._mode = "advanced"
     app._apply_mode()
-    app.tabs.set(f"{icons.CAT_IMAGES}  Fotos parecidas")
+    app.show_tab("similar")
     app.similar.entry_folder.insert(0, str(root))
     app.similar.sensitivity_slider.set(14)
 

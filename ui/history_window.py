@@ -15,18 +15,20 @@ from core import history
 from core.file_moves import COPY
 from core.hashing import format_size  # noqa: F401  (in case it is needed)
 from . import styles, icons
+from core.i18n import tr
 
+# Catalog key of the label of each kind of operation (translated when the window is drawn).
 _KIND_LABEL = {
-    history.KIND_QUARANTINE: "Mover a cuarentena",
-    history.KIND_GATHER: "Reunir imágenes",
-    history.KIND_GATHER_FOLDER: "Reunir (carpeta entera)",
+    history.KIND_QUARANTINE: "common.move_quarantine",
+    history.KIND_GATHER: "history_ui.kind_gather",
+    history.KIND_GATHER_FOLDER: "history_ui.kind_gather_folder",
 }
 
 
 class HistoryWindow(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
-        self.title("Historial de operaciones")
+        self.title(tr("history_ui.title"))
         self.geometry("720x560")
         self.configure(fg_color=styles.COLOR_BACKGROUND)
         self.transient(master)
@@ -35,8 +37,7 @@ class HistoryWindow(ctk.CTkToplevel):
         self.grid_rowconfigure(1, weight=1)
 
         ctk.CTkLabel(
-            self, text="Cada operación se puede deshacer. «Mover» devuelve los "
-                       "archivos a su sitio; «copiar» borra las copias del destino.",
+            self, text=tr("history_ui.intro"),
             font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
             wraplength=680, justify="left").grid(
             row=0, column=0, padx=16, pady=(14, 6), sticky="w")
@@ -47,10 +48,10 @@ class HistoryWindow(ctk.CTkToplevel):
 
         caption = ctk.CTkFrame(self, fg_color="transparent")
         caption.grid(row=2, column=0, sticky="ew", padx=12, pady=(4, 12))
-        ctk.CTkButton(caption, text="Actualizar", width=110, fg_color="transparent",
+        ctk.CTkButton(caption, text=tr("history_ui.refresh"), width=110, fg_color="transparent",
                       border_width=1, text_color=styles.COLOR_TEXT,
                       command=self._paint).pack(side="left")
-        ctk.CTkButton(caption, text="Cerrar", width=100,
+        ctk.CTkButton(caption, text=tr("common.close"), width=100,
                       command=self.destroy).pack(side="right")
 
         self._paint()
@@ -64,7 +65,7 @@ class HistoryWindow(ctk.CTkToplevel):
         ops = history.list_all()
         if not ops:
             ctk.CTkLabel(
-                self.items, text="Todavía no hay operaciones registradas.",
+                self.items, text=tr("history_ui.empty"),
                 font=styles.base_font(12),
                 text_color=styles.COLOR_MUTED_TEXT).grid(
                 row=0, column=0, padx=16, pady=20)
@@ -78,11 +79,11 @@ class HistoryWindow(ctk.CTkToplevel):
         card.grid(row=row, column=0, sticky="ew", pady=(0, 8))
         card.grid_columnconfigure(0, weight=1)
 
-        kind = _KIND_LABEL.get(op["kind"], op["kind"])
-        verb = "copiados" if op["action"] == COPY else "movidos"
+        kind = tr(_KIND_LABEL[op["kind"]]) if op["kind"] in _KIND_LABEL else op["kind"]
+        verb = tr("history_ui.verb_copied" if op["action"] == COPY else "history_ui.verb_moved")
         n = len(op["moves"])
         date = op["date"].replace("T", "  ")
-        title = f"{kind}  ·  {n} archivo(s) {verb}"
+        title = f"{kind}  {tr("history_ui.item_title", n=n, verb=verb)}"
         ctk.CTkLabel(card, text=title, font=styles.base_font(12, "bold"),
                      anchor="w").grid(row=0, column=0, padx=12, pady=(10, 2),
                                       sticky="w")
@@ -93,40 +94,36 @@ class HistoryWindow(ctk.CTkToplevel):
             row=1, column=0, padx=12, pady=(0, 10), sticky="w")
 
         if op.get("undone"):
-            ctk.CTkLabel(card, text=f"{icons.OK} deshecha",
+            ctk.CTkLabel(card, text=tr("history_ui.undone", OK=icons.OK),
                          font=styles.base_font(11),
                          text_color=styles.COLOR_OK).grid(
                 row=0, column=1, rowspan=2, padx=12)
         else:
             ctk.CTkButton(
-                card, text=f"{icons.RELOAD}  Deshacer", width=120,
+                card, text=f"{icons.RELOAD}  {tr("history_ui.undo")}", width=120,
                 command=lambda o=op: self._undo(o)).grid(
                 row=0, column=1, rowspan=2, padx=12, pady=8)
 
     def _undo(self, op):
         n = len(op["moves"])
         if op["action"] == COPY:
-            warning = (f"Se van a BORRAR {n} archivo(s) copiados en:\n\n"
-                     f"{op['destination']}\n\n"
-                     "Son las copias que hizo la app. Los originales no se "
-                     "tocan. Esta acción no se puede deshacer.\n\n¿Continuar?")
+            warning = tr("history_ui.confirm_delete_copies", n=n, destination=op["destination"])
         else:
-            warning = (f"Se van a devolver {n} archivo(s) a su ubicación "
-                     f"original (desde {op['destination']}).\n\n¿Continuar?")
-        if not messagebox.askyesno("Deshacer operación", warning, parent=self):
+            warning = tr("history_ui.confirm_return", n=n, destination=op["destination"])
+        if not messagebox.askyesno(tr("history_ui.undo_title"), warning, parent=self):
             return
 
         res = history.undo(op["id"])
         self._paint()
 
         if res["failures"]:
-            detail = "\n".join(f"· {os.path.basename(r) or r}: {m}"
+            detail = "\n".join(tr("history_ui.failure_line", name=os.path.basename(r) or r, m=m)
                                 for r, m in res["failures"][:12])
             messagebox.showwarning(
-                "Deshacer con avisos",
-                f"Revertidos: {res['reverted']}.\nNo se pudieron revertir "
-                f"{len(res['failures'])}:\n\n{detail}", parent=self)
+                tr("history_ui.undo_warnings_title"),
+                tr("history_ui.undo_warnings_msg", reverted=res['reverted'],
+                   count=len(res['failures']), detail=detail), parent=self)
         else:
             messagebox.showinfo(
-                "Hecho", f"Operación deshecha: {res['reverted']} archivo(s).",
+                tr("common.done_title"), tr("history_ui.undo_done", reverted=res['reverted']),
                 parent=self)

@@ -26,6 +26,7 @@ from typing import Any
 from .app_logging import log
 from .callbacks import ProgressCallback
 from .file_moves import COPY
+from .i18n import tr
 
 _MAX_OPERATIONS = 80
 
@@ -111,7 +112,7 @@ def _save(items: list[dict[str, Any]]) -> None:
             json.dumps(items[-_MAX_OPERATIONS:], indent=2, ensure_ascii=False),
             encoding="utf-8")
     except OSError:
-        log.warning("No se pudo guardar el historial en %s", path, exc_info=True)
+        log.warning("Could not save the history to %s", path, exc_info=True)
 
 
 def record(
@@ -185,9 +186,9 @@ def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]
     progress = progress or (lambda *_: None)
     op = next((o for o in _load() if o["id"] == op_id), None)
     if op is None:
-        return {"reverted": 0, "failures": [("", "operación no encontrada")], "op": None}
+        return {"reverted": 0, "failures": [("", tr("history.op_not_found"))], "op": None}
     if op.get("undone"):
-        return {"reverted": 0, "failures": [("", "esta operación ya se deshizo")], "op": op}
+        return {"reverted": 0, "failures": [("", tr("history.already_undone"))], "op": op}
 
     op_moves = op["moves"]        # each one: {"source": ..., "destination": ...}
     total = len(op_moves)
@@ -205,10 +206,10 @@ def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]
                 ok += 1
             else:  # "move" -> take the file back to its source
                 if not os.path.exists(destination):
-                    raise FileNotFoundError("ya no está en el destino")
+                    raise FileNotFoundError(tr("history.gone_from_destination"))
                 if os.path.exists(source):
                     # someone has put something there again: we do not overwrite it
-                    raise FileExistsError("ya hay algo en la ruta original")
+                    raise FileExistsError(tr("history.original_path_taken"))
                 os.makedirs(os.path.dirname(source), exist_ok=True)
                 shutil.move(destination, source)
                 ok += 1

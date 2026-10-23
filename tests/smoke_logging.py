@@ -59,9 +59,10 @@ def main():
         h.flush()
     text = log_path.read_text(encoding="utf-8")
     check("fallo provocado en la interfaz" in text, "el error de la interfaz queda en el registro")
-    check(text.count("Error inesperado en la interfaz") == 2, "los dos fallos repetidos se anotan")
+    check(text.count("Unexpected error in the interface") == 2,
+          "los dos fallos repetidos se anotan")
     check(len(warnings) == 1, "pero el aviso al usuario sale una sola vez")
-    check("Falló el escaneo" in text and "NotADirectoryError" in text,
+    check("Scan of" in text and "NotADirectoryError" in text,
           "el error del hilo de escaneo queda en el registro, con su traceback")
     check(str(log_path) in warnings[0][1] if warnings else False,
           "el aviso dice dónde está el registro")

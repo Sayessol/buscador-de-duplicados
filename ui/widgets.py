@@ -64,6 +64,41 @@ class EmptyState(ctk.CTkFrame):
             self._detail.configure(text=detail)
 
 
+class KeyedSegmentedButton(ctk.CTkSegmentedButton):
+    """Segmented button whose options have a stable key and a translated label.
+
+    The code works with the keys (`get_key()`, `set_key()`); only the labels depend on the
+    language, so comparing against text the user sees is never needed.
+    """
+
+    def __init__(self, master, options, **kw):
+        """`options` maps each key to its label, in the order they are shown."""
+        super().__init__(master, values=list(options.values()), **kw)
+        self._labels = dict(options)
+
+    def set_key(self, key):
+        self.set(self._labels[key])
+
+    def get_key(self):
+        label = self.get()
+        return next(key for key, text in self._labels.items() if text == label)
+
+
+class KeyedOptionMenu(ctk.CTkOptionMenu):
+    """Drop-down list with the same key / label split as KeyedSegmentedButton."""
+
+    def __init__(self, master, options, **kw):
+        super().__init__(master, values=list(options.values()), **kw)
+        self._labels = dict(options)
+
+    def set_key(self, key):
+        self.set(self._labels[key])
+
+    def key_of(self, label):
+        """The key of a label (what the `command` callback receives)."""
+        return next(key for key, text in self._labels.items() if text == label)
+
+
 def make_card(parent, row):
     """Section card: a frame with a card background that takes up a row of the parent."""
     t = ctk.CTkFrame(parent, fg_color=styles.COLOR_CARD)

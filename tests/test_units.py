@@ -7,7 +7,7 @@ import pytest
 
 from core import config
 from core.hashing import format_size
-from core.report import COLUMNS, export_csv
+from core.report import columns, export_csv
 
 
 @pytest.fixture
@@ -63,8 +63,8 @@ def test_export_csv(tmp_path):
     assert export_csv(result, destination) == 1
 
     rows = list(csv.reader(destination.open(encoding="utf-8-sig", newline="")))
-    assert rows[0] == COLUMNS
-    assert rows[1] == ["Grupo 1", r"C:\a\foto.jpg", "2.0 KB", "2048", "abc123"]
+    assert rows[0] == columns()
+    assert rows[1] == ["Group 1", r"C:\a\foto.jpg", "2.0 KB", "2048", "abc123"]
     assert len(rows) == 3
 
 

@@ -17,6 +17,7 @@ from core.app_logging import log
 
 from . import styles
 from .thumbnails import IMAGE_EXT
+from core.i18n import tr
 
 # Limit when loading (px, longer side): avoids exhausting memory with huge
 # photos; zoom keeps working within that limit.
@@ -42,7 +43,7 @@ class ImageViewer(ctk.CTkToplevel):
                     im.thumbnail((_MAX_SIDE, _MAX_SIDE), Image.LANCZOS)
                 self._orig = im.copy()
         except Exception:  # the viewer shows "cannot be opened" instead of breaking
-            log.warning("No se pudo abrir la imagen %s en el visor", path, exc_info=True)
+            log.warning("Could not open image %s in the viewer", path, exc_info=True)
             self._orig = None
 
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
@@ -53,7 +54,7 @@ class ImageViewer(ctk.CTkToplevel):
         bar.pack(fill="x", padx=8, pady=8)
         ctk.CTkButton(bar, text="−", width=40,
                       command=lambda: self._zoom(1 / 1.25)).pack(side="left", padx=2)
-        ctk.CTkButton(bar, text="Ajustar", width=90,
+        ctk.CTkButton(bar, text=tr("viewer.fit"), width=90,
                       command=self._fit).pack(side="left", padx=2)
         ctk.CTkButton(bar, text="100 %", width=60,
                       command=lambda: self._set_scale(1.0)).pack(side="left", padx=2)
@@ -63,7 +64,7 @@ class ImageViewer(ctk.CTkToplevel):
             bar, text="", font=styles.base_font(12),
             text_color=styles.COLOR_MUTED_TEXT)
         self._lbl_info.pack(side="left", padx=14)
-        ctk.CTkButton(bar, text="Cerrar", width=80,
+        ctk.CTkButton(bar, text=tr("common.close"), width=80,
                       command=self.destroy).pack(side="right", padx=2)
 
         ctk.CTkLabel(self, text=path, font=styles.base_font(11),
@@ -112,7 +113,7 @@ class ImageViewer(ctk.CTkToplevel):
         if self._orig is None:
             self.canvas.create_text(
                 20, 20, anchor="nw", fill=styles.col(styles.COLOR_TEXT),
-                text="No se puede mostrar esta imagen.")
+                text=tr("viewer.cannot_show"))
             self._lbl_info.configure(text="")
             return
         w = max(1, int(self._orig.width * self._scale))

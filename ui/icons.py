@@ -38,11 +38,11 @@ CAT_DOCUMENTS = "\U0001F4C4"   # 📄
 CAT_ARCHIVES = "\U0001F4E6"  # 📦
 
 CATEGORY_ICON = {
-    "Imágenes": CAT_IMAGES,
-    "Audio": CAT_AUDIO,
-    "Vídeo": CAT_VIDEO,
-    "Documentos": CAT_DOCUMENTS,
-    "Comprimidos": CAT_ARCHIVES,
+    "images": CAT_IMAGES,
+    "audio": CAT_AUDIO,
+    "video": CAT_VIDEO,
+    "documents": CAT_DOCUMENTS,
+    "archives": CAT_ARCHIVES,
 }
 
 

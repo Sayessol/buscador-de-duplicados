@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from .callbacks import CancelledCallback, ProgressCallback
+from .i18n import tr
 
 MOVE = "move"
 COPY = "copy"
@@ -37,14 +38,12 @@ def validate_destination(destination: str, source: str) -> str | None:
     d, o = _norm(destination), _norm(source)
     if d == o:
         raise InvalidDestination(
-            "El destino no puede ser la misma carpeta que el origen.")
+            tr("moves.same_folder"))
     if d.startswith(o + os.sep):
         raise InvalidDestination(
-            "El destino está dentro de la carpeta de origen. "
-            "Elige una carpeta fuera de ella.")
+            tr("moves.inside_source"))
     if o.startswith(d + os.sep):
-        return ("Atención: la carpeta de origen está dentro del destino. "
-                "Se puede continuar, pero revisa que sea lo que quieres.")
+        return tr("moves.source_inside_destination")
     return None
 
 
@@ -104,15 +103,16 @@ def execute(
     progress = progress or (lambda *_: None)
     cancelled = cancelled or (lambda: False)
     total = len(transfers)
-    verb = "Copiando" if action == COPY else "Moviendo"
+    verb = tr("common.copying") if action == COPY else tr("common.moving")
 
     for i, t in enumerate(transfers, start=1):
         if cancelled():
             break
-        progress(i, total, f"{verb} {i}/{total}: {os.path.basename(t.source)}")
+        progress(i, total, tr("moves.progress", verb=verb, i=i, total=total,
+                              basename=os.path.basename(t.source)))
         try:
             if not os.path.exists(t.source):
-                raise FileNotFoundError("el archivo ya no está en su sitio")
+                raise FileNotFoundError(tr("common.file_gone"))
             os.makedirs(os.path.dirname(t.destination), exist_ok=True)
             t.destination = collision_free_path(t.destination)
             if action == COPY:
@@ -123,7 +123,7 @@ def execute(
         except (OSError, shutil.Error) as e:
             t.ok, t.error = False, str(e)
 
-    progress(total, total, "Listo.")
+    progress(total, total, tr("common.done"))
     return TransferResult(transfers=transfers, action=action)
 
 
@@ -136,12 +136,14 @@ def write_log(
         os.makedirs(destination_folder, exist_ok=True)
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
-            w.writerow(["Fecha", "Accion", "Origen_Raiz", "Origen", "Destino",
-                        "Tamano_Bytes", "Estado", "Error"])
+            w.writerow([tr(key) for key in (
+                "csv.date", "csv.action", "csv.source_root", "csv.source", "csv.destination",
+                "csv.size_bytes", "csv.status", "csv.error")])
+            status_done, status_error = tr("csv.status_done"), tr("csv.status_error")
             now = datetime.now().isoformat(timespec="seconds")
             for t in transfers:
                 w.writerow([now, action, root_source, t.source, t.destination,
-                            t.size, "hecho" if t.ok else "ERROR", t.error])
+                            t.size, status_done if t.ok else status_error, t.error])
         return path
     except OSError:
         return ""

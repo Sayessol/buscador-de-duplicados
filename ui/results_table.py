@@ -28,11 +28,13 @@ from core.selection import (
 )
 from . import styles
 from .thumbnails import thumbnail_or_placeholder
+from core.i18n import tr
 
+# Catalog key of the text each state of a group shows.
 _STATE_LABEL = {
-    GROUP_OK: "listo",
-    GROUP_NOTHING_KEPT: "elige cuál conservar",
-    GROUP_MULTIPLE: "elige cuál conservar",
+    GROUP_OK: "table.state_ready",
+    GROUP_NOTHING_KEPT: "table.state_choose",
+    GROUP_MULTIPLE: "table.state_choose",
 }
 
 _ROW_HEIGHT = 48
@@ -62,9 +64,9 @@ class ResultsTable(ctk.CTkFrame):
         self.tree = ttk.Treeview(
             self, columns=("decision", "size", "info"),
             selectmode="browse", style="Duplicates.Treeview")
-        self.tree.heading("#0", text="Grupo / Archivo", anchor="w")
-        self.tree.heading("decision", text="Decisión", anchor="w")
-        self.tree.heading("size", text="Tamaño", anchor="e")
+        self.tree.heading("#0", text=tr("table.col_group"), anchor="w")
+        self.tree.heading("decision", text=tr("table.col_decision"), anchor="w")
+        self.tree.heading("size", text=tr("table.col_size"), anchor="e")
         self.tree.heading("info", text="", anchor="w")
 
         self.tree.column("#0", width=520, minwidth=260, stretch=True, anchor="w")
@@ -157,9 +159,9 @@ class ResultsTable(ctk.CTkFrame):
         for gi, group in enumerate(result.groups):
             group_id = self.tree.insert(
                 "", "end",
-                text=f"Grupo {gi + 1}  ·  {group.count} copias",
+                text=tr("table.group_title", number=gi + 1, count=group.count),
                 values=("", format_size(group.size),
-                        f"libera {format_size(group.reclaimable_space)}"),
+                        tr("table.reclaim", size=format_size(group.reclaimable_space))),
                 open=True)
             self._meta[group_id] = ("group", gi)
             self._group_iid[gi] = group_id
@@ -192,7 +194,7 @@ class ResultsTable(ctk.CTkFrame):
                 try:
                     pil = thumbnail_or_placeholder(path, _MINI_SIDE)
                 except Exception as e:  # a broken file must not stop the thumbnails
-                    log.info("No se pudo crear la miniatura de %s: %s", path, e)
+                    log.info("Could not create the thumbnail of %s: %s", path, e)
                     pil = None
                 self._thumbs_queue.put((gen, iid, pil))
 
@@ -225,7 +227,7 @@ class ResultsTable(ctk.CTkFrame):
         tag_group = "group" if state == GROUP_OK else "group_pending"
         mark = "OK" if state == GROUP_OK else "!"
         vals = list(self.tree.item(group_id, "values"))
-        vals[0] = f"{mark}  {_STATE_LABEL[state]}"
+        vals[0] = f"{mark}  {tr(_STATE_LABEL[state])}"
         self.tree.item(group_id, values=vals, tags=(tag_group,))
 
         for file in self.selection.result.groups[gi].files:
@@ -233,9 +235,9 @@ class ResultsTable(ctk.CTkFrame):
             decision = self.selection.decision(gi, file.path)
             vals = list(self.tree.item(iid, "values"))
             if decision == KEEP:
-                vals[0], tag = "✔ conservar", "keep"
+                vals[0], tag = tr("table.decision_keep"), "keep"
             else:
-                vals[0], tag = "→ mover", "move"
+                vals[0], tag = tr("table.decision_move"), "move"
             self.tree.item(iid, values=vals, tags=(tag,))
 
     def refresh_all(self):

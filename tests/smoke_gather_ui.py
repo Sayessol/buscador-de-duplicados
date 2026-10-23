@@ -38,7 +38,7 @@ def main():
     tmp = Path(tempfile.mkdtemp(prefix="dup_reunir_"))
     os.environ["APPDATA"] = str(tmp / "appdata")
 
-    from ui import styles, icons                         # noqa: E402
+    from ui import styles                         # noqa: E402
     from ui import main_window as MW                      # noqa: E402
     from core import history                            # noqa: E402
     from core.gather import NonImageRules                # noqa: E402
@@ -72,11 +72,11 @@ def main():
     app = MW.MainWindow()
     app._mode = "advanced"
     app._apply_mode()
-    app.tabs.set(f"{icons.GATHER}  Reunir imágenes")
+    app.show_tab("gather")
     app.gather.entry_folder.insert(0, str(root))
     app.gather.entry_destination.insert(0, str(destination))
-    app.gather.seg_action.set("Mover")
-    app.gather.seg_strategy.set("Por archivos")
+    app.gather.seg_action.set_key("move")
+    app.gather.seg_strategy.set_key("files")
 
     imgs_before = sorted(str(p.relative_to(root)).replace("\\", "/")
                         for p in root.rglob("*") if p.suffix.lower() in

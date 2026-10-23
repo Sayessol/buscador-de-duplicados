@@ -31,14 +31,14 @@ def test_creates_the_file_and_logs_the_startup(appdata):
     assert path == appdata / "BuscadorDuplicados" / "logs" / "app.log"
     assert app_logging.file_path() == path
     text = _read(path)
-    assert "Arranca Buscador de duplicados" in text and app_logging.__version__ in text
+    assert "Starting Duplicate Finder" in text and app_logging.__version__ in text
 
 
 def test_starting_twice_does_not_duplicate_lines(appdata):
     app_logging.start()
     app_logging.start()
-    app_logging.log.info("una sola vez")
-    assert _read(app_logging.file_path()).count("una sola vez") == 1
+    app_logging.log.info("only once")
+    assert _read(app_logging.file_path()).count("only once") == 1
 
 
 def test_logs_exceptions_with_their_traceback(appdata):
@@ -46,9 +46,9 @@ def test_logs_exceptions_with_their_traceback(appdata):
     try:
         _ = 1 / 0
     except ZeroDivisionError:
-        app_logging.log.exception("Falló una cuenta")
+        app_logging.log.exception("A calculation failed")
     text = _read(app_logging.file_path())
-    assert "Falló una cuenta" in text
+    assert "A calculation failed" in text
     assert "ZeroDivisionError" in text and "Traceback" in text
 
 
@@ -56,13 +56,13 @@ def test_logs_exceptions_with_their_traceback(appdata):
 def test_detail_is_only_logged_with_the_debug_variable(appdata, monkeypatch, variable):
     """The old BUSCADOR_DEBUG name still works next to the current one."""
     app_logging.start()
-    app_logging.log.debug("detalle-oculto")
-    assert "detalle-oculto" not in _read(app_logging.file_path())
+    app_logging.log.debug("hidden-detail")
+    assert "hidden-detail" not in _read(app_logging.file_path())
     app_logging.stop()
     monkeypatch.setenv(variable, "1")
     app_logging.start()
-    app_logging.log.debug("detalle-visible")
-    assert "detalle-visible" in _read(app_logging.file_path())
+    app_logging.log.debug("visible-detail")
+    assert "visible-detail" in _read(app_logging.file_path())
 
 
 def test_without_write_permission_the_app_carries_on(tmp_path, monkeypatch):
@@ -72,7 +72,7 @@ def test_without_write_permission_the_app_carries_on(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(file))
     app_logging.stop()
     assert app_logging.start() is None
-    app_logging.log.error("esto no debe lanzar nada")     # keeps working, without a file
+    app_logging.log.error("this must not raise")     # keeps working, without a file
     assert app_logging.file_path() is None
 
 
@@ -116,6 +116,6 @@ def test_unexpected_ui_error_is_logged_and_warned_once(appdata, monkeypatch):
         except KeyError:
             MainWindow.report_callback_exception(window, *sys.exc_info())
     text = _read(app_logging.file_path())
-    assert text.count("Error inesperado en la interfaz") == 3   # all three are logged
+    assert text.count("Unexpected error in the interface") == 3   # all three are logged
     assert len(warnings) == 1                                      # but warned only once
     assert str(app_logging.file_path()) in warnings[0][1]     # and it says where the log is

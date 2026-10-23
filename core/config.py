@@ -12,7 +12,10 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from . import i18n
 from .app_logging import log
+
+LANGUAGE_AUTO = "auto"    # nothing chosen yet: follow the language of the system
 
 MODES = ("simple", "advanced")
 DEFAULT_MODE = "simple"
@@ -71,7 +74,7 @@ def save(data: dict[str, Any]) -> None:
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False),
                         encoding="utf-8")
     except OSError:
-        log.warning("No se pudo guardar la configuración en %s", path, exc_info=True)
+        log.warning("Could not save the configuration to %s", path, exc_info=True)
 
 
 def get_mode() -> str:
@@ -97,4 +100,18 @@ def set_theme(theme: str) -> None:
         return
     data = load()
     data["theme"] = theme
+    save(data)
+
+
+def get_language() -> str:
+    """The saved language ("en" | "es"), or "auto" when none was chosen yet."""
+    language = load().get("language")
+    return language if language in i18n.LANGUAGES else LANGUAGE_AUTO
+
+
+def set_language(language: str) -> None:
+    if language not in i18n.LANGUAGES:
+        return
+    data = load()
+    data["language"] = language
     save(data)
