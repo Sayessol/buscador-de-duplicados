@@ -63,7 +63,7 @@ def test_logic(name):
         module.main()
     except SystemExit as output:
         code = output.code or 0
-    assert code == 0, f"{name} terminó con código {code} (mira la salida de arriba)"
+    assert code == 0, f"{name} finished with code {code} (see the output above)"
 
 
 @pytest.mark.gui
@@ -74,4 +74,4 @@ def test_window(name, tmp_path):
     r = subprocess.run([sys.executable, str(FOLDER / f"{name}.py")],
                        capture_output=True, text=True, encoding="utf-8",
                        errors="replace", timeout=300, check=False, env=environment)
-    assert r.returncode == 0, f"{name} falló:\n{r.stdout}\n{r.stderr}"
+    assert r.returncode == 0, f"{name} failed:\n{r.stdout}\n{r.stderr}"

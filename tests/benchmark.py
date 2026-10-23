@@ -67,7 +67,7 @@ def create_data(base: Path, n: int) -> int:
 
     for i in range(n_copies):                               # exact copies
         _, data = rnd.choice(paths)
-        write(f"copia{i:05d}.bin", data)
+        write(f"copy{i:05d}.bin", data)
 
     for i in range(n_same_size):                            # same size, other content
         _, data = rnd.choice(paths)
@@ -128,10 +128,10 @@ def main():
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 4000
     tmp = Path(tempfile.mkdtemp(prefix="bench_"))
     try:
-        base = tmp / "datos"
-        print(f"Creando {n} archivos de prueba...")
+        base = tmp / "data"
+        print(f"Creating {n} test files...")
         total = create_data(base, n)
-        print(f"  {n} archivos, {format_size(total)} en total\n")
+        print(f"  {n} files, {format_size(total)} in total\n")
 
         # Each method is repeated and the BEST time is taken: that way the first one does not
         # pay alone the cost of "warming up" the disk cache and the antivirus.
@@ -146,16 +146,16 @@ def main():
             t_app = min(t_app, time.perf_counter() - t)
 
         equal = g_naive == g_app
-        print(f"{'Método':<28}{'Tiempo':>10}{'Bytes leídos':>16}{'% del total':>13}")
+        print(f"{'Method':<28}{'Time':>10}{'Bytes read':>16}{'% of total':>13}")
         print("-" * 67)
-        print(f"{'Hashear todo (ingenuo)':<28}{t_naive:>9.2f}s{format_size(b_naive):>16}"
+        print(f"{'Hash everything (naive)':<28}{t_naive:>9.2f}s{format_size(b_naive):>16}"
               f"{100 * b_naive / total:>12.1f}%")
-        print(f"{'3 pasadas (esta app)':<28}{t_app:>9.2f}s{format_size(b_app):>16}"
+        print(f"{'3 passes (this app)':<28}{t_app:>9.2f}s{format_size(b_app):>16}"
               f"{100 * b_app / total:>12.1f}%")
-        print(f"\nGrupos de duplicados: {len(g_app)}  ·  "
-              f"mismos grupos que el método ingenuo: {'SÍ' if equal else 'NO'}")
-        print(f"Ahorro de lectura: {100 * (1 - b_app / b_naive):.0f} %  ·  "
-              f"tiempo {t_naive / t_app:.1f}x más rápido (mejor de {REPETITIONS})")
+        print(f"\nDuplicate groups: {len(g_app)}  ·  same groups as the naive method: "
+              f"{'YES' if equal else 'NO'}")
+        print(f"Read savings: {100 * (1 - b_app / b_naive):.0f} %  ·  "
+              f"time {t_naive / t_app:.1f}x faster (best of {REPETITIONS})")
         if not equal:
             sys.exit(1)
     finally:

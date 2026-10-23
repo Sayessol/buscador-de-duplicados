@@ -55,14 +55,14 @@ TEXT_ON_BACKGROUND = [
 
 # WHITE text on button or selection fills
 FILLS_WITH_WHITE_TEXT = {
-    "selección de la tabla": styles.COLOR_SELECTION,
-    "botón de acción (verde)": styles.COLOR_OK_BUTTON,
-    "botón de acción, al pasar el ratón": styles.ACTION_HOVER,
-    "botón peligroso (rojo)": styles.COLOR_DANGER_BUTTON,
-    "botón azul": (styles._BLUE, styles._BLUE),
-    "botón azul, al pasar el ratón": (styles._BLUE_HOVER, styles._BLUE_HOVER),
-    "pestaña sin seleccionar": (styles._TAB_GRAY, "#4a4a4a"),
-    "pestaña sin seleccionar, al pasar el ratón": (styles._TAB_GRAY_HOVER, "#696969"),
+    "table selection": styles.COLOR_SELECTION,
+    "action button (green)": styles.COLOR_OK_BUTTON,
+    "action button, on hover": styles.ACTION_HOVER,
+    "dangerous button (red)": styles.COLOR_DANGER_BUTTON,
+    "blue button": (styles._BLUE, styles._BLUE),
+    "blue button, on hover": (styles._BLUE_HOVER, styles._BLUE_HOVER),
+    "unselected tab": (styles._TAB_GRAY, "#4a4a4a"),
+    "unselected tab, on hover": (styles._TAB_GRAY_HOVER, "#696969"),
 }
 
 
@@ -71,7 +71,7 @@ FILLS_WITH_WHITE_TEXT = {
 def test_text_readable_on_its_background(theme, text, background):
     i = THEMES[theme]
     c = contrast(getattr(styles, text)[i], getattr(styles, background)[i])
-    assert c >= AA_TEXT, f"{text} sobre {background} ({theme}): {c:.2f}:1, hace falta {AA_TEXT}:1"
+    assert c >= AA_TEXT, f"{text} on {background} ({theme}): {c:.2f}:1, {AA_TEXT}:1 needed"
 
 
 @pytest.mark.parametrize("theme", THEMES)
@@ -79,19 +79,19 @@ def test_text_readable_on_its_background(theme, text, background):
 def test_white_text_readable_on_fills(theme, name):
     fill = FILLS_WITH_WHITE_TEXT[name][THEMES[theme]]
     c = contrast(WHITE, fill)
-    assert c >= AA_TEXT, f"Texto blanco sobre «{name}» ({theme}, {fill}): {c:.2f}:1"
+    assert c >= AA_TEXT, f"White text on “{name}” ({theme}, {fill}): {c:.2f}:1"
 
 
 @pytest.mark.parametrize("theme", THEMES)
 def test_disabled_button_looks_off_but_readable(theme):
     i = THEMES[theme]
     background, text = styles.COLOR_BUTTON_OFF[i], styles.COLOR_BUTTON_OFF_TEXT[i]
-    assert contrast(text, background) >= 2.0, "el texto deshabilitado casi no se ve"
+    assert contrast(text, background) >= 2.0, "disabled text is almost invisible"
     # And it is not mistaken for an active button or an error one:
     for active in (styles.COLOR_OK_BUTTON, styles.COLOR_DANGER_BUTTON, styles.COLOR_SELECTION):
         assert background.lower() != active[i].lower()
-        assert contrast(background, active[i]) >= 1.5, "deshabilitado y activo se parecen demasiado"
-    assert contrast(background, styles.COLOR_CARD[i]) >= 1.08, "el botón se funde con la tarjeta"
+        assert contrast(background, active[i]) >= 1.5, "disabled and active look too alike"
+    assert contrast(background, styles.COLOR_CARD[i]) >= 1.08, "the button blends into the card"
 
 
 def test_contrast_meter_is_correct():

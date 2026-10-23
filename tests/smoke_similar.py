@@ -28,9 +28,9 @@ R = {}
 def main():
     styles.apply_theme()
     tmp = tempfile.mkdtemp(prefix="dup_parui_")
-    base = Path(tmp) / "fotos"
+    base = Path(tmp) / "photos"
     build(base)
-    quarantine = Path(tmp) / "CUARENTENA"
+    quarantine = Path(tmp) / "QUARANTINE"
 
     app = MainWindow()
     app._mode = "advanced"
@@ -46,19 +46,19 @@ def main():
             return
         sel = app.similar._selection
         res = app.similar._result
-        R["grupos"] = res.total_groups
+        R["groups"] = res.total_groups
         R["tiles"] = len(app.similar._tiles)
-        R["errores"] = len(res.errors)
+        R["errors"] = len(res.errors)
 
-        # the "playa" group must have 5 photos and the best one marked to keep
+        # the "beach" group must have 5 photos and the best one marked to keep
         beach_gi = next(
             i for i, g in enumerate(res.groups)
-            if any("playa_original" in a.path for a in g.files))
+            if any("beach_original" in a.path for a in g.files))
         g = res.groups[beach_gi]
-        R["playa_5"] = g.count == 5
-        R["mejor_es_png"] = g.files[0].path.endswith("playa_original.png")
-        R["mejor_conservar"] = sel.decision(beach_gi, g.files[0].path) == KEEP
-        R["resto_mover"] = all(
+        R["beach_5"] = g.count == 5
+        R["best_is_png"] = g.files[0].path.endswith("beach_original.png")
+        R["best_keep"] = sel.decision(beach_gi, g.files[0].path) == KEEP
+        R["rest_to_move"] = all(
             sel.decision(beach_gi, a.path) != KEEP for a in g.files[1:])
 
         # manual toggle: choose another one as the one to keep
@@ -71,8 +71,8 @@ def main():
         # put the best one back
         app.similar._choose_keep(beach_gi, g.files[0].path)
 
-        R["todo_listo"] = sel.all_ready()
-        R["boton_cuarentena"] = str(app.similar.btn_quarantine.cget("state")) == "normal"
+        R["all_ready"] = sel.all_ready()
+        R["quarantine_button"] = str(app.similar.btn_quarantine.cget("state")) == "normal"
         to_move = sel.count_to_move()
 
         # paged gallery: with 1 group per page there is one page per group, and when
@@ -81,27 +81,27 @@ def main():
         similar_photos_tab.MAX_GROUPS_PER_PAGE = 1
         p._build_gallery()
         app.update()
-        R["paginas"] = len(p._pages) == res.total_groups
+        R["pages"] = len(p._pages) == res.total_groups
         R["pager_visible"] = bool(p.pager.winfo_ismapped())
         R["pag1_tiles"] = {gi for gi, _ in p._tiles} == {0}
-        R["pag1_anterior_apagado"] = str(p.btn_page_prev.cget("state")) == "disabled"
+        R["page1_previous_off"] = str(p.btn_page_prev.cget("state")) == "disabled"
         p._change_page(1)
         app.update()
         R["pag2_tiles"] = {gi for gi, _ in p._tiles} == {1}
-        R["pag2_siguiente_apagado"] = str(p.btn_page_next.cget("state")) == "disabled"
+        R["page2_next_off"] = str(p.btn_page_next.cget("state")) == "disabled"
         p._change_page(1)                       # it is already the last: it does nothing
-        R["no_pasa_de_la_ultima"] = p._page == 1
-        R["seleccion_intacta"] = sel.decision(beach_gi, g.files[0].path) == KEEP
-        R["alto_galeria_ok"] = p.gallery.winfo_reqheight() < 32767
+        R["does_not_pass_the_last"] = p._page == 1
+        R["selection_intact"] = sel.decision(beach_gi, g.files[0].path) == KEEP
+        R["gallery_height_ok"] = p.gallery.winfo_reqheight() < 32767
         similar_photos_tab.MAX_GROUPS_PER_PAGE = 40
         p._build_gallery()
         app.update()
-        R["una_pagina_sin_pager"] = len(p._pages) == 1 and not p.pager.winfo_ismapped()
+        R["one_page_no_pager"] = len(p._pages) == 1 and not p.pager.winfo_ismapped()
 
         move_res = move_to_quarantine(sel, str(base), str(quarantine))
-        R["movidas"] = len(move_res.moved)
-        R["movidas_ok"] = len(move_res.moved) == to_move and not move_res.failed
-        R["mejor_intacta"] = (base / "playa_original.png").exists()
+        R["moved_photos"] = len(move_res.moved)
+        R["moved_photos_ok"] = len(move_res.moved) == to_move and not move_res.failed
+        R["best_intact"] = (base / "beach_original.png").exists()
         R["log"] = bool(move_res.log_path) and Path(move_res.log_path).exists()
 
         app.after(300, app.destroy)
@@ -115,26 +115,26 @@ def main():
         print(f"  {k:22} {v}")
 
     ok = (
-        R.get("grupos") == 2
-        and R.get("tiles") == 7          # 5 playa + 2 montaña
-        and R.get("errores") == 1
-        and R.get("playa_5") is True
-        and R.get("mejor_es_png") is True
-        and R.get("mejor_conservar") is True
-        and R.get("resto_mover") is True
+        R.get("groups") == 2
+        and R.get("tiles") == 7          # 5 beach + 2 mountain
+        and R.get("errors") == 1
+        and R.get("beach_5") is True
+        and R.get("best_is_png") is True
+        and R.get("best_keep") is True
+        and R.get("rest_to_move") is True
         and R.get("toggle_ok") is True
-        and R.get("todo_listo") is True
-        and R.get("boton_cuarentena") is True
+        and R.get("all_ready") is True
+        and R.get("quarantine_button") is True
         and all(R.get(k) is True for k in (
-            "paginas", "pager_visible", "pag1_tiles", "pag1_anterior_apagado",
-            "pag2_tiles", "pag2_siguiente_apagado", "no_pasa_de_la_ultima",
-            "seleccion_intacta", "alto_galeria_ok", "una_pagina_sin_pager"))
-        and R.get("movidas") == 5       # 4 extra playa + 1 montaña
-        and R.get("movidas_ok") is True
-        and R.get("mejor_intacta") is True
+            "pages", "pager_visible", "pag1_tiles", "page1_previous_off",
+            "pag2_tiles", "page2_next_off", "does_not_pass_the_last",
+            "selection_intact", "gallery_height_ok", "one_page_no_pager"))
+        and R.get("moved_photos") == 5       # 4 extra beach + 1 mountain
+        and R.get("moved_photos_ok") is True
+        and R.get("best_intact") is True
         and R.get("log") is True
     )
-    print("\n" + ("HUMO PARECIDAS OK" if ok else "HUMO PARECIDAS FALLA"))
+    print("\n" + ("SIMILAR SMOKE OK" if ok else "SIMILAR SMOKE FAILED"))
     sys.exit(0 if ok else 1)
 
 

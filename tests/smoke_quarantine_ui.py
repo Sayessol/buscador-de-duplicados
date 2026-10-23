@@ -28,7 +28,7 @@ failures = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
@@ -45,23 +45,23 @@ def _photo(seed):
 
 
 def build(root: Path):
-    (root / "2023" / "verano").mkdir(parents=True)
+    (root / "2023" / "summer").mkdir(parents=True)
     (root / "2024").mkdir(parents=True)
-    (root / "sin ordenar").mkdir(parents=True)
-    _photo(1).save(root / "2023" / "verano" / "playa.jpg", quality=92)
-    _photo(1).save(root / "2024" / "playa.jpg", quality=45)          # similar
-    _photo(1).save(root / "sin ordenar" / "playa (copia).jpg", quality=70)  # similar
-    _photo(2).save(root / "2023" / "retrato.jpg", quality=92)
-    _photo(2).save(root / "sin ordenar" / "retrato.jpg", quality=45)  # similar
+    (root / "unsorted").mkdir(parents=True)
+    _photo(1).save(root / "2023" / "summer" / "beach.jpg", quality=92)
+    _photo(1).save(root / "2024" / "beach.jpg", quality=45)          # similar
+    _photo(1).save(root / "unsorted" / "beach (copy).jpg", quality=70)  # similar
+    _photo(2).save(root / "2023" / "portrait.jpg", quality=92)
+    _photo(2).save(root / "unsorted" / "portrait.jpg", quality=45)  # similar
 
 
 def main():
     styles.apply_theme()
     tmp = tempfile.mkdtemp(prefix="dup_uic_")
-    root = Path(tmp) / "Fotos móvil"
+    root = Path(tmp) / "Phone photos"
     build(root)
     # Quarantine folder "on the desktop", created by the user:
-    quarantine = Path(tmp) / "Escritorio" / "Cuarentena"
+    quarantine = Path(tmp) / "Desktop" / "Quarantine"
     quarantine.mkdir(parents=True)
 
     # Stub the dialogs.
@@ -91,7 +91,7 @@ def main():
         app.after(600, move)
 
     def move():
-        R["a_mover"] = app.similar._selection.count_to_move()
+        R["to_move"] = app.similar._selection.count_to_move()
         app.similar._move_to_quarantine()
         app.after(1500, verify)
 
@@ -106,20 +106,20 @@ def main():
             str(x.relative_to(quarantine)) for x in quarantine.rglob("*")
             if x.is_file() and not x.name.endswith(".csv"))
 
-        print("  carpetas del origen ANTES: ", folders_before)
-        print("  carpetas del origen DESPUÉS:", folders_after)
-        print("  archivos que quedan en origen:", files_after)
-        print("  carpetas creadas en cuarentena:", dirs_in_quarantine)
-        print("  archivos movidos a cuarentena:", files_in_quarantine)
+        print("  source folders BEFORE: ", folders_before)
+        print("  source folders AFTER:", folders_after)
+        print("  files left in the source:", files_after)
+        print("  folders created in the quarantine:", dirs_in_quarantine)
+        print("  files moved to quarantine:", files_in_quarantine)
 
         check(folders_before == folders_after,
-              "TODAS las subcarpetas del origen siguen ahí (no se movieron)")
+              "ALL the source subfolders are still there (they were not moved)")
         check(len(files_after) + len(files_in_quarantine) == len(files_before),
-              "ningún archivo se ha perdido")
-        check(len(files_in_quarantine) == R["a_mover"] and R["a_mover"] >= 2,
-              f"se movieron {R['a_mover']} archivos (regulares) a la cuarentena")
+              "no file was lost")
+        check(len(files_in_quarantine) == R["to_move"] and R["to_move"] >= 2,
+              f"{R['to_move']} regular files were moved to the quarantine")
         check(all("." in Path(f).name for f in files_in_quarantine),
-              "lo que hay en la cuarentena son archivos con extensión, no carpetas")
+              "what is in the quarantine are files with an extension, not folders")
 
         app.after(200, app.destroy)
 
@@ -130,9 +130,9 @@ def main():
 
     print()
     if failures:
-        print(f"FALLARON {len(failures)} comprobaciones.")
+        print(f"{len(failures)} CHECKS FAILED.")
         sys.exit(1)
-    print("LA UI MUEVE ARCHIVOS, NO CARPETAS: OK")
+    print("THE UI MOVES FILES, NOT FOLDERS: OK")
     sys.exit(0)
 
 

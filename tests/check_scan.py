@@ -32,18 +32,18 @@ def main():
     if len(sys.argv) > 1:
         folder = sys.argv[1].strip()
     else:
-        folder = input("Ruta de la carpeta a escanear (ej. D:\\Fotos): ").strip()
+        folder = input("Path of the folder to scan (e.g. D:\\Photos): ").strip()
 
     if not os.path.isdir(folder):
-        print(f"\n[ERROR] La ruta '{folder}' no existe o no es una carpeta.")
+        print(f"\n[ERROR] The path '{folder}' does not exist or is not a folder.")
         return
 
-    print(f"\nEscaneando: {folder}\n")
+    print(f"\nScanning: {folder}\n")
     start = time.time()
     try:
         result = scan(folder, progress=_print_progress)
     except ScanCancelled:
-        print("\nEscaneo cancelado.")
+        print("\nScan cancelled.")
         return
     duration = time.time() - start
     print()  # line break after the \r
@@ -52,28 +52,26 @@ def main():
     export_csv(result, report_path)
 
     print("\n" + "=" * 55)
-    print(f"Archivos revisados:            {result.total_files}")
-    print(f"Grupos de duplicados:          {result.total_groups}")
-    print(f"Archivos duplicados en total:  {result.total_files_duplicates}")
-    print(f"Copias que se podrían mover:   {result.extra_copies}")
-    print(f"Espacio recuperable:           "
-          f"{format_size(result.total_reclaimable_space)} "
+    print(f"Files reviewed:                {result.total_files}")
+    print(f"Duplicate groups:              {result.total_groups}")
+    print(f"Duplicate files in total:      {result.total_files_duplicates}")
+    print(f"Copies that could be moved:    {result.extra_copies}")
+    print(f"Recoverable space:            {format_size(result.total_reclaimable_space)} "
           f"({result.total_reclaimable_space} bytes)")
     if result.errors:
-        print(f"Avisos de lectura:            {len(result.errors)}")
-    print(f"Tiempo:                       {duration:.1f} s")
-    print(f"Reporte CSV:                  {report_path}")
-    print("No se movió ni se borró ningún archivo.")
+        print(f"Read warnings:                {len(result.errors)}")
+    print(f"Time:                         {duration:.1f} s")
+    print(f"CSV report:                   {report_path}")
+    print("No file was moved or deleted.")
     print("=" * 55)
 
     for number, group in enumerate(result.groups[:10], start=1):
-        print(f"\nGrupo {number}  ({group.count} copias, "
-              f"{format_size(group.size)} c/u, "
-              f"libera {format_size(group.reclaimable_space)}):")
+        print(f"\nGroup {number}  ({group.count} copies, {format_size(group.size)} each, "
+              f"frees {format_size(group.reclaimable_space)}):")
         for file in group.files:
             print(f"    {file.path}")
     if result.total_groups > 10:
-        print(f"\n... y {result.total_groups - 10} grupos más (ver CSV).")
+        print(f"\n... and {result.total_groups - 10} more groups (see the CSV).")
 
 
 if __name__ == "__main__":

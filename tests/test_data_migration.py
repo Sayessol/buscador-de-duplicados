@@ -24,7 +24,7 @@ def _legacy_operation(op_id, action, kind, source, destination, undone=False):
     return {
         "id": op_id, "fecha": "2026-10-21T10:00:00", "tipo": kind, "accion": action,
         "origen_raiz": str(source.parent), "destino": str(destination.parent),
-        "descripcion": "1 archivo",
+        "descripcion": "1 file",
         "movimientos": [{"origen": str(source), "destino": str(destination)}],
         "deshecha": undone,
     }
@@ -42,7 +42,7 @@ def test_history_reads_the_version_1_file_in_the_current_format(data_folder, tmp
     assert op["kind"] == history.KIND_QUARANTINE and op["action"] == "move"
     assert op["date"] == "2026-10-21T10:00:00" and op["undone"] is False
     assert op["moves"] == [{"source": str(source), "destination": str(destination)}]
-    assert op["source_root"] == str(source.parent) and op["description"] == "1 archivo"
+    assert op["source_root"] == str(source.parent) and op["description"] == "1 file"
     assert not any(key in op for key in ("fecha", "tipo", "accion", "movimientos"))
 
 
@@ -103,7 +103,7 @@ def test_history_drops_entries_that_are_not_operations(data_folder, tmp_path):
     assert [op["id"] for op in history.list_all()] == ["1"]
 
 
-@pytest.mark.parametrize("content", ["no es json", '{"a": 1}', "[]", ""])
+@pytest.mark.parametrize("content", ["not json", '{"a": 1}', "[]", ""])
 def test_history_ignores_a_file_that_is_not_a_list_of_operations(data_folder, content):
     (data_folder / "historial.json").write_text(content, encoding="utf-8")
     assert history.list_all() == []

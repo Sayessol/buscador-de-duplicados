@@ -23,21 +23,21 @@ R = {}
 
 
 def build(base: Path):
-    data = b"foto identica\n" * 50
-    (base / "Fotos" / "Backup").mkdir(parents=True)
-    (base / "Descargas").mkdir(parents=True)
-    (base / "Fotos" / "boda.jpg").write_bytes(data)
-    (base / "Fotos" / "Backup" / "boda.jpg").write_bytes(data)
-    (base / "Descargas" / "boda (1).jpg").write_bytes(data)
-    others = b"otro archivo\n" * 30
+    data = b"photo identica\n" * 50
+    (base / "Photos" / "Backup").mkdir(parents=True)
+    (base / "Downloads").mkdir(parents=True)
+    (base / "Photos" / "wedding.jpg").write_bytes(data)
+    (base / "Photos" / "Backup" / "wedding.jpg").write_bytes(data)
+    (base / "Downloads" / "wedding (1).jpg").write_bytes(data)
+    others = b"otro file\n" * 30
     (base / "a.txt").write_bytes(others)
-    (base / "Descargas" / "a.txt").write_bytes(others)
+    (base / "Downloads" / "a.txt").write_bytes(others)
 
 
 def main():
     styles.apply_theme()
     tmp = tempfile.mkdtemp(prefix="dup_senc_")
-    base = Path(tmp) / "raiz"
+    base = Path(tmp) / "root"
     build(base)
 
     app = MainWindow()
@@ -47,35 +47,35 @@ def main():
     app.exact.entry_folder.insert(0, str(base))
     app.update()
 
-    R["opciones_ocultas"] = not app.exact._options_container.winfo_ismapped()
-    R["decision_fila_oculta"] = not app.exact.decision_card_row.winfo_ismapped()
-    R["btn_tipos_oculto"] = not app.exact.btn_kinds.winfo_ismapped()
+    R["options_hidden"] = not app.exact._options_container.winfo_ismapped()
+    R["decision_row_hidden"] = not app.exact.decision_card_row.winfo_ismapped()
+    R["kinds_button_hidden"] = not app.exact.btn_kinds.winfo_ismapped()
 
     def when_done():
         if app.exact._selection is None:
             app.after(200, when_done)
             return
         sel = app.exact._selection
-        R["grupos"] = sel.result.total_groups
-        R["todo_listo"] = sel.all_ready()
-        R["cuarentena_lista"] = str(app.exact.btn_quarantine.cget("state")) == "normal"
-        R["a_mover"] = sel.count_to_move()
+        R["groups"] = sel.result.total_groups
+        R["all_ready"] = sel.all_ready()
+        R["quarantine_ready"] = str(app.exact.btn_quarantine.cget("state")) == "normal"
+        R["to_move"] = sel.count_to_move()
 
         # the copy kept in the "boda" group is neither the Backup one nor the (1) one
         gi = next(i for i, g in enumerate(sel.result.groups)
-                  if any("boda" in a.path for a in g.files))
+                  if any("wedding" in a.path for a in g.files))
         from core.selection import KEEP
         kept = [a for a in sel.result.groups[gi].files
                       if sel.decision(gi, a.path) == KEEP][0]
-        R["principal_ok"] = (Path(kept.path).name == "boda.jpg"
+        R["main_ok"] = (Path(kept.path).name == "wedding.jpg"
                              and "Backup" not in kept.path)
 
         # switching to Advanced shows the controls again
         app._mode = "advanced"
         app._apply_mode()
         app.update()
-        R["opciones_visibles_avanzada"] = app.exact._options_container.winfo_ismapped() == 1
-        R["decision_visible_avanzada"] = app.exact.decision_card_row.winfo_ismapped() == 1
+        R["options_visible_advanced"] = app.exact._options_container.winfo_ismapped() == 1
+        R["decision_visible_advanced"] = app.exact.decision_card_row.winfo_ismapped() == 1
 
         app.after(300, app.destroy)
 
@@ -88,18 +88,18 @@ def main():
         print(f"  {k:28} {v}")
 
     ok = (
-        R.get("opciones_ocultas") is True
-        and R.get("decision_fila_oculta") is True
-        and R.get("btn_tipos_oculto") is True
-        and R.get("grupos") == 2
-        and R.get("todo_listo") is True
-        and R.get("cuarentena_lista") is True
-        and R.get("a_mover") == 3
-        and R.get("principal_ok") is True
-        and R.get("opciones_visibles_avanzada") is True
-        and R.get("decision_visible_avanzada") is True
+        R.get("options_hidden") is True
+        and R.get("decision_row_hidden") is True
+        and R.get("kinds_button_hidden") is True
+        and R.get("groups") == 2
+        and R.get("all_ready") is True
+        and R.get("quarantine_ready") is True
+        and R.get("to_move") == 3
+        and R.get("main_ok") is True
+        and R.get("options_visible_advanced") is True
+        and R.get("decision_visible_advanced") is True
     )
-    print("\n" + ("HUMO SENCILLA OK" if ok else "HUMO SENCILLA FALLA"))
+    print("\n" + ("SIMPLE SMOKE OK" if ok else "SIMPLE SMOKE FAILED"))
     sys.exit(0 if ok else 1)
 
 

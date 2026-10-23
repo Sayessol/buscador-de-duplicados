@@ -34,11 +34,11 @@ def _dont_cancel():
 def folder(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()
-    (tmp_path / "a" / "foto.jpg").write_bytes(b"x" * 100)
-    (tmp_path / "b" / "foto copia.jpg").write_bytes(b"x" * 100)      # identical to the previous one
+    (tmp_path / "a" / "photo.jpg").write_bytes(b"x" * 100)
+    (tmp_path / "b" / "photo copy.jpg").write_bytes(b"x" * 100)      # identical to the previous one
     (tmp_path / "a" / "otro.txt").write_bytes(b"y" * 100)            # same size, other content
     (tmp_path / "a" / "unico.png").write_bytes(b"z" * 7)             # unique size
-    (tmp_path / "a" / "vacio.log").write_bytes(b"")
+    (tmp_path / "a" / "empty.log").write_bytes(b"")
     return tmp_path
 
 
@@ -70,23 +70,23 @@ def test_pass_2_discards_those_that_differ_at_the_start(folder):
     # Only the two identical ones survive; the .txt (same size, other content) is discarded.
     assert len(finalists) == 1
     (paths,) = finalists.values()
-    assert sorted(Path(r).name for r in paths) == ["foto copia.jpg", "foto.jpg"]
+    assert sorted(Path(r).name for r in paths) == ["photo copy.jpg", "photo.jpg"]
 
 
 def test_pass_2_logs_a_file_that_disappeared(tmp_path):
     errors = []
-    _partial_hash_pass({5: [str(tmp_path / "no_existe_1"), str(tmp_path / "no_existe_2")]},
-                         _nothing, _dont_cancel, errors)
-    assert len(errors) == 2 and all("no_existe" in path for path, _ in errors)
+    missing = [str(tmp_path / "does_not_exist_1"), str(tmp_path / "does_not_exist_2")]
+    _partial_hash_pass({5: missing}, _nothing, _dont_cancel, errors)
+    assert len(errors) == 2 and all("does_not_exist" in path for path, _ in errors)
 
 
 def test_pass_3_small_ones_are_identical_without_rereading(tmp_path):
     a, b = tmp_path / "a.bin", tmp_path / "b.bin"
     a.write_bytes(b"1" * 50)
     b.write_bytes(b"1" * 50)
-    finalists = {(50, "hash_parcial_falso"): [str(a), str(b)]}
+    finalists = {(50, "false_partial_hash"): [str(a), str(b)]}
     groups = _full_hash_pass(finalists, _nothing, _dont_cancel, [])
-    assert len(groups) == 1 and groups[0].hash == "hash_parcial_falso" and groups[0].count == 2
+    assert len(groups) == 1 and groups[0].hash == "false_partial_hash" and groups[0].count == 2
 
 
 def test_pass_3_separates_those_that_only_differ_at_the_end(tmp_path):
@@ -105,4 +105,4 @@ def test_pass_3_separates_those_that_only_differ_at_the_end(tmp_path):
 
 def test_scan_non_folder_raises(tmp_path):
     with pytest.raises(NotADirectoryError):
-        scan(str(tmp_path / "no_existe"))
+        scan(str(tmp_path / "does_not_exist"))

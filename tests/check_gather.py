@@ -26,24 +26,24 @@ failures = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
 
 def build(root: Path):
-    (root / "vacaciones").mkdir(parents=True)
-    (root / "2024" / "bodas").mkdir(parents=True)
-    (root / "vacaciones" / "playa.jpg").write_bytes(b"img1")
-    (root / "vacaciones" / "montana.png").write_bytes(b"img2")
-    (root / "2024" / "retrato.jpg").write_bytes(b"img3")
-    (root / "2024" / "bodas" / "grupo.jpeg").write_bytes(b"img4")
-    (root / "portada.png").write_bytes(b"img5")            # first level
+    (root / "holidays").mkdir(parents=True)
+    (root / "2024" / "weddings").mkdir(parents=True)
+    (root / "holidays" / "beach.jpg").write_bytes(b"img1")
+    (root / "holidays" / "mountain.png").write_bytes(b"img2")
+    (root / "2024" / "portrait.jpg").write_bytes(b"img3")
+    (root / "2024" / "weddings" / "group.jpeg").write_bytes(b"img4")
+    (root / "cover.png").write_bytes(b"img5")            # first level
     # non-images
-    (root / "notas.txt").write_bytes(b"texto")
-    (root / "vacaciones" / "info.pdf").write_bytes(b"pdf")
-    (root / "2024" / "gastos.pdf").write_bytes(b"pdf2")
-    (root / "2024" / "musica.mp3").write_bytes(b"mp3")
+    (root / "notes.txt").write_bytes(b"text")
+    (root / "holidays" / "info.pdf").write_bytes(b"pdf")
+    (root / "2024" / "expenses.pdf").write_bytes(b"pdf2")
+    (root / "2024" / "music.mp3").write_bytes(b"mp3")
 
 
 def _rel(paths, base):
@@ -53,128 +53,128 @@ def _rel(paths, base):
 def main():
     # ---- list -----------------------------------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "Fotos"
+        root = Path(tmp) / "Photos"
         build(root)
 
         img_r, others_r = list_all(str(root), recursive=True)
-        check(_rel(img_r, root) == ["2024/bodas/grupo.jpeg", "2024/retrato.jpg",
-                                    "portada.png", "vacaciones/montana.png",
-                                    "vacaciones/playa.jpg"],
-              "recursivo lista las 5 imágenes de todos los niveles")
-        check(_rel(others_r, root) == ["2024/gastos.pdf", "2024/musica.mp3",
-                                      "notas.txt", "vacaciones/info.pdf"],
-              "recursivo lista los 4 no-imagen")
+        check(_rel(img_r, root) == ["2024/portrait.jpg", "2024/weddings/group.jpeg",
+                                    "cover.png", "holidays/beach.jpg",
+                                    "holidays/mountain.png"],
+              "recursive lists the 5 images of every level")
+        check(_rel(others_r, root) == ["2024/expenses.pdf", "2024/music.mp3",
+                                      "holidays/info.pdf", "notes.txt"],
+              "recursive lists the 4 non-images")
 
         img_n, others_n = list_all(str(root), recursive=False)
-        check(_rel(img_n, root) == ["portada.png"],
-              "primer nivel: solo portada.png")
-        check(_rel(others_n, root) == ["notas.txt"],
-              "primer nivel: solo notas.txt")
+        check(_rel(img_n, root) == ["cover.png"],
+              "first level: only cover.png")
+        check(_rel(others_n, root) == ["notes.txt"],
+              "first level: only notes.txt")
 
         kinds = non_image_kinds(others_r)
         check(set(kinds) == {"pdf", "mp3", "txt"} and len(kinds["pdf"]) == 2,
-              "tipos_no_imagen agrupa por extensión (pdf x2, mp3, txt)")
+              "non_image_kinds groups by extension (pdf x2, mp3, txt)")
 
     # ---- plan_by_files with rules -------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "Fotos"
+        root = Path(tmp) / "Photos"
         build(root)
-        destination = Path(tmp) / "Reunidas"
+        destination = Path(tmp) / "Gathered"
         img, others = list_all(str(root), recursive=True)
 
         rules = NonImageRules(
             action_by_ext={"pdf": "group", "mp3": "move", "txt": "leave"},
-            folder_by_ext={"pdf": "Documentos"})
+            folder_by_ext={"pdf": "Documents"})
         plan = plan_by_files(img, others, str(root), str(destination), rules)
         destinations = _rel([t.destination for t in plan], destination)
-        print("  destinos planeados:", destinations)
-        check("vacaciones/playa.jpg" in destinations,
-              "imagen -> destino/<misma subruta>")
-        check("Documentos/vacaciones/info.pdf" in destinations
-              and "Documentos/2024/gastos.pdf" in destinations,
-              "pdf 'group' -> destino/Documentos/<subruta>")
-        check("2024/musica.mp3" in destinations,
-              "mp3 'move' -> destino/<subruta> (sin agrupar)")
-        check(not any("notas.txt" in d for d in destinations),
-              "txt 'leave' -> no se planea")
+        print("  planned destinations:", destinations)
+        check("holidays/beach.jpg" in destinations,
+              "image -> destination/<same subpath>")
+        check("Documents/holidays/info.pdf" in destinations
+              and "Documents/2024/expenses.pdf" in destinations,
+              "pdf 'group' -> destination/Documents/<subpath>")
+        check("2024/music.mp3" in destinations,
+              "mp3 'move' -> destination/<subpath> (not grouped)")
+        check(not any("notes.txt" in d for d in destinations),
+              "txt 'leave' -> not planned")
 
     # ---- gather_by_files: MOVE ------------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "Fotos"
+        root = Path(tmp) / "Photos"
         build(root)
-        destination = Path(tmp) / "Reunidas"
+        destination = Path(tmp) / "Gathered"
         img, others = list_all(str(root), recursive=True)
         res = gather_by_files(img, others, str(root), str(destination),
                                   action=MOVE, rules=NonImageRules())
         check(len(res.done) == 5 and not res.failed,
-              "mover: se trasladan las 5 imágenes, ningún fallo")
-        check((destination / "vacaciones" / "playa.jpg").exists()
-              and not (root / "vacaciones" / "playa.jpg").exists(),
-              "la imagen está en el destino y ya no en el origen")
-        check((root / "vacaciones" / "info.pdf").exists(),
-              "el pdf ('leave' por defecto) sigue en el origen")
-        check((root / "vacaciones").is_dir() and (root / "2024" / "bodas").is_dir(),
-              "las subcarpetas del origen NO se han movido")
+              "move: the 5 images are moved, no failure")
+        check((destination / "holidays" / "beach.jpg").exists()
+              and not (root / "holidays" / "beach.jpg").exists(),
+              "the image is in the destination and no longer in the source")
+        check((root / "holidays" / "info.pdf").exists(),
+              "the pdf ('leave' by default) is still in the source")
+        check((root / "holidays").is_dir() and (root / "2024" / "weddings").is_dir(),
+              "the subfolders of the source were NOT moved")
         check(res.log_path and Path(res.log_path).exists(),
-              "se escribe el CSV de registro")
+              "the log CSV is written")
 
     # ---- gather_by_files: COPY ----------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "Fotos"
+        root = Path(tmp) / "Photos"
         build(root)
-        destination = Path(tmp) / "Reunidas"
+        destination = Path(tmp) / "Gathered"
         img, others = list_all(str(root), recursive=True)
         res = gather_by_files(img, others, str(root), str(destination),
                                   action=COPY)
-        check(len(res.done) == 5, "copiar: 5 traslados")
-        check((destination / "portada.png").exists()
-              and (root / "portada.png").exists(),
-              "copiar deja el original intacto")
+        check(len(res.done) == 5, "copy: 5 transfers")
+        check((destination / "cover.png").exists()
+              and (root / "cover.png").exists(),
+              "copy leaves the original intact")
 
     # ---- name collision -----------------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "Fotos"
+        root = Path(tmp) / "Photos"
         (root / "a").mkdir(parents=True)
         (root / "b").mkdir(parents=True)
-        (root / "a" / "foto.jpg").write_bytes(b"A")
-        (root / "b" / "foto.jpg").write_bytes(b"B")
-        destination = Path(tmp) / "Reunidas"
+        (root / "a" / "photo.jpg").write_bytes(b"A")
+        (root / "b" / "photo.jpg").write_bytes(b"B")
+        destination = Path(tmp) / "Gathered"
         # we flatten on purpose with odd rules: we use the normal relpath,
         # but force a collision by moving both to the same place.
         from core.file_moves import Transfer, execute
-        plan = [Transfer(str(root / "a" / "foto.jpg"), str(destination / "foto.jpg")),
-                Transfer(str(root / "b" / "foto.jpg"), str(destination / "foto.jpg"))]
+        plan = [Transfer(str(root / "a" / "photo.jpg"), str(destination / "photo.jpg")),
+                Transfer(str(root / "b" / "photo.jpg"), str(destination / "photo.jpg"))]
         execute(plan, action=MOVE)
-        check((destination / "foto.jpg").exists() and (destination / "foto (1).jpg").exists(),
-              "la segunda colisión se guarda como 'foto (1).jpg', sin pisar")
+        check((destination / "photo.jpg").exists() and (destination / "photo (1).jpg").exists(),
+              "the second collision is saved as 'photo (1).jpg', without overwriting")
 
     # ---- whole folder ----------------------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "AlbumViaje"
+        root = Path(tmp) / "TripAlbum"
         build(root)
-        destination = Path(tmp) / "Destino"
+        destination = Path(tmp) / "Destination"
         res = gather_whole_folder(str(root), str(destination), action=MOVE)
-        check(res.done and (destination / "AlbumViaje" / "vacaciones" / "playa.jpg").exists(),
-              "carpeta entera: destino/AlbumViaje/... con todo dentro")
-        check((destination / "AlbumViaje" / "notas.txt").exists(),
-              "carpeta entera incluye los no-imagen")
-        check(not root.exists(), "mover: la carpeta original ya no está")
+        check(res.done and (destination / "TripAlbum" / "holidays" / "beach.jpg").exists(),
+              "whole folder: destination/TripAlbum/... with everything inside")
+        check((destination / "TripAlbum" / "notes.txt").exists(),
+              "whole folder includes the non-images")
+        check(not root.exists(), "move: the original folder is gone")
 
     # ---- invalid destination -----------------------------------
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "Fotos"
+        root = Path(tmp) / "Photos"
         root.mkdir()
         try:
             validate_destination(str(root / "sub"), str(root))
-            check(False, "destino dentro del origen debe lanzar InvalidDestination")
+            check(False, "destination inside the source must raise InvalidDestination")
         except InvalidDestination:
-            check(True, "destino dentro del origen -> InvalidDestination")
+            check(True, "destination inside the source -> InvalidDestination")
 
     print()
     if failures:
-        print(f"FALLARON {len(failures)} comprobaciones.")
+        print(f"{len(failures)} CHECKS FAILED.")
         sys.exit(1)
-    print("REUNIR OK")
+    print("GATHER OK")
     sys.exit(0)
 
 
