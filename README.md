@@ -25,7 +25,7 @@ App de escritorio para Windows que **encuentra archivos duplicados y fotos parec
   · <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados-portable.zip">versión ZIP</a> si tu antivirus bloquea el <code>.exe</code> · no necesita instalar Python
 </p>
 
-Nació de una necesidad mía y de un script de 150 líneas ([`docs/origen/buscar_duplicados.py`](docs/origen/buscar_duplicados.py)), y creció hasta ser una aplicación completa con interfaz gráfica, pruebas automáticas, integración continua y un `.exe` de un solo archivo. [Aquí cuento cómo nació](#cómo-nació-este-proyecto).
+Nació de una necesidad mía y de un script de 150 líneas ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)), y creció hasta ser una aplicación completa con interfaz gráfica, pruebas automáticas, integración continua y un `.exe` de un solo archivo. [Aquí cuento cómo nació](#cómo-nació-este-proyecto).
 
 > 📚 **Proyecto de aprendizaje.** Lo hice para profundizar en Python partiendo de un nivel básico, con Claude como copiloto. [Más abajo](#por-qué-existe-este-proyecto) explico qué significa eso.
 
@@ -77,7 +77,7 @@ Siempre he guardado copias de seguridad de mis dispositivos antiguos, como telé
 
 Revisarlo a mano es tedioso, y se vuelve incluso un lío cuando ya no sabes qué carpetas has revisado y cuáles no. Mi idea de partida era poder lanzar órdenes rápidas y sencillas que compararan imágenes y otros tipos de archivos y me dijeran enseguida si había duplicados o no. Descubrí que la forma más rápida de conseguirlo era usar Python.
 
-Empecé con un script sencillo de unas 150 líneas ([`docs/origen/buscar_duplicados.py`](docs/origen/buscar_duplicados.py)): le introducía la ruta de una carpeta y me decía si había archivos duplicados y cuántos había analizado. Tras usarlo varias veces me di cuenta de que era poco práctico: tener que escribir la ruta cada vez era lento. Así que decidí crearle una interfaz para que fuese más fácil de usar.
+Empecé con un script sencillo de unas 150 líneas ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)): le introducía la ruta de una carpeta y me decía si había archivos duplicados y cuántos había analizado. Tras usarlo varias veces me di cuenta de que era poco práctico: tener que escribir la ruta cada vez era lento. Así que decidí crearle una interfaz para que fuese más fácil de usar.
 
 Al construir la interfaz vi que podía añadirle funciones que adaptaran mejor la búsqueda a lo que yo quería. Así, lo que empezó siendo un script pasó a ser un programa de escritorio completo, con varias funciones y opciones de filtrado.
 
@@ -142,8 +142,8 @@ python app.py
 Para generar tu propia versión:
 
 ```bash
-python construir_exe.py                  # un solo archivo: dist/duplicados.exe
-python construir_exe.py --carpeta --zip  # carpeta + ZIP:    dist/Buscador-de-duplicados.zip
+python build_exe.py                  # un solo archivo: dist/duplicados.exe
+python build_exe.py --carpeta --zip  # carpeta + ZIP:    dist/Buscador-de-duplicados.zip
 ```
 
 ## Cómo funciona por dentro
@@ -169,11 +169,11 @@ python construir_exe.py --carpeta --zip  # carpeta + ZIP:    dist/Buscador-de-du
 | **Hash parcial antes del completo** | La mayoría de archivos con el mismo tamaño ya difieren en los primeros 64 KB; así no se leen enteros. |
 | **dHash y no OpenCV** | Cubre recompresión, reescalado y filtros con muy poco peso. OpenCV (para recortes y rotaciones) multiplicaría el tamaño del `.exe`. |
 | **Lógica (`core/`) separada de la interfaz (`ui/`)** | `core/` no importa nada de la ventana, así que se prueba entera por consola y con pytest. |
-| **Una pestaña = un componente** | `ui/main_window.py` es una carcasa de ~200 líneas; cada pestaña es un componente con su propio estado (`PestanaExactos`, `PestanaParecidas`, `PestanaReunir`) y la ventana solo le pasa el modo y el cierre. |
+| **Una pestaña = un componente** | `ui/main_window.py` es una carcasa de ~200 líneas; cada pestaña es un componente con su propio estado (`ExactDuplicatesTab`, `SimilarPhotosTab`, `GatherImagesTab`) y la ventana solo le pasa el modo y el cierre. |
 
 ### Rendimiento
 
-`python pruebas/benchmark.py` genera 4.000 archivos (830 MB, con copias exactas y «casi duplicados» a propósito) y compara con hashear todo el contenido:
+`python tests/benchmark.py` genera 4.000 archivos (830 MB, con copias exactas y «casi duplicados» a propósito) y compara con hashear todo el contenido:
 
 | Método | Tiempo | Bytes leídos |
 |---|---|---|
@@ -193,7 +193,7 @@ Encuentran **exactamente los mismos 386 grupos**. Lee un 66 % menos de datos. Lo
 ```
 core/      Lógica pura, sin interfaz (librería estándar + Pillow para las fotos)
 ui/        Interfaz CustomTkinter; un componente por pestaña (pestana_*.py)
-pruebas/   15 suites + pruebas unitarias + benchmark
+tests/   15 suites + pruebas unitarias + benchmark
 docs/      Manual de usuario, guía del código y proceso de creación (PDF)
 ```
 

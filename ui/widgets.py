@@ -5,68 +5,68 @@ import customtkinter as ctk
 from . import styles
 
 
-class CabeceraSeccion(ctk.CTkFrame):
+class SectionHeader(ctk.CTkFrame):
     """Fila de título de una sección: número en un círculo + texto."""
 
-    def __init__(self, master, numero, texto, icono="", **kw):
+    def __init__(self, master, number, text, icon="", **kw):
         super().__init__(master, fg_color="transparent", **kw)
-        insignia = ctk.CTkLabel(
-            self, text=str(numero), width=22, height=22,
-            corner_radius=11, fg_color=styles.COLOR_SELECCION,
-            text_color="#ffffff", font=styles.fuente_base(11, "bold"))
-        insignia.pack(side="left", padx=(0, 8))
-        etiqueta = f"{icono}  {texto}" if icono else texto
-        ctk.CTkLabel(self, text=etiqueta,
-                     font=styles.fuente_titulo(14)).pack(side="left")
+        badge = ctk.CTkLabel(
+            self, text=str(number), width=22, height=22,
+            corner_radius=11, fg_color=styles.COLOR_SELECTION,
+            text_color="#ffffff", font=styles.base_font(11, "bold"))
+        badge.pack(side="left", padx=(0, 8))
+        label = f"{icon}  {text}" if icon else text
+        ctk.CTkLabel(self, text=label,
+                     font=styles.title_font(14)).pack(side="left")
 
 
-class Baldosa(ctk.CTkFrame):
+class StatTile(ctk.CTkFrame):
     """Recuadro con un número grande y una etiqueta debajo."""
 
-    def __init__(self, master, etiqueta, **kw):
-        super().__init__(master, fg_color=styles.COLOR_BALDOSA,
+    def __init__(self, master, label, **kw):
+        super().__init__(master, fg_color=styles.COLOR_TILE,
                          corner_radius=8, **kw)
-        self._valor = ctk.CTkLabel(self, text="—", font=styles.fuente_numero(19),
-                                   text_color=styles.COLOR_TEXTO)
-        self._valor.pack(padx=14, pady=(8, 0), anchor="w")
-        ctk.CTkLabel(self, text=etiqueta, font=styles.fuente_base(11),
-                     text_color=styles.COLOR_TEXTO_TENUE).pack(
+        self._value = ctk.CTkLabel(self, text="—", font=styles.number_font(19),
+                                   text_color=styles.COLOR_TEXT)
+        self._value.pack(padx=14, pady=(8, 0), anchor="w")
+        ctk.CTkLabel(self, text=label, font=styles.base_font(11),
+                     text_color=styles.COLOR_MUTED_TEXT).pack(
             padx=14, pady=(0, 8), anchor="w")
 
-    def set(self, texto, color=None):
-        self._valor.configure(text=str(texto),
-                              text_color=color or styles.COLOR_TEXTO)
+    def set(self, text, color=None):
+        self._value.configure(text=str(text),
+                              text_color=color or styles.COLOR_TEXT)
 
 
-class EstadoVacio(ctk.CTkFrame):
+class EmptyState(ctk.CTkFrame):
     """Mensaje centrado para cuando la tabla no tiene resultados."""
 
-    def __init__(self, master, icono, titulo, detalle, **kw):
-        super().__init__(master, fg_color=styles.COLOR_FONDO_TABLA,
+    def __init__(self, master, icon, title, detail, **kw):
+        super().__init__(master, fg_color=styles.COLOR_TABLE_BACKGROUND,
                          corner_radius=8, **kw)
-        centro = ctk.CTkFrame(self, fg_color="transparent")
-        centro.place(relx=0.5, rely=0.5, anchor="center")
-        ctk.CTkLabel(centro, text=icono,
-                     font=styles.fuente_base(46)).pack(pady=(0, 10))
-        self._titulo = ctk.CTkLabel(centro, text=titulo,
-                                    font=styles.fuente_titulo(15))
-        self._titulo.pack()
-        self._detalle = ctk.CTkLabel(
-            centro, text=detalle, font=styles.fuente_base(12),
-            text_color=styles.COLOR_TEXTO_TENUE, wraplength=420,
+        center = ctk.CTkFrame(self, fg_color="transparent")
+        center.place(relx=0.5, rely=0.5, anchor="center")
+        ctk.CTkLabel(center, text=icon,
+                     font=styles.base_font(46)).pack(pady=(0, 10))
+        self._title = ctk.CTkLabel(center, text=title,
+                                    font=styles.title_font(15))
+        self._title.pack()
+        self._detail = ctk.CTkLabel(
+            center, text=detail, font=styles.base_font(12),
+            text_color=styles.COLOR_MUTED_TEXT, wraplength=420,
             justify="center")
-        self._detalle.pack(pady=(4, 0))
+        self._detail.pack(pady=(4, 0))
 
-    def configurar(self, titulo=None, detalle=None):
-        if titulo is not None:
-            self._titulo.configure(text=titulo)
-        if detalle is not None:
-            self._detalle.configure(text=detalle)
+    def configure(self, title=None, detail=None):
+        if title is not None:
+            self._title.configure(text=title)
+        if detail is not None:
+            self._detail.configure(text=detail)
 
 
-def tarjeta(parent, row):
+def make_card(parent, row):
     """Tarjeta de sección: un marco con fondo de tarjeta que ocupa una fila del padre."""
-    t = ctk.CTkFrame(parent, fg_color=styles.COLOR_TARJETA)
+    t = ctk.CTkFrame(parent, fg_color=styles.COLOR_CARD)
     t.grid(row=row, column=0, sticky="ew", padx=6, pady=(8, 0))
     t.grid_columnconfigure(0, weight=1)
     return t

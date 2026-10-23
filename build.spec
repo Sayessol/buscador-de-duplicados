@@ -9,7 +9,7 @@
 #          librerías (_internal/). No extrae nada al arrancar, así que los
 #          antivirus la molestan mucho menos. Es lo que se publica en el ZIP.
 #
-# (Normalmente se usa  python construir_exe.py [--carpeta]  en vez de esto.)
+# (Normalmente se usa  python build_exe.py [--carpeta]  en vez de esto.)
 
 import os
 
@@ -62,7 +62,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="icono.ico",   # generado con: python generar_icono.py
+    icon="icono.ico",   # generado con: python gen_icon.py
 )
 
 if CARPETA:

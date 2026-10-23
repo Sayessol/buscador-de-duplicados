@@ -9,7 +9,7 @@ Interacción con una fila de archivo:
   * doble clic            -> deja ese archivo como la única copia a conservar
 
 La tabla no decide nada por su cuenta: lee y escribe sobre una
-`SeleccionDuplicados` que le pasa la ventana principal.
+`DuplicateSelection` que le pasa la ventana principal.
 """
 
 import queue
@@ -20,44 +20,44 @@ from tkinter import ttk
 import customtkinter as ctk
 from PIL import ImageTk
 
-from core.hashing import formatear_tamano
-from core.registro import log
-from core.seleccion import (
-    SeleccionDuplicados, CONSERVAR,
-    GRUPO_OK, GRUPO_SIN_CONSERVAR, GRUPO_MULTIPLE,
+from core.hashing import format_size
+from core.app_logging import log
+from core.selection import (
+    DuplicateSelection, KEEP,
+    GROUP_OK, GROUP_NOTHING_KEPT, GROUP_MULTIPLE,
 )
 from . import styles
-from .thumbnails import miniatura_o_placeholder
+from .thumbnails import thumbnail_or_placeholder
 
-_ETIQUETA_ESTADO = {
-    GRUPO_OK: "listo",
-    GRUPO_SIN_CONSERVAR: "elige cuál conservar",
-    GRUPO_MULTIPLE: "elige cuál conservar",
+_STATE_LABEL = {
+    GROUP_OK: "listo",
+    GROUP_NOTHING_KEPT: "elige cuál conservar",
+    GROUP_MULTIPLE: "elige cuál conservar",
 }
 
-_ALTO_FILA = 48
-_LADO_MINI = 40
+_ROW_HEIGHT = 48
+_MINI_SIDE = 40
 
 
-class TablaResultados(ctk.CTkFrame):
-    def __init__(self, master, on_cambio=None, on_seleccion=None, **kwargs):
+class ResultsTable(ctk.CTkFrame):
+    def __init__(self, master, on_change=None, on_selection=None, **kwargs):
         super().__init__(master, **kwargs)
-        self.on_cambio = on_cambio
-        self.on_seleccion = on_seleccion
-        self.seleccion = None
+        self.on_change = on_change
+        self.on_selection = on_selection
+        self.selection = None
 
         self._meta = {}
-        self._iid_grupo = {}
-        self._iids_archivo = {}
+        self._group_iid = {}
+        self._file_iids = {}
 
         self._img_refs = {}          # iid -> ImageTk.PhotoImage (hay que guardarlas)
-        self._cola_thumbs = queue.Queue()
+        self._thumbs_queue = queue.Queue()
         self._gen = 0                # generación: descarta miniaturas de escaneos viejos
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self._configurar_estilo_ttk()
+        self._configure_ttk_style()
 
         self.tree = ttk.Treeview(
             self, columns=("decision", "tamano", "info"),
@@ -82,99 +82,99 @@ class TablaResultados(ctk.CTkFrame):
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
-        self._configurar_tags()
+        self._configure_tags()
 
         self.tree.bind("<Button-1>", self._on_click)
-        self.tree.bind("<Double-Button-1>", self._on_doble_click)
-        self.tree.bind("<<TreeviewSelect>>", self._on_seleccion)
+        self.tree.bind("<Double-Button-1>", self._on_double_click)
+        self.tree.bind("<<TreeviewSelect>>", self._on_selection)
 
     # -- estilo ttk: se re-aplica cuando cambia el tema claro/oscuro ----
-    def _configurar_estilo_ttk(self):
+    def _configure_ttk_style(self):
         # ttk.Treeview NO cambia solo con el tema de CustomTkinter, así que
         # aquí se resuelve cada color con styles.col(...) para el tema activo.
         c = styles.col
-        estilo = ttk.Style()
+        style = ttk.Style()
         try:
-            estilo.theme_use("clam")
+            style.theme_use("clam")
         except tk.TclError:
             pass
-        estilo.configure(
+        style.configure(
             "Duplicados.Treeview",
-            background=c(styles.COLOR_FONDO_TABLA),
-            fieldbackground=c(styles.COLOR_FONDO_TABLA),
-            foreground=c(styles.COLOR_TEXTO),
-            rowheight=_ALTO_FILA, font=styles.fuente_tabla(), borderwidth=0)
-        estilo.configure(
+            background=c(styles.COLOR_TABLE_BACKGROUND),
+            fieldbackground=c(styles.COLOR_TABLE_BACKGROUND),
+            foreground=c(styles.COLOR_TEXT),
+            rowheight=_ROW_HEIGHT, font=styles.table_font(), borderwidth=0)
+        style.configure(
             "Duplicados.Treeview.Heading",
-            background=c(styles.COLOR_CABECERA), foreground=c(styles.COLOR_TEXTO),
-            font=styles.fuente_tabla_encabezado(), relief="flat")
-        estilo.map("Duplicados.Treeview.Heading",
-                   background=[("active", c(styles.COLOR_CABECERA))])
-        estilo.map("Duplicados.Treeview",
-                   background=[("selected", c(styles.COLOR_SELECCION))],
+            background=c(styles.COLOR_HEADER), foreground=c(styles.COLOR_TEXT),
+            font=styles.table_heading_font(), relief="flat")
+        style.map("Duplicados.Treeview.Heading",
+                   background=[("active", c(styles.COLOR_HEADER))])
+        style.map("Duplicados.Treeview",
+                   background=[("selected", c(styles.COLOR_SELECTION))],
                    foreground=[("selected", "#ffffff")])
 
-    def _configurar_tags(self):
+    def _configure_tags(self):
         c = styles.col
-        self.tree.tag_configure("grupo", background=c(styles.COLOR_FONDO_TABLA),
-                                foreground=c(styles.COLOR_TEXTO),
-                                font=styles.fuente_tabla_encabezado())
+        self.tree.tag_configure("grupo", background=c(styles.COLOR_TABLE_BACKGROUND),
+                                foreground=c(styles.COLOR_TEXT),
+                                font=styles.table_heading_font())
         self.tree.tag_configure("grupo_pendiente",
-                                background=c(styles.COLOR_GRUPO_PENDIENTE),
-                                foreground=c(styles.COLOR_TEXTO),
-                                font=styles.fuente_tabla_encabezado())
+                                background=c(styles.COLOR_PENDING_GROUP),
+                                foreground=c(styles.COLOR_TEXT),
+                                font=styles.table_heading_font())
         self.tree.tag_configure("conservar", foreground=c(styles.COLOR_OK))
-        self.tree.tag_configure("mover", foreground=c(styles.COLOR_ADVERTENCIA))
+        self.tree.tag_configure("mover", foreground=c(styles.COLOR_WARNING))
 
     def _set_appearance_mode(self, mode_string):
         super()._set_appearance_mode(mode_string)
         # el tema ha cambiado: re-pintar lo que ttk no actualiza solo
         try:
-            self._configurar_estilo_ttk()
-            self._configurar_tags()
+            self._configure_ttk_style()
+            self._configure_tags()
         except tk.TclError:
             pass
 
     # ------------------------------------------------------------------
-    def limpiar(self):
+    def clear(self):
         self._gen += 1
         for iid in self.tree.get_children():
             self.tree.delete(iid)
         self._meta.clear()
-        self._iid_grupo.clear()
-        self._iids_archivo.clear()
+        self._group_iid.clear()
+        self._file_iids.clear()
         self._img_refs.clear()
-        self.seleccion = None
-        if self.on_seleccion:
-            self.on_seleccion(None)
+        self.selection = None
+        if self.on_selection:
+            self.on_selection(None)
 
-    def cargar(self, seleccion: SeleccionDuplicados):
-        self.limpiar()
-        self.seleccion = seleccion
-        resultado = seleccion.resultado
+    def load(self, selection: DuplicateSelection):
+        self.clear()
+        self.selection = selection
+        result = selection.result
 
-        pendientes_thumb = []
-        for gi, grupo in enumerate(resultado.grupos):
-            id_grupo = self.tree.insert(
+        pending_thumb = []
+        for gi, group in enumerate(result.groups):
+            group_id = self.tree.insert(
                 "", "end",
-                text=f"Grupo {gi + 1}  ·  {grupo.cantidad} copias",
-                values=("", formatear_tamano(grupo.tamano),
-                        f"libera {formatear_tamano(grupo.espacio_recuperable)}"),
+                text=f"Grupo {gi + 1}  ·  {group.count} copias",
+                values=("", format_size(group.size),
+                        f"libera {format_size(group.reclaimable_space)}"),
                 open=True)
-            self._meta[id_grupo] = ("grupo", gi)
-            self._iid_grupo[gi] = id_grupo
+            self._meta[group_id] = ("grupo", gi)
+            self._group_iid[gi] = group_id
 
-            for archivo in grupo.archivos:
+            for file in group.files:
                 iid = self.tree.insert(
-                    id_grupo, "end", text="  " + archivo.ruta,
-                    values=("", formatear_tamano(archivo.tamano), ""))
-                self._meta[iid] = ("archivo", gi, archivo.ruta)
-                self._iids_archivo[(gi, archivo.ruta)] = iid
-                pendientes_thumb.append((iid, archivo.ruta))
+                    group_id, "end", text="  " + file.path,
+                    values=("", format_size(file.size), ""))
+                self._meta[iid] = ("archivo", gi, file.path)
+                self._file_iids[(gi, file.path)] = iid
+                pending_thumb.append((iid, file.path))
 
-            self._refrescar_grupo(gi)
+            self._refresh_group(gi)
 
-        self._cargar_miniaturas(pendientes_thumb)
+        self._load_thumbnails(pending_thumb)
 
     # -- miniaturas en un hilo aparte ------------------------------
     # Decodificar imágenes es lento, así que se hace en un hilo. El hilo
@@ -182,75 +182,75 @@ class TablaResultados(ctk.CTkFrame):
     # pegarlos en las filas se hace en el hilo principal (Tkinter).
     # `self._gen` sube en cada limpiar(): si el usuario reescanea, las
     # miniaturas a medio hacer del escaneo viejo se descartan.
-    def _cargar_miniaturas(self, items):
+    def _load_thumbnails(self, items):
         gen = self._gen
 
-        def trabajo():
-            for iid, ruta in items:
+        def job():
+            for iid, path in items:
                 if gen != self._gen:        # llegó otro escaneo: abandonar
                     return
                 try:
-                    pil = miniatura_o_placeholder(ruta, _LADO_MINI)
+                    pil = thumbnail_or_placeholder(path, _MINI_SIDE)
                 except Exception as e:  # un archivo roto no debe parar las miniaturas
-                    log.info("No se pudo crear la miniatura de %s: %s", ruta, e)
+                    log.info("No se pudo crear la miniatura de %s: %s", path, e)
                     pil = None
-                self._cola_thumbs.put((gen, iid, pil))
+                self._thumbs_queue.put((gen, iid, pil))
 
-        threading.Thread(target=trabajo, daemon=True).start()
-        self.after(80, self._procesar_cola_thumbs)
+        threading.Thread(target=job, daemon=True).start()
+        self.after(80, self._process_thumbs_queue)
 
-    def _procesar_cola_thumbs(self):
-        procesadas = 0
+    def _process_thumbs_queue(self):
+        processed = 0
         try:
-            while procesadas < 40:          # como mucho 40 por tick, para no atascar
-                gen, iid, pil = self._cola_thumbs.get_nowait()
-                procesadas += 1
+            while processed < 40:          # como mucho 40 por tick, para no atascar
+                gen, iid, pil = self._thumbs_queue.get_nowait()
+                processed += 1
                 if gen != self._gen or pil is None:
                     continue
                 if not self.tree.exists(iid):   # la fila ya no existe
                     continue
-                foto = ImageTk.PhotoImage(pil)
-                self._img_refs[iid] = foto      # ¡hay que guardar la referencia!
-                self.tree.item(iid, image=foto)  # si no, Python la recolecta y desaparece
+                photo = ImageTk.PhotoImage(pil)
+                self._img_refs[iid] = photo      # ¡hay que guardar la referencia!
+                self.tree.item(iid, image=photo)  # si no, Python la recolecta y desaparece
         except queue.Empty:
             return
-        self.after(60, self._procesar_cola_thumbs)
+        self.after(60, self._process_thumbs_queue)
 
     # ------------------------------------------------------------------
-    def _refrescar_grupo(self, gi):
-        if self.seleccion is None:
+    def _refresh_group(self, gi):
+        if self.selection is None:
             return
-        estado = self.seleccion.estado_grupo(gi)
-        id_grupo = self._iid_grupo[gi]
-        tag_grupo = "grupo" if estado == GRUPO_OK else "grupo_pendiente"
-        marca = "OK" if estado == GRUPO_OK else "!"
-        vals = list(self.tree.item(id_grupo, "values"))
-        vals[0] = f"{marca}  {_ETIQUETA_ESTADO[estado]}"
-        self.tree.item(id_grupo, values=vals, tags=(tag_grupo,))
+        state = self.selection.group_state(gi)
+        group_id = self._group_iid[gi]
+        tag_group = "grupo" if state == GROUP_OK else "grupo_pendiente"
+        mark = "OK" if state == GROUP_OK else "!"
+        vals = list(self.tree.item(group_id, "values"))
+        vals[0] = f"{mark}  {_STATE_LABEL[state]}"
+        self.tree.item(group_id, values=vals, tags=(tag_group,))
 
-        for archivo in self.seleccion.resultado.grupos[gi].archivos:
-            iid = self._iids_archivo[(gi, archivo.ruta)]
-            decision = self.seleccion.decision(gi, archivo.ruta)
+        for file in self.selection.result.groups[gi].files:
+            iid = self._file_iids[(gi, file.path)]
+            decision = self.selection.decision(gi, file.path)
             vals = list(self.tree.item(iid, "values"))
-            if decision == CONSERVAR:
+            if decision == KEEP:
                 vals[0], tag = "✔ conservar", "conservar"
             else:
                 vals[0], tag = "→ mover", "mover"
             self.tree.item(iid, values=vals, tags=(tag,))
 
-    def refrescar_todo(self):
-        if self.seleccion is None:
+    def refresh_all(self):
+        if self.selection is None:
             return
-        for gi in range(len(self.seleccion.resultado.grupos)):
-            self._refrescar_grupo(gi)
+        for gi in range(len(self.selection.result.groups)):
+            self._refresh_group(gi)
 
-    def ir_a_pendiente(self):
-        if self.seleccion is None:
+    def go_to_pending(self):
+        if self.selection is None:
             return
-        pend = self.seleccion.grupos_pendientes()
-        if not pend:
+        pending = self.selection.pending_groups()
+        if not pending:
             return
-        iid = self._iid_grupo[pend[0]]
+        iid = self._group_iid[pending[0]]
         self.tree.see(iid)
         self.tree.selection_set(iid)
 
@@ -259,7 +259,7 @@ class TablaResultados(ctk.CTkFrame):
     # Tk QUÉ hay bajo el ratón: identify_row (qué fila), identify_column
     # (qué columna: "#1" es "Decisión"), identify_region ("heading",
     # "cell"...). Con eso decidimos qué hacer.
-    def _fila_archivo(self, event):
+    def _file_row(self, event):
         """(indice_grupo, ruta) si el ratón está sobre una fila de
         archivo; None si está sobre una cabecera de grupo o fuera."""
         iid = self.tree.identify_row(event.y)
@@ -273,40 +273,40 @@ class TablaResultados(ctk.CTkFrame):
     def _on_click(self, event):
         if self.tree.identify_region(event.x, event.y) == "heading":
             return
-        objetivo = self._fila_archivo(event)
-        if objetivo is None:
+        target = self._file_row(event)
+        if target is None:
             return
         # Un clic normal solo SELECCIONA (para la vista previa). Únicamente
         # si cae en la columna "Decisión" alterna conservar/mover.
         if self.tree.identify_column(event.x) == "#1":
-            gi, ruta = objetivo
-            self.seleccion.alternar(gi, ruta)
-            self._refrescar_grupo(gi)
-            if self.on_cambio:
-                self.on_cambio()
+            gi, path = target
+            self.selection.toggle(gi, path)
+            self._refresh_group(gi)
+            if self.on_change:
+                self.on_change()
 
-    def _on_doble_click(self, event):
+    def _on_double_click(self, event):
         # Doble clic = "quiero conservar ESTA copia" (y mover el resto).
-        objetivo = self._fila_archivo(event)
-        if objetivo is None:
+        target = self._file_row(event)
+        if target is None:
             return None
-        gi, ruta = objetivo
-        self.seleccion.conservar_solo(gi, ruta)
-        self._refrescar_grupo(gi)
-        if self.on_cambio:
-            self.on_cambio()
+        gi, path = target
+        self.selection.keep_only(gi, path)
+        self._refresh_group(gi)
+        if self.on_change:
+            self.on_change()
         return "break"       # evita que Tk además expanda/colapse el nodo
 
-    def _on_seleccion(self, _event):
-        if not self.on_seleccion:
+    def _on_selection(self, _event):
+        if not self.on_selection:
             return
         sel = self.tree.selection()
         if not sel:
-            self.on_seleccion(None)
+            self.on_selection(None)
             return
         meta = self._meta.get(sel[0])
-        self.on_seleccion(meta[2] if meta and meta[0] == "archivo" else None)
+        self.on_selection(meta[2] if meta and meta[0] == "archivo" else None)
 
-    def expandir_todo(self, abierto=True):
-        for iid in self._iid_grupo.values():
-            self.tree.item(iid, open=abierto)
+    def expand_all(self, open=True):
+        for iid in self._group_iid.values():
+            self.tree.item(iid, open=open)

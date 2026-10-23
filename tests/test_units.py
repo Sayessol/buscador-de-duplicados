@@ -1,0 +1,109 @@
+"""Pruebas unitarias pequeñas (pytest puro): config, informe CSV y formato de tamaños."""
+
+import csv
+from types import SimpleNamespace
+
+import pytest
+
+from core import config
+from core.hashing import format_size
+from core.report import COLUMNS, export_csv
+
+
+@pytest.fixture
+def appdata(tmp_path, monkeypatch):
+    """Aísla la configuración en una carpeta temporal (no toca la real)."""
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    return tmp_path
+
+
+def test_config_default_values(appdata):
+    assert config.get_mode() == "sencillo"
+    assert config.get_theme() == "auto"
+
+
+def test_config_saves_and_remembers(appdata):
+    config.set_mode("avanzado")
+    config.set_theme("oscuro")
+    assert config.get_mode() == "avanzado"
+    assert config.get_theme() == "oscuro"
+    assert (appdata / "BuscadorDuplicados" / "config.json").exists()
+
+
+def test_config_ignores_invalid_values(appdata):
+    config.set_mode("avanzado")
+    config.set_mode("loquesea")           # se ignora
+    config.set_theme("fucsia")             # se ignora
+    assert config.get_mode() == "avanzado"
+    assert config.get_theme() == "auto"
+
+
+def test_config_corrupt_does_not_break(appdata):
+    path = appdata / "BuscadorDuplicados" / "config.json"
+    path.parent.mkdir()
+    path.write_text("{ esto no es json", encoding="utf-8")
+    assert config.get_mode() == "sencillo"   # vuelve al valor por defecto
+
+
+def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
+    # APPDATA apunta a un FICHERO, así que no se puede crear la carpeta debajo.
+    file = tmp_path / "soy_un_fichero"
+    file.write_text("x")
+    monkeypatch.setenv("APPDATA", str(file))
+    config.set_mode("avanzado")              # falla en silencio
+    assert config.get_mode() == "sencillo"
+
+
+def test_export_csv(tmp_path):
+    a1 = SimpleNamespace(path=r"C:\a\foto.jpg", size=2048)
+    a2 = SimpleNamespace(path=r"C:\b\foto.jpg", size=2048)
+    result = SimpleNamespace(groups=[SimpleNamespace(files=[a1, a2], hash="abc123")])
+    destination = tmp_path / "informe.csv"
+
+    assert export_csv(result, destination) == 1
+
+    rows = list(csv.reader(destination.open(encoding="utf-8-sig", newline="")))
+    assert rows[0] == COLUMNS
+    assert rows[1] == ["Grupo 1", r"C:\a\foto.jpg", "2.0 KB", "2048", "abc123"]
+    assert len(rows) == 3
+
+
+@pytest.mark.parametrize("bytes_, expected", [
+    (0, "0.0 B"),
+    (1023, "1023.0 B"),
+    (1024, "1.0 KB"),
+    (1536, "1.5 KB"),
+    (1024 ** 2, "1.0 MB"),
+    (5 * 1024 ** 3, "5.0 GB"),
+    (1024 ** 4, "1.0 TB"),
+    (1024 ** 5, "1.0 PB"),
+])
+def test_format_size(bytes_, expected):
+    assert format_size(bytes_) == expected
+
+
+def test_app_without_console_survives_writing(monkeypatch):
+    """En el .exe sin consola stdout/stderr son None; la app lo corrige al arrancar."""
+    import sys
+
+    import app
+
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+    app._ensure_outputs()
+    sys.stderr.write("aviso de una librería\n")      # antes: AttributeError
+    print("también con print")
+    assert sys.stdout is not None and sys.stderr is not None
+
+
+def test_version_matches_the_changelog():
+    """La versión del código tiene su apartado en CHANGELOG.md (así no se desfasan)."""
+    import re
+    from pathlib import Path
+
+    from core import __version__
+
+    assert re.fullmatch(r"\d+\.\d+\.\d+", __version__), __version__
+    changelog = (Path(__file__).resolve().parents[1] / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert f"## [{__version__}]" in changelog, (
+        f"Falta el apartado «## [{__version__}]» en CHANGELOG.md")

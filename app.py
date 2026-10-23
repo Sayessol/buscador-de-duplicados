@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
-def _asegurar_salidas():
+def _ensure_outputs():
     """Evita que la app se caiga por un simple aviso en el .exe sin consola.
 
     En un .exe de ventana (sin consola) sys.stdout y sys.stderr valen None. Si
@@ -19,20 +19,20 @@ def _asegurar_salidas():
     daría «'NoneType' object has no attribute 'write'» y la app no abriría.
     Se sustituyen por un destino que descarta lo escrito.
     """
-    for nombre in ("stdout", "stderr"):
-        if getattr(sys, nombre) is None:
-            setattr(sys, nombre, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115
+    for name in ("stdout", "stderr"):
+        if getattr(sys, name) is None:
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115
 
 
-_asegurar_salidas()
+_ensure_outputs()
 
-from core import registro  # noqa: E402
+from core import app_logging  # noqa: E402
 
-registro.iniciar()              # empieza a anotar en %APPDATA%\BuscadorDuplicados\registro
-registro.instalar_ganchos()     # y anota también los errores que nadie ha capturado
+app_logging.start()              # empieza a anotar en %APPDATA%\BuscadorDuplicados\registro
+app_logging.install_hooks()     # y anota también los errores que nadie ha capturado
 
-from ui.main_window import lanzar  # noqa: E402
+from ui.main_window import launch  # noqa: E402
 
 
 if __name__ == "__main__":
-    lanzar()
+    launch()

@@ -19,39 +19,39 @@ import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from .seleccion import SeleccionDuplicados
-from .tipos import FuncCancelado, FuncProgreso
+from .selection import DuplicateSelection
+from .callbacks import CancelledCallback, ProgressCallback
 
 
 @dataclass
-class Movimiento:
-    grupo: int
-    origen: str
-    destino: str
-    tamano: int
+class Move:
+    group: int
+    source: str
+    destination: str
+    size: int
     ok: bool = False
     error: str = ""
 
 
 @dataclass
-class ResultadoCuarentena:
-    movimientos: list[Movimiento] = field(default_factory=list)
-    ruta_log: str = ""
+class QuarantineResult:
+    moves: list[Move] = field(default_factory=list)
+    log_path: str = ""
 
     @property
-    def movidos(self) -> list[Movimiento]:
-        return [m for m in self.movimientos if m.ok]
+    def moved(self) -> list[Move]:
+        return [m for m in self.moves if m.ok]
 
     @property
-    def fallidos(self) -> list[Movimiento]:
-        return [m for m in self.movimientos if not m.ok]
+    def failed(self) -> list[Move]:
+        return [m for m in self.moves if not m.ok]
 
     @property
-    def bytes_movidos(self) -> int:
-        return sum(m.tamano for m in self.movidos)
+    def bytes_moved(self) -> int:
+        return sum(m.size for m in self.moved)
 
 
-class CuarentenaInvalida(Exception):
+class InvalidQuarantine(Exception):
     """La carpeta de cuarentena elegida no sirve (p. ej. está dentro de
     la carpeta escaneada)."""
 
@@ -60,22 +60,22 @@ def _norm(p: str) -> str:
     return os.path.normcase(os.path.abspath(p))
 
 
-def validar_carpeta_cuarentena(carpeta_cuarentena: str, carpeta_raiz: str) -> str | None:
+def validate_quarantine_folder(quarantine_folder: str, root_folder: str) -> str | None:
     """Devuelve un mensaje de advertencia (str) o None si todo bien.
 
-    Lanza CuarentenaInvalida si la carpeta de cuarentena está dentro de
+    Lanza InvalidQuarantine si la carpeta de cuarentena está dentro de
     la carpeta escaneada (provocaría que el próximo escaneo vuelva a
     encontrar los archivos ya movidos, o mover una carpeta dentro de sí
     misma).
     """
-    cq = _norm(carpeta_cuarentena)
-    cr = _norm(carpeta_raiz)
+    cq = _norm(quarantine_folder)
+    cr = _norm(root_folder)
 
     if cq == cr:
-        raise CuarentenaInvalida(
+        raise InvalidQuarantine(
             "La carpeta de cuarentena no puede ser la misma que la carpeta escaneada.")
     if cq.startswith(cr + os.sep):
-        raise CuarentenaInvalida(
+        raise InvalidQuarantine(
             "La carpeta de cuarentena está dentro de la carpeta escaneada. "
             "Elige una carpeta fuera de ella.")
     if cr.startswith(cq + os.sep):
@@ -84,109 +84,109 @@ def validar_carpeta_cuarentena(carpeta_cuarentena: str, carpeta_raiz: str) -> st
     return None
 
 
-def _destino_para(origen: str, carpeta_raiz: str, carpeta_cuarentena: str) -> str:
+def _destination_for(source: str, root_folder: str, quarantine_folder: str) -> str:
     """Ruta destino preservando la estructura relativa a la carpeta escaneada."""
     try:
-        rel = os.path.relpath(origen, carpeta_raiz)
+        rel = os.path.relpath(source, root_folder)
     except ValueError:
-        rel = os.path.basename(origen)
+        rel = os.path.basename(source)
     if rel.startswith(".." + os.sep) or rel == "..":
         # El archivo está fuera de la carpeta escaneada: lo colgamos de
         # una subcarpeta "_fuera_de_la_carpeta" con su nombre.
-        rel = os.path.join("_fuera_de_la_carpeta", os.path.basename(origen))
-    return os.path.join(carpeta_cuarentena, rel)
+        rel = os.path.join("_fuera_de_la_carpeta", os.path.basename(source))
+    return os.path.join(quarantine_folder, rel)
 
 
-def _evitar_colision(destino: str) -> str:
+def _avoid_collision(destination: str) -> str:
     """Si `destino` ya existe, devuelve 'nombre (1).ext', 'nombre (2).ext'..."""
-    if not os.path.exists(destino):
-        return destino
-    base, ext = os.path.splitext(destino)
+    if not os.path.exists(destination):
+        return destination
+    base, ext = os.path.splitext(destination)
     i = 1
     while os.path.exists(f"{base} ({i}){ext}"):
         i += 1
     return f"{base} ({i}){ext}"
 
 
-def planear_movimientos(
-    seleccion: SeleccionDuplicados, carpeta_raiz: str, carpeta_cuarentena: str,
-) -> list[Movimiento]:
+def plan_moves(
+    selection: DuplicateSelection, root_folder: str, quarantine_folder: str,
+) -> list[Move]:
     """Lista de Movimiento (sin ejecutar) para los archivos marcados como MOVER."""
-    plan: list[Movimiento] = []
-    for gi, archivo in seleccion.archivos_a_mover():
-        destino = _destino_para(archivo.ruta, carpeta_raiz, carpeta_cuarentena)
-        plan.append(Movimiento(
-            grupo=gi + 1, origen=archivo.ruta, destino=destino,
-            tamano=archivo.tamano))
+    plan: list[Move] = []
+    for gi, file in selection.files_to_move():
+        destination = _destination_for(file.path, root_folder, quarantine_folder)
+        plan.append(Move(
+            group=gi + 1, source=file.path, destination=destination,
+            size=file.size))
     return plan
 
 
-def mover_a_cuarentena(
-    seleccion: SeleccionDuplicados,
-    carpeta_raiz: str,
-    carpeta_cuarentena: str,
-    progreso: FuncProgreso | None = None,
-    cancelado: FuncCancelado | None = None,
-) -> ResultadoCuarentena:
-    """Ejecuta el movimiento. Devuelve un ResultadoCuarentena.
+def move_to_quarantine(
+    selection: DuplicateSelection,
+    root_folder: str,
+    quarantine_folder: str,
+    progress: ProgressCallback | None = None,
+    cancelled: CancelledCallback | None = None,
+) -> QuarantineResult:
+    """Ejecuta el movimiento. Devuelve un QuarantineResult.
 
     progreso : callable(actual, total, mensaje) opcional.
     cancelado: callable() -> bool opcional. Si pasa a True, se deja de
                mover (lo ya movido queda movido) y se escribe el log
                igual.
     """
-    if not seleccion.todo_listo():
+    if not selection.all_ready():
         raise ValueError(
             "Hay grupos sin resolver: cada grupo debe tener exactamente una "
             "copia marcada como conservar antes de mover.")
 
-    validar_carpeta_cuarentena(carpeta_cuarentena, carpeta_raiz)
+    validate_quarantine_folder(quarantine_folder, root_folder)
 
-    progreso = progreso or (lambda *_: None)
-    cancelado = cancelado or (lambda: False)
+    progress = progress or (lambda *_: None)
+    cancelled = cancelled or (lambda: False)
 
-    plan = planear_movimientos(seleccion, carpeta_raiz, carpeta_cuarentena)
+    plan = plan_moves(selection, root_folder, quarantine_folder)
     total = len(plan)
-    os.makedirs(carpeta_cuarentena, exist_ok=True)
+    os.makedirs(quarantine_folder, exist_ok=True)
 
-    for i, mov in enumerate(plan, start=1):
-        if cancelado():
+    for i, move in enumerate(plan, start=1):
+        if cancelled():
             break
-        progreso(i, total, f"Moviendo {i}/{total}: {os.path.basename(mov.origen)}")
+        progress(i, total, f"Moviendo {i}/{total}: {os.path.basename(move.source)}")
         try:
-            if not os.path.exists(mov.origen):
+            if not os.path.exists(move.source):
                 raise FileNotFoundError("el archivo ya no está en su sitio")
-            os.makedirs(os.path.dirname(mov.destino), exist_ok=True)
-            mov.destino = _evitar_colision(mov.destino)
-            shutil.move(mov.origen, mov.destino)
-            mov.ok = True
+            os.makedirs(os.path.dirname(move.destination), exist_ok=True)
+            move.destination = _avoid_collision(move.destination)
+            shutil.move(move.source, move.destination)
+            move.ok = True
         except (OSError, shutil.Error) as e:
-            mov.ok = False
-            mov.error = str(e)
+            move.ok = False
+            move.error = str(e)
 
-    resultado = ResultadoCuarentena(movimientos=plan)
-    resultado.ruta_log = _escribir_log(plan, carpeta_cuarentena, carpeta_raiz)
-    progreso(total, total, "Listo.")
-    return resultado
+    result = QuarantineResult(moves=plan)
+    result.log_path = _write_log(plan, quarantine_folder, root_folder)
+    progress(total, total, "Listo.")
+    return result
 
 
-def _escribir_log(
-    movimientos: list[Movimiento], carpeta_cuarentena: str, carpeta_raiz: str,
+def _write_log(
+    moves: list[Move], quarantine_folder: str, root_folder: str,
 ) -> str:
-    sello = datetime.now().strftime("%Y%m%d_%H%M%S")
-    ruta_log = os.path.join(carpeta_cuarentena, f"_log_cuarentena_{sello}.csv")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(quarantine_folder, f"_log_cuarentena_{stamp}.csv")
     try:
-        os.makedirs(carpeta_cuarentena, exist_ok=True)
-        with open(ruta_log, "w", newline="", encoding="utf-8-sig") as f:
+        os.makedirs(quarantine_folder, exist_ok=True)
+        with open(log_path, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
             w.writerow(["Fecha", "Carpeta_Escaneada", "Grupo", "Origen",
                         "Destino", "Tamano_Bytes", "Estado", "Error"])
-            ahora = datetime.now().isoformat(timespec="seconds")
-            for m in movimientos:
+            now = datetime.now().isoformat(timespec="seconds")
+            for m in moves:
                 w.writerow([
-                    ahora, carpeta_raiz, m.grupo, m.origen, m.destino,
-                    m.tamano, "movido" if m.ok else "ERROR", m.error,
+                    now, root_folder, m.group, m.source, m.destination,
+                    m.size, "movido" if m.ok else "ERROR", m.error,
                 ])
-        return ruta_log
+        return log_path
     except OSError:
         return ""
