@@ -37,6 +37,7 @@ from ui.tipos_duplicados_dialog import VentanaTipos     # noqa: E402
 
 fallos = []
 avisos = {"preguntas": 0, "info": 0, "aviso": 0, "error": 0}
+textos_de_aviso = []       # para explicar un fallo si una comprobación no se cumple
 
 
 def check(cond, msg):
@@ -47,8 +48,10 @@ def check(cond, msg):
 
 def simular_cuadros_de_dialogo():
     def contar(clave, devuelve=None):
-        def f(*_a, **_k):
+        def f(*a, **_k):
             avisos[clave] += 1
+            if clave in ("aviso", "error"):
+                textos_de_aviso.append(" ".join(str(x) for x in a[:2]))
             return devuelve
         return f
     messagebox.askyesno = contar("preguntas", True)
@@ -143,7 +146,8 @@ def main():
           "deshacer un «mover» devuelve el archivo a su sitio")
     ventana._deshacer(op_copiar)
     check(copiado_origen.exists() and not (destino / "copiado.txt").exists(),
-          "deshacer un «copiar» borra la copia y NO toca el original")
+          "deshacer un «copiar» borra la copia y NO toca el original"
+          + (f"  [avisos: {textos_de_aviso}]" if textos_de_aviso else ""))
     check(all(o["deshecha"] for o in historial.listar()), "las dos quedan marcadas como deshechas")
 
     (destino / "otro.txt").write_text("x")

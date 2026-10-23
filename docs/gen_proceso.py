@@ -235,8 +235,8 @@ C += [lista([
 # ======================================================================
 C += [h1("4. Pruebas")]
 C += [p(
-    "Pruebo el proyecto con <font face='Courier'>pytest</font>: 128 pruebas "
-    "(15 suites y 113 unitarias). No hay ningún test que «finja» el sistema de "
+    "Pruebo el proyecto con <font face='Courier'>pytest</font>: 134 pruebas "
+    "(15 suites y 119 unitarias). No hay ningún test que «finja» el sistema de "
     "archivos: cada uno construye "
     "archivos de verdad en una carpeta temporal, ejecuta la lógica real y "
     "comprueba el resultado en disco.")]
@@ -304,11 +304,11 @@ C += [tabla([
     ["Código Python (sin build ni dist)", "~8.800 líneas"],
     ["  · núcleo (core/)", "~2.100 líneas, 13 módulos"],
     ["  · interfaz (ui/)", "~3.500 líneas, 13 módulos"],
-    ["  · pruebas", "~3.000 líneas: 15 suites + 113 unitarias"],
+    ["  · pruebas", "~3.000 líneas: 15 suites + 119 unitarias"],
     ["Dependencias de la app", "customtkinter, pillow"],
     ["Ejecutable final",
      "duplicados.exe (~20 MB, un solo archivo) o ZIP con carpeta (~20 MB), sin consola"],
-    ["Estado de las pruebas", "128/128 en verde; cobertura: núcleo 93 %, interfaz 79 %"],
+    ["Estado de las pruebas", "134/134 en verde; cobertura: núcleo 93 %, interfaz 79 %"],
 ], anchos_cm=[7.5, 8.1])]
 C += [p(
     "La aplicación cubre tres necesidades relacionadas — encontrar "

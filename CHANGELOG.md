@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Undoing a copy now retries for a moment when Windows reports the copied file as in use (antivirus, indexer) before reporting a failure.
+
 ## [1.0.0] - 2026-10-21
 
 Primera versión pública.
@@ -19,7 +24,7 @@ Primera versión pública.
 - `.exe` de un solo archivo y ZIP portable con carpeta (los antivirus retienen mucho menos el ZIP).
 
 ### Calidad
-- **128 pruebas con pytest**: 15 suites que ejercitan la lógica y la ventana de verdad, más 113 pruebas unitarias (71 de ellas de contraste WCAG AA, 4,5:1, para cada pareja de texto y fondo en los dos temas).
+- **134 pruebas con pytest**: 15 suites que ejercitan la lógica y la ventana de verdad, más 119 pruebas unitarias (71 de ellas de contraste WCAG AA, 4,5:1, para cada pareja de texto y fondo en los dos temas).
 - **Cobertura**: 93 % del núcleo y 79 % de la interfaz; el CI exige un mínimo del 90 % y del 70 %.
 - **ruff** (estilo) y **mypy** (tipos del núcleo, completamente anotado), en el CI con GitHub Actions. Dependabot avisa de actualizaciones.
 - **Registro de errores** en un archivo con rotación (`%APPDATA%\BuscadorDuplicados\registro\buscador.log`): los hilos de trabajo y la interfaz anotan sus errores con el traceback, y la app avisa una vez de dónde está el registro.
