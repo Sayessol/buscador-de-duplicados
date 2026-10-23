@@ -1,4 +1,4 @@
-"""Piezas visuales reutilizables para la ventana principal."""
+"""Reusable visual pieces for the main window."""
 
 import customtkinter as ctk
 
@@ -6,7 +6,7 @@ from . import styles
 
 
 class SectionHeader(ctk.CTkFrame):
-    """Fila de título de una sección: número en un círculo + texto."""
+    """Title row of a section: number in a circle + text."""
 
     def __init__(self, master, number, text, icon="", **kw):
         super().__init__(master, fg_color="transparent", **kw)
@@ -21,7 +21,7 @@ class SectionHeader(ctk.CTkFrame):
 
 
 class StatTile(ctk.CTkFrame):
-    """Recuadro con un número grande y una etiqueta debajo."""
+    """Box with a big number and a label underneath."""
 
     def __init__(self, master, label, **kw):
         super().__init__(master, fg_color=styles.COLOR_TILE,
@@ -39,7 +39,7 @@ class StatTile(ctk.CTkFrame):
 
 
 class EmptyState(ctk.CTkFrame):
-    """Mensaje centrado para cuando la tabla no tiene resultados."""
+    """Centred message for when the table has no results."""
 
     def __init__(self, master, icon, title, detail, **kw):
         super().__init__(master, fg_color=styles.COLOR_TABLE_BACKGROUND,
@@ -65,7 +65,7 @@ class EmptyState(ctk.CTkFrame):
 
 
 def make_card(parent, row):
-    """Tarjeta de sección: un marco con fondo de tarjeta que ocupa una fila del padre."""
+    """Section card: a frame with a card background that takes up a row of the parent."""
     t = ctk.CTkFrame(parent, fg_color=styles.COLOR_CARD)
     t.grid(row=row, column=0, sticky="ew", padx=6, pady=(8, 0))
     t.grid_columnconfigure(0, weight=1)

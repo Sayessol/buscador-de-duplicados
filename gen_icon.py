@@ -1,14 +1,14 @@
-"""Genera icono.ico a partir del dibujo de core/ui/icons.py.
+"""Generates icono.ico from the drawing in ui/icons.py.
 
-No depende de Pillow: usa tkinter (librería estándar) para renderizar
-cada tamaño como PNG y arma el contenedor .ico a mano con `struct`
-(formato ICO con frames PNG, soportado desde Windows Vista).
+It does not depend on Pillow: it uses tkinter (standard library) to render
+each size as a PNG and builds the .ico container by hand with `struct`
+(ICO format with PNG frames, supported since Windows Vista).
 
     python gen_icon.py
 
-Genera icono.ico, que build.spec usa para el .exe final.
-Hace falta volver a correr esto solo si se cambia el dibujo del icono
-en ui/icons.py.
+It generates icono.ico, which build.spec uses for the final .exe.
+This only needs to be run again if the drawing of the icon
+in ui/icons.py changes.
 """
 
 import struct
@@ -36,18 +36,18 @@ def png_bytes(photo):
 
 
 def build_ico(frames):
-    """frames: lista de (tamano, bytes_png) -> bytes del .ico completo."""
+    """frames: list of (size, png_bytes) -> bytes of the complete .ico."""
     n = len(frames)
     header = struct.pack("<HHH", 0, 1, n)
 
     entries = b""
     offset = 6 + 16 * n
     for size, data in frames:
-        side = size if size < 256 else 0  # 0 significa 256 en formato ICO
+        side = size if size < 256 else 0  # 0 means 256 in ICO format
         entries += struct.pack(
             "<BBBBHHII",
-            side, side, 0, 0,      # ancho, alto, paleta, reservado
-            1, 32,                  # planos, bits por pixel
+            side, side, 0, 0,      # width, height, palette, reserved
+            1, 32,                  # planes, bits per pixel
             len(data), offset,
         )
         offset += len(data)

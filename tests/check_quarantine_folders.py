@@ -1,14 +1,14 @@
-"""Reproduce el caso que reportó el usuario: fotos repartidas en varias
-subcarpetas dentro de una carpeta, movidas a una cuarentena externa.
+"""Reproduces the case the user reported: photos spread across several
+subfolders inside a folder, moved to an external quarantine.
 
-Comprueba explícitamente que se MUEVEN LOS ARCHIVOS y NO LAS CARPETAS:
+It explicitly checks that FILES are MOVED and NOT FOLDERS:
 
-  * las subcarpetas del origen siguen existiendo después de mover,
-  * en la cuarentena hay ARCHIVOS (no carpetas sueltas movidas enteras),
-  * cada cosa movida es un archivo regular, nunca un directorio,
-  * las copias marcadas para conservar no se tocan.
+  * the subfolders of the source still exist after moving,
+  * the quarantine contains FILES (not whole folders moved loose),
+  * everything moved is a regular file, never a directory,
+  * the copies marked to keep are not touched.
 
-Prueba tanto el flujo de "Duplicados exactos" como el de "Fotos parecidas".
+It tests both the "Exact duplicates" flow and the "Similar photos" one.
 
     python tests/check_quarantine_folders.py
 """
@@ -55,13 +55,13 @@ def build(root: Path):
     _photo(2).save(root / "familia" / "retrato.png")
     _photo(3).save(root / "unica.png")
 
-    # Grupo A EXACTO: mismos bytes en vacaciones y descargas
+    # Group A EXACT: same bytes in vacaciones and descargas
     bytes_a = (root / "vacaciones" / "playa.png").read_bytes()
     (root / "descargas" / "playa.png").write_bytes(bytes_a)
-    # Grupo B EXACTO: mismos bytes en familia y familia/recortes
+    # Group B EXACT: same bytes in familia and familia/recortes
     bytes_b = (root / "familia" / "retrato.png").read_bytes()
     (root / "familia" / "recortes" / "retrato.png").write_bytes(bytes_b)
-    # Versiones PARECIDAS (JPEG recomprimido) para el otro flujo
+    # SIMILAR versions (recompressed JPEG) for the other flow
     _photo(1).save(root / "descargas" / "playa_baja.jpg", quality=35)
     _photo(2).save(root / "familia" / "recortes" / "retrato_baja.jpg", quality=35)
 
@@ -84,7 +84,7 @@ def _run_case(name, make_selection):
 
         sel, root_arg = make_selection(root)
 
-        # Inspeccionar el PLAN antes de ejecutar.
+        # Inspect the PLAN before running it.
         plan = plan_moves(sel, root_arg, str(quarantine))
         print("  plan de movimientos:")
         for m in plan:
@@ -98,14 +98,14 @@ def _run_case(name, make_selection):
         res = move_to_quarantine(sel, root_arg, str(quarantine))
         check(not res.failed, "ningún movimiento falló")
 
-        # Las carpetas del origen SIGUEN existiendo.
+        # The source folders STILL exist.
         folders_after = {str(x.relative_to(root))
                             for x in root.rglob("*") if x.is_dir()}
         check(folders_before == folders_after,
               f"las subcarpetas del origen no se han movido "
               f"(antes={sorted(folders_before)}, después={sorted(folders_after)})")
 
-        # Las copias 'conservar' siguen en su sitio.
+        # The 'keep' copies stay in their place.
         for gi, group in enumerate(sel.result.groups):
             for a in group.files:
                 if sel.decision(gi, a.path) == KEEP:
@@ -113,8 +113,8 @@ def _run_case(name, make_selection):
                           f"la copia a conservar sigue existaste: "
                           f"{Path(a.path).name}")
 
-        # En la cuarentena solo hay ARCHIVOS (+ el CSV de log), colgando de
-        # la estructura recreada; ninguna carpeta entera del origen.
+        # In the quarantine there are only FILES (+ the CSV log), hanging from
+        # the recreated structure; no whole folder from the source.
         actually_moved = [x for x in quarantine.rglob("*")
                           if x.is_file() and not x.name.endswith(".csv")]
         check(len(actually_moved) == len(res.moved),
@@ -123,7 +123,7 @@ def _run_case(name, make_selection):
         for line in _tree(quarantine):
             print(f"    {line}")
 
-        # Nada perdido: (quedan en origen) + (movidos a cuarentena) == (antes)
+        # Nothing lost: (left in the source) + (moved to quarantine) == (before)
         remain = [x for x in root.rglob("*") if x.is_file()]
         check(len(remain) + len(actually_moved) == files_before,
               f"no se ha perdido nada ({len(remain)} quedan + "

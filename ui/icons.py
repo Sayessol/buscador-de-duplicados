@@ -1,36 +1,36 @@
-"""Iconos de la interfaz.
+"""Interface icons.
 
-Son glifos Unicode monocromo que dibuja la fuente del sistema (Segoe UI
-Symbol / Segoe UI Emoji en Windows). No hay archivos de imagen ni
-dependencias: se usan como prefijo del texto de botones y títulos.
+They are monochrome Unicode glyphs drawn by the system font (Segoe UI
+Symbol / Segoe UI Emoji on Windows). There are no image files or
+dependencies: they are used as a prefix of the text of buttons and titles.
 
-`window_icon()` dibuja una lupa por código en un PhotoImage para
-`app.iconphoto()` (barra de tareas y título de la ventana).
+`window_icon()` draws a magnifying glass in code on a PhotoImage for
+`app.iconphoto()` (taskbar and window title).
 """
 
 import math
 import tkinter as tk
 
-# --- glifos --------------------------------------------------------------
-SEARCH = "\U0001F50D"      # 🔍  escanear / app
-FOLDER = "\U0001F4C1"     # 📁  elegir carpeta
-GEAR = "⚙"       # ⚙   opciones
-STAR = "⭐"        # ⭐  carpeta preferida
-AUTO = "✨"            # ✨  aplicar regla automática
-CHART = "\U0001F4CA"     # 📊  ver tipos de archivo
-SAVE = "\U0001F4BE"     # 💾  exportar CSV
-SHIELD = "\U0001F6E1"      # 🛡   mover a cuarentena (zona segura, no se borra)
-OK = "✔"              # ✔   validación correcta
-WARNING = "⚠"           # ⚠   validación pendiente
-CROSS = "✕"            # ✕   cancelar
-TRI_RIGHT = "▸"         # ▸   sección colapsada
-TRI_DOWN = "▾"       # ▾   sección abierta
-ARROW = "→"          # →   "mover"
-RELOAD = "↻"         # ↻   reescanear / deshacer
-GATHER = "\U0001F4E5"      # 📥  reunir imágenes
-HISTORY = "\U0001F553"   # 🕓  historial de operaciones
+# --- glyphs ---------------------------------------------------------------
+SEARCH = "\U0001F50D"      # 🔍  scan / app
+FOLDER = "\U0001F4C1"     # 📁  choose folder
+GEAR = "⚙"       # ⚙   options
+STAR = "⭐"        # ⭐  preferred folder
+AUTO = "✨"            # ✨  apply automatic rule
+CHART = "\U0001F4CA"     # 📊  view file kinds
+SAVE = "\U0001F4BE"     # 💾  export CSV
+SHIELD = "\U0001F6E1"      # 🛡   move to quarantine (safe zone, nothing is deleted)
+OK = "✔"              # ✔   validation passed
+WARNING = "⚠"           # ⚠   validation pending
+CROSS = "✕"            # ✕   cancel
+TRI_RIGHT = "▸"         # ▸   collapsed section
+TRI_DOWN = "▾"       # ▾   open section
+ARROW = "→"          # →   "move"
+RELOAD = "↻"         # ↻   rescan / undo
+GATHER = "\U0001F4E5"      # 📥  gather images
+HISTORY = "\U0001F553"   # 🕓  history of operations
 
-# --- categorías de tipos de archivo -----------------------------------
+# --- file kind categories -----------------------------------
 CAT_IMAGES = "\U0001F4F7"     # 📷
 CAT_AUDIO = "\U0001F3B5"        # 🎵
 CAT_VIDEO = "\U0001F3AC"        # 🎬
@@ -47,9 +47,9 @@ CATEGORY_ICON = {
 
 
 def window_icon(size=64, color="#5aa9e6"):
-    """PhotoImage con una lupa dibujada, para app.iconphoto(True, img).
+    """PhotoImage with a magnifying glass drawn on it, for app.iconphoto(True, img).
 
-    Los píxeles no pintados quedan transparentes.
+    Unpainted pixels stay transparent.
     """
     img = tk.PhotoImage(width=size, height=size)
 
@@ -62,7 +62,7 @@ def window_icon(size=64, color="#5aa9e6"):
         if 0 <= xi < size and 0 <= yi < size:
             img.put(color, to=(xi, yi))
 
-    # Anillo de la lupa.
+    # Ring of the magnifying glass.
     steps = max(120, int(size * 6))
     for i in range(steps):
         ang = 2 * math.pi * i / steps
@@ -70,7 +70,7 @@ def window_icon(size=64, color="#5aa9e6"):
             rr = r - thickness / 2 + t
             point(cx + rr * math.cos(ang), cy + rr * math.sin(ang))
 
-    # Mango.
+    # Handle.
     hx, hy = cx + r * 0.7, cy + r * 0.7
     ex, ey = size * 0.9, size * 0.9
     long = max(60, int(size * 3))

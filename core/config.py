@@ -1,9 +1,9 @@
-"""Configuración persistente mínima de la app.
+"""Minimal persistent configuration of the app.
 
-Se guarda en %APPDATA%\\BuscadorDuplicados\\config.json (en Windows) o
-en ~/.buscador_duplicados/config.json si no hay APPDATA. Solo librería
-estándar. Todo falla en silencio: si no se puede leer/escribir, la app
-funciona igual con los valores por defecto.
+It is stored in %APPDATA%\\BuscadorDuplicados\\config.json (on Windows) or
+in ~/.buscador_duplicados/config.json when there is no APPDATA. Standard
+library only. Everything fails silently: if it cannot be read or written,
+the app works the same with the default values.
 """
 
 import json
@@ -16,7 +16,7 @@ from .app_logging import log
 MODES = ("sencillo", "avanzado")
 DEFAULT_MODE = "sencillo"
 
-THEMES = ("auto", "claro", "oscuro")   # auto = seguir al sistema
+THEMES = ("auto", "claro", "oscuro")   # auto = follow the system
 DEFAULT_THEME = "auto"
 
 
@@ -32,7 +32,7 @@ def load() -> dict[str, Any]:
         data = json.loads(_path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    # Un JSON válido pero que no es un diccionario (p. ej. una lista) también se ignora.
+    # A JSON that is valid but is not a dictionary (e.g. a list) is also ignored.
     return data if isinstance(data, dict) else {}
 
 

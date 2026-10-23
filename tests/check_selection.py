@@ -1,5 +1,5 @@
-"""Pruebas de DuplicateSelection: regla de carpeta preferida, ajuste
-manual y validación de "una sola copia por grupo".
+"""Tests of DuplicateSelection: preferred-folder rule, manual
+adjustment and validation of "a single copy per group".
 
     python tests/check_selection.py
 """
@@ -59,20 +59,20 @@ def main():
     check(resolved == 2, "g1 y g3 tienen copia en la carpeta preferida")
     check(no_match == 1, "g2 no tiene copia en la carpeta preferida")
 
-    # g1: conserva la de Organizado, mueve las otras dos
+    # g1: keeps the one in Organizado, moves the other two
     check(sel.decision(0, r"D:\Fotos\Organizado\viaje\a.jpg") == KEEP,
           "g1 conserva la copia dentro de la carpeta preferida")
     check(sel.decision(0, r"D:\Descargas\a.jpg") == MOVE, "g1 mueve la de Descargas")
     check(sel.group_state(0) == GROUP_OK, "g1 queda OK")
 
-    # g3: dos copias dentro de la carpeta preferida -> conserva la de ruta más corta
+    # g3: two copies inside the preferred folder -> keeps the one with the shortest path
     check(sel.decision(2, r"D:\Fotos\Organizado\c.png") == KEEP,
           "g3 conserva la copia de ruta más corta dentro de la carpeta")
     check(sel.decision(2, r"D:\Fotos\Organizado\copia\c.png") == MOVE,
           "g3 mueve la copia anidada")
     check(sel.group_state(2) == GROUP_OK, "g3 queda OK")
 
-    # g2: sin coincidencia -> sigue todo en CONSERVAR -> pendiente
+    # g2: no match -> everything stays on KEEP -> pending
     check(sel.group_state(1) == GROUP_MULTIPLE, "g2 sigue pendiente")
     check(sel.pending_groups() == [1], "solo g2 queda pendiente")
     check(not sel.all_ready(), "todavía no está todo listo (falta g2)")
@@ -87,7 +87,7 @@ def main():
     check(sel.space_to_free() == 100 + 100 + 50 + 200, "espacio a liberar correcto")
 
     print("\n--- alternar() ---")
-    sel.mark(1, r"D:\Descargas\b.txt", KEEP)  # ahora g2 tiene 2 conservadas
+    sel.mark(1, r"D:\Descargas\b.txt", KEEP)  # now g2 has 2 kept
     check(sel.group_state(1) == GROUP_MULTIPLE, "marcar dos conservadas rompe g2")
     new = sel.toggle(1, r"D:\Descargas\b.txt")
     check(new == MOVE and sel.group_state(1) == GROUP_OK, "alternar lo vuelve a arreglar")
@@ -105,9 +105,9 @@ def main():
         data = b"contenido identico\n" * 40
         (root / "Fotos").mkdir()
         (root / "Fotos" / "Backup").mkdir()
-        (root / "Fotos" / "vacaciones.jpg").write_bytes(data)          # principal
-        (root / "Fotos" / "vacaciones (1).jpg").write_bytes(data)      # parece copia
-        (root / "Fotos" / "Backup" / "vacaciones.jpg").write_bytes(data)  # más anidada
+        (root / "Fotos" / "vacaciones.jpg").write_bytes(data)          # primary
+        (root / "Fotos" / "vacaciones (1).jpg").write_bytes(data)      # looks like a copy
+        (root / "Fotos" / "Backup" / "vacaciones.jpg").write_bytes(data)  # more nested
         r = scan(str(root))
         s = DuplicateSelection(r)
         s.preselect_primary()

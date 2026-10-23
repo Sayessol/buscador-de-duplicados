@@ -1,9 +1,9 @@
-"""Ventana de historial de operaciones, con "Deshacer".
+"""Operation history window, with "Undo".
 
-Lista las operaciones registradas (mover a cuarentena, reunir imágenes)
-y permite revertir cada una:
-- "mover"  -> devuelve los archivos a su sitio,
-- "copiar" -> borra las copias del destino (con confirmación clara).
+Lists the recorded operations (move to quarantine, gather images)
+and lets you revert each one:
+- "mover"  -> puts the files back in their place,
+- "copiar" -> deletes the copies in the destination (with a clear confirmation).
 """
 
 import os
@@ -12,7 +12,7 @@ from tkinter import messagebox
 import customtkinter as ctk
 
 from core import history
-from core.hashing import format_size  # noqa: F401  (por si hace falta)
+from core.hashing import format_size  # noqa: F401  (in case it is needed)
 from . import styles, icons
 
 _KIND_LABEL = {

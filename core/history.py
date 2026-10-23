@@ -1,14 +1,14 @@
-"""Historial persistente de operaciones que mueven o copian archivos
-(mover a cuarentena, reunir imágenes), con posibilidad de deshacer.
+"""Persistent history of the operations that move or copy files
+(move to quarantine, gather images), with the ability to undo them.
 
-Se guarda en %APPDATA%\\BuscadorDuplicados\\historial.json (o en
-~/.buscador_duplicados/ si no hay APPDATA). Solo librería estándar.
+It is stored in %APPDATA%\\BuscadorDuplicados\\historial.json (or in
+~/.buscador_duplicados/ when there is no APPDATA). Standard library only.
 
-Deshacer:
-* "mover"  -> devuelve cada archivo/carpeta del destino a su origen.
-* "copiar" -> BORRA las copias del destino. Es el ÚNICO sitio donde la
-  app borra algo, y solo archivos que ella misma creó; el que llama debe
-  pedir confirmación explícita antes.
+Undo:
+* "mover"  -> returns each file/folder from the destination to its source.
+* "copiar" -> DELETES the copies in the destination. It is the ONLY place where the
+  app deletes anything, and only files it created itself; the caller must
+  ask for explicit confirmation first.
 """
 
 import json
@@ -68,9 +68,9 @@ def record(
     moves: list[tuple[str, str]],
     description: str = "",
 ) -> str:
-    """`movimientos`: lista de (origen, destino) ya ejecutados con éxito.
+    """`moves`: list of (source, destination) already carried out successfully.
 
-    Devuelve el id de la operación registrada.
+    Returns the id of the recorded operation.
     """
     items = _load()
     now = datetime.now()
@@ -91,7 +91,7 @@ def record(
 
 
 def list_all() -> list[dict[str, Any]]:
-    """Operaciones, de la más reciente a la más antigua."""
+    """Operations, from the most recent to the oldest."""
     return list(reversed(_load()))
 
 
@@ -123,10 +123,10 @@ def _remove_with_retries(path: str) -> None:
 
 
 def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]:
-    """Revierte la operación `op_id`.
+    """Reverts the operation `op_id`.
 
-    Devuelve dict: {"ok": n_revertidos, "fallos": [(ruta, mensaje), ...],
-    "op": operacion}. Marca la operación como deshecha si no hubo fallos.
+    Returns a dict: {"ok": n_reverted, "fallos": [(path, message), ...],
+    "op": operation}. Marks the operation as undone if there were no failures.
     """
     progress = progress or (lambda *_: None)
     op = next((o for o in _load() if o["id"] == op_id), None)
@@ -135,7 +135,7 @@ def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]
     if op.get("deshecha"):
         return {"ok": 0, "fallos": [("", "esta operación ya se deshizo")], "op": op}
 
-    op_moves = op["movimientos"]        # cada uno: {"origen": ..., "destino": ...}
+    op_moves = op["movimientos"]        # each one: {"origen": ..., "destino": ...}
     total = len(op_moves)
     ok = 0
     failures: list[tuple[str, str]] = []
@@ -145,15 +145,15 @@ def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]
         progress(i, total, os.path.basename(destination) or destination)
         try:
             if op["accion"] == "copiar":
-                # Deshacer una copia = borrar lo que la app copió en el
-                # destino. El original nunca se toca.
+                # Undoing a copy = deleting what the app copied into the
+                # destination. The original is never touched.
                 _remove_with_retries(destination)
                 ok += 1
-            else:  # "mover" -> llevar el archivo de vuelta a su origen
+            else:  # "mover" -> take the file back to its source
                 if not os.path.exists(destination):
                     raise FileNotFoundError("ya no está en el destino")
                 if os.path.exists(source):
-                    # alguien ha vuelto a poner algo ahí: no lo pisamos
+                    # someone has put something there again: we do not overwrite it
                     raise FileExistsError("ya hay algo en la ruta original")
                 os.makedirs(os.path.dirname(source), exist_ok=True)
                 shutil.move(destination, source)
@@ -161,9 +161,9 @@ def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]
         except OSError as e:
             failures.append((destination, str(e)))
 
-    # Solo se marca "deshecha" si TODO se pudo revertir; si no, se puede
-    # reintentar más tarde (los que ya volvieron no se moverán dos veces
-    # porque su destino ya no existe).
+    # It is only marked "undone" if EVERYTHING could be reverted; otherwise it can be
+    # retried later (the ones that already went back will not be moved twice
+    # because their destination no longer exists).
     if not failures:
         _mark_undone(op_id)
     return {"ok": ok, "fallos": failures, "op": op}

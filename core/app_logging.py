@@ -1,23 +1,23 @@
-"""Registro de errores en un archivo, para saber qué falló cuando algo va mal.
+"""Error log in a file, to know what failed when something goes wrong.
 
-La app, empaquetada como .exe, no tiene consola: si algo falla, el mensaje
-desaparecía. Aquí se guarda en un archivo de texto que se puede abrir con el
-Bloc de notas:
+The app, packaged as an .exe, has no console: if something failed, the message
+used to disappear. Here it is saved in a text file that can be opened with
+Notepad:
 
     %APPDATA%\\BuscadorDuplicados\\registro\\buscador.log
 
-(o en ~/.buscador_duplicados/registro/ si no hay APPDATA). El archivo es
-pequeño: al llegar a 512 KB se archiva y se conservan 2 copias antiguas.
+(or in ~/.buscador_duplicados/registro/ when there is no APPDATA). The file is
+small: when it reaches 512 KB it is archived and 2 old copies are kept.
 
-Cómo se usa desde el resto del código:
+How it is used from the rest of the code:
 
     from core.app_logging import log
-    log.info("algo normal pero útil")
-    log.warning("algo raro, la app sigue", exc_info=True)   # añade el traceback
-    log.exception("algo falló")                             # dentro de un except
+    log.info("something normal but useful")
+    log.warning("something odd, the app carries on", exc_info=True)   # adds the traceback
+    log.exception("something failed")                                 # inside an except
 
-Si no se puede crear el archivo (disco de solo lectura, etc.), la app sigue
-funcionando igual, simplemente sin registro.
+If the file cannot be created (read-only disk, etc.), the app keeps
+working the same, just without a log.
 """
 
 import logging
@@ -30,15 +30,15 @@ from types import TracebackType
 
 from . import __version__
 
-# Logger común de toda la app. Sin configurar (en las pruebas, por ejemplo) no escribe nada.
+# Shared logger of the whole app. Unconfigured (in the tests, for example) it writes nothing.
 log = logging.getLogger("buscador")
 log.addHandler(logging.NullHandler())
 
 _MAX_SIZE = 512 * 1024
 _OLD_COPIES = 2
 
-_handler: RotatingFileHandler | None = None   # el que escribe en el archivo (None = no iniciado)
-_path_file: Path | None = None               # ruta del archivo, si se pudo crear
+_handler: RotatingFileHandler | None = None   # the one that writes to the file (None = not started)
+_path_file: Path | None = None               # path of the file, if it could be created
 
 
 def log_folder() -> Path:
@@ -49,15 +49,15 @@ def log_folder() -> Path:
 
 
 def file_path() -> Path | None:
-    """Ruta del archivo de registro, o None si no está activo."""
+    """Path of the log file, or None if it is not active."""
     return _path_file
 
 
 def start() -> Path | None:
-    """Activa el registro en archivo. Se puede llamar varias veces sin duplicar nada.
+    """Turns on logging to a file. It can be called several times without duplicating anything.
 
-    Nivel normal: INFO. Con la variable de entorno BUSCADOR_DEBUG=1 se anotan
-    también los detalles (DEBUG), útil para investigar un problema.
+    Normal level: INFO. With the environment variable BUSCADOR_DEBUG=1 the details
+    (DEBUG) are logged too, which is useful to investigate a problem.
     """
     global _handler, _path_file
     if _handler is not None:
@@ -70,7 +70,7 @@ def start() -> Path | None:
         handler = RotatingFileHandler(
             path, maxBytes=_MAX_SIZE, backupCount=_OLD_COPIES, encoding="utf-8")
     except OSError:
-        return None          # sin registro: la app sigue funcionando igual
+        return None          # no log: the app keeps working the same
     handler.setFormatter(logging.Formatter(
         "%(asctime)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S"))
     log.addHandler(handler)
@@ -81,7 +81,7 @@ def start() -> Path | None:
 
 
 def stop() -> None:
-    """Cierra el archivo de registro (lo usan las pruebas y al cerrar la app)."""
+    """Closes the log file (used by the tests and when the app closes)."""
     global _handler, _path_file
     if _handler is not None:
         log.removeHandler(_handler)
@@ -90,7 +90,7 @@ def stop() -> None:
 
 
 def install_hooks() -> None:
-    """Anota también los errores que nadie ha capturado (hilo principal y otros hilos)."""
+    """Also logs the errors nobody has caught (main thread and other threads)."""
     previous_primary = sys.excepthook
     previous_thread_hook = threading.excepthook
 

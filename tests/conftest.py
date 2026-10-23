@@ -1,8 +1,8 @@
-"""Red de seguridad común: las pruebas no deben tocar los datos reales del usuario.
+"""Common safety net: the tests must not touch the user's real data.
 
-Si una prueba escribe en el historial o en la configuración reales de la app
-(en %APPDATA%\\BuscadorDuplicados), al terminar toda la sesión se da un error.
-Antes pasaba sin que nadie se enterara; por eso existe esta comprobación.
+If a test writes to the real history or configuration of the app
+(in %APPDATA%\\BuscadorDuplicados), an error is raised at the end of the whole session.
+This used to happen without anyone noticing; that is why this check exists.
 """
 
 import os

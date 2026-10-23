@@ -1,7 +1,7 @@
-"""Prueba de humo del modo Sencilla: los controles avanzados se ocultan,
-la app preselecciona sola la copia principal de cada grupo y el botón de
-cuarentena queda listo sin que el usuario elija nada. Cambiar a Avanzada
-vuelve a mostrarlo todo.
+"""Smoke test of Simple mode: the advanced controls are hidden,
+the app preselects the primary copy of each group by itself and the
+quarantine button is ready without the user choosing anything. Switching to Advanced
+shows everything again.
 
     python tests/smoke_simple.py
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# No toca los datos reales del usuario (historial, configuración):
+# It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from ui import styles                            # noqa: E402
@@ -61,7 +61,7 @@ def main():
         R["cuarentena_lista"] = str(app.exact.btn_quarantine.cget("state")) == "normal"
         R["a_mover"] = sel.count_to_move()
 
-        # la copia conservada del grupo de la boda no es la de Backup ni la (1)
+        # the copy kept in the "boda" group is neither the Backup one nor the (1) one
         gi = next(i for i, g in enumerate(sel.result.groups)
                   if any("boda" in a.path for a in g.files))
         from core.selection import KEEP
@@ -70,7 +70,7 @@ def main():
         R["principal_ok"] = (Path(kept.path).name == "boda.jpg"
                              and "Backup" not in kept.path)
 
-        # cambiar a Avanzada muestra los controles otra vez
+        # switching to Advanced shows the controls again
         app._mode = "avanzado"
         app._apply_mode()
         app.update()

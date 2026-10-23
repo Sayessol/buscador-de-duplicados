@@ -1,24 +1,24 @@
-"""Mide cuánto ahorra el escaneo en 3 pasadas frente a hashear todo el contenido.
+"""Measures how much the 3-pass scan saves compared with hashing all the content.
 
-    python tests/benchmark.py            # 4.000 archivos (~1 GB temporal)
-    python tests/benchmark.py 10000      # otro tamaño
+    python tests/benchmark.py            # 4,000 files (~1 GB temporary)
+    python tests/benchmark.py 10000      # another size
 
-Crea una carpeta temporal con archivos de contenido aleatorio (tamaños entre
-8 KB y 1 MB) y tres tipos de "casi duplicados" que obligan a trabajar a cada
-pasada:
+It creates a temporary folder with files of random content (sizes between
+8 KB and 1 MB) and three kinds of "near duplicates" that make each
+pass work:
 
-  · 10 %  copias exactas de otro archivo (los duplicados de verdad)
-  ·  5 %  mismo tamaño que otro pero contenido distinto desde el principio
-          -> los descarta el hash parcial (pasada 2)
-  ·  3 %  mismo tamaño y mismos primeros 64 KB, pero distinto después
-          -> solo los descarta el hash completo (pasada 3)
+  · 10 %  exact copies of another file (the real duplicates)
+  ·  5 %  same size as another but different content from the start
+          -> discarded by the partial hash (pass 2)
+  ·  3 %  same size and same first 64 KB, but different afterwards
+          -> only discarded by the full hash (pass 3)
 
-Compara con el método "ingenuo" (el del script original: hashear el archivo
-entero de todos) y comprueba que ambos encuentran EXACTAMENTE los mismos grupos.
+It compares with the "naive" method (the one from the original script: hashing the
+whole file for all of them) and checks that both find EXACTLY the same groups.
 
-Ojo: se mide con los archivos recién creados, así que el sistema operativo los
-tiene en caché y los tiempos son más optimistas que en un disco "frío". Los
-bytes leídos, en cambio, no dependen de la caché.
+Note: it is measured with freshly created files, so the operating system
+has them cached and the times are more optimistic than on a "cold" disk. The
+bytes read, on the other hand, do not depend on the cache.
 """
 
 import hashlib
@@ -47,7 +47,7 @@ def create_data(base: Path, n: int) -> int:
     for c in folders:
         c.mkdir(parents=True)
 
-    paths = []                      # (ruta, tamaño) de los originales ya creados
+    paths = []                      # (path, size) of the originals already created
     total = 0
 
     def write(name, data):
@@ -61,20 +61,20 @@ def create_data(base: Path, n: int) -> int:
     n_unique = n - n_copies - n_same_size - n_same_start
 
     for i in range(n_unique):
-        size = int(8_192 * (128 ** rnd.random()))          # 8 KB .. 1 MB, más pequeños que grandes
+        size = int(8_192 * (128 ** rnd.random()))          # 8 KB .. 1 MB, more small than large
         data = rnd.randbytes(size)
         paths.append((write(f"f{i:05d}.bin", data), data))
 
-    for i in range(n_copies):                               # copias exactas
+    for i in range(n_copies):                               # exact copies
         _, data = rnd.choice(paths)
         write(f"copia{i:05d}.bin", data)
 
-    for i in range(n_same_size):                            # mismo tamaño, otro contenido
+    for i in range(n_same_size):                            # same size, other content
         _, data = rnd.choice(paths)
         write(f"mismotam{i:05d}.bin", rnd.randbytes(len(data)))
 
     large = [d for _, d in paths if len(d) > PARTIAL_HASH_SIZE * 2]
-    for i in range(n_same_start):                            # mismo inicio, otro final
+    for i in range(n_same_start):                            # same start, other end
         data = rnd.choice(large)
         queue = bytearray(data[PARTIAL_HASH_SIZE:])
         queue[0] ^= 0xFF
@@ -83,7 +83,7 @@ def create_data(base: Path, n: int) -> int:
 
 
 def naive_method(base: Path):
-    """Hashea el contenido ENTERO de todos los archivos (como el script original)."""
+    """Hashes the WHOLE content of all the files (like the original script)."""
     groups, read, count = defaultdict(list), 0, 0
     for folder, _subs, files in os.walk(base):
         for name in files:
@@ -99,7 +99,7 @@ def naive_method(base: Path):
 
 
 def three_pass_method(base: Path):
-    """Usa el escáner de la app, contando los bytes que de verdad lee."""
+    """Uses the app's scanner, counting the bytes it really reads."""
     read = 0
     partial, full = scanner.partial_hash, scanner.full_hash
 
@@ -124,7 +124,7 @@ def three_pass_method(base: Path):
 
 def main():
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")   # la consola de Windows suele ser cp1252
+        sys.stdout.reconfigure(encoding="utf-8")   # the Windows console is usually cp1252
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 4000
     tmp = Path(tempfile.mkdtemp(prefix="bench_"))
     try:
@@ -133,8 +133,8 @@ def main():
         total = create_data(base, n)
         print(f"  {n} archivos, {format_size(total)} en total\n")
 
-        # Se repite cada método y se toma el MEJOR tiempo: así el primero no paga
-        # en solitario el coste de "calentar" la caché del disco y el antivirus.
+        # Each method is repeated and the BEST time is taken: that way the first one does not
+        # pay alone the cost of "warming up" the disk cache and the antivirus.
         t_naive = t_app = float("inf")
         for _ in range(REPETITIONS):
             t = time.perf_counter()

@@ -1,68 +1,67 @@
-"""Cálculo de hashes de contenido y formateo de tamaños.
+"""Content hash computation and size formatting.
 
-Se usa BLAKE2b (viene en la librería estándar de Python, es más rápido
-que SHA-256 y de sobra seguro para detectar archivos idénticos).
+BLAKE2b is used (it ships with Python's standard library, is faster than
+SHA-256 and more than secure enough to detect identical files).
 
-Estrategia en dos niveles, para no leer archivos gigantes enteros sin
-necesidad:
+Two-level strategy, so huge files are not read in full unnecessarily:
 
-1. `hash_parcial`  -> hashea solo los primeros 64 KB del archivo.
-2. `hash_completo` -> hashea el archivo entero, leyendo en bloques.
+1. `partial_hash` -> hashes only the first 64 KB of the file.
+2. `full_hash`    -> hashes the whole file, reading in blocks.
 
-El escáner primero agrupa por tamaño, luego por hash parcial, y solo
-calcula el hash completo de los pocos candidatos que sobreviven a los
-dos filtros anteriores.
+The scanner first groups by size, then by partial hash, and only
+computes the full hash of the few candidates that survive the two
+previous filters.
 """
 
 import hashlib
 
-# Tamaño del bloque de lectura para el hash completo (64 KB).
+# Read block size for the full hash (64 KB).
 BLOCK_SIZE = 65536
 
-# Cuántos bytes del inicio del archivo mira el hash parcial (64 KB).
-# Si el archivo es más chico que esto, el hash parcial cubre todo el
-# archivo y es idéntico al hash completo.
+# How many bytes from the start of the file the partial hash looks at (64 KB).
+# If the file is smaller than this, the partial hash covers the whole
+# file and is identical to the full hash.
 PARTIAL_HASH_SIZE = 65536
 
 
 def partial_hash(file_path: str, nbytes: int = PARTIAL_HASH_SIZE) -> str:
-    """Hash BLAKE2b de los primeros `nbytes` bytes del archivo.
+    """BLAKE2b hash of the first `nbytes` bytes of the file.
 
-    Lanza OSError / PermissionError si el archivo no se puede leer;
-    el que llama decide qué hacer con eso.
+    Raises OSError / PermissionError if the file cannot be read;
+    the caller decides what to do about it.
     """
     h = hashlib.blake2b()
     with open(file_path, "rb") as f:
-        h.update(f.read(nbytes))     # una sola lectura: los primeros nbytes
-    return h.hexdigest()             # el hash en hexadecimal (texto)
+        h.update(f.read(nbytes))     # a single read: the first nbytes
+    return h.hexdigest()             # the hash in hexadecimal (text)
 
 
 def full_hash(file_path: str, block_size: int = BLOCK_SIZE) -> str:
-    """Hash BLAKE2b del contenido completo del archivo.
+    """BLAKE2b hash of the whole content of the file.
 
-    Lee en bloques para no cargar archivos grandes enteros en memoria.
-    Lanza OSError / PermissionError si el archivo no se puede leer.
+    Reads in blocks so large files are never loaded into memory in full.
+    Raises OSError / PermissionError if the file cannot be read.
     """
     h = hashlib.blake2b()
     with open(file_path, "rb") as f:
         while True:
-            block = f.read(block_size)   # lee de 64 KB en 64 KB
-            if not block:                    # cadena vacía = fin del archivo
+            block = f.read(block_size)   # reads 64 KB at a time
+            if not block:                    # empty bytes = end of file
                 break
-            h.update(block)                  # va acumulando en el hash
+            h.update(block)                  # accumulates into the hash
     return h.hexdigest()
 
 
 def format_size(bytes_: float) -> str:
-    """Convierte una cantidad de bytes a texto legible (B, KB, MB, GB...).
+    """Converts a number of bytes to readable text (B, KB, MB, GB...).
 
-    Mismo comportamiento que el script de consola original: divide entre
-    1024 y muestra un decimal.
+    Same behaviour as the original console script: divides by
+    1024 and shows one decimal.
     """
     value = float(bytes_)
-    # Va subiendo de unidad mientras el número no quepa por debajo de 1024.
+    # Moves up a unit while the number does not fit below 1024.
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if value < 1024:
             return f"{value:.1f} {unit}"
         value /= 1024
-    return f"{value:.1f} PB"        # por si acaso (petabytes)
+    return f"{value:.1f} PB"        # just in case (petabytes)

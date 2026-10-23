@@ -1,5 +1,5 @@
-"""Prueba de humo de la pestaña "Reunir imágenes" + Historial + Deshacer,
-pulsando los botones reales de la ventana (con los diálogos simulados).
+"""Smoke test of the "Gather images" tab + History + Undo,
+pressing the real buttons of the window (with the dialogs stubbed).
 
     python tests/smoke_gather_ui.py
 """
@@ -50,10 +50,10 @@ def main():
     destination = tmp / "Escritorio" / "Todas las fotos"
     build(root)
 
-    # Diálogos simulados
+    # Stubbed dialogs
     filedialog.askdirectory = lambda *a, **k: str(destination)
     messagebox.askyesno = lambda *a, **k: True
-    os.startfile = lambda *a, **k: None   # sin esto se abriría el Explorador de verdad
+    os.startfile = lambda *a, **k: None   # without this the real Explorer would open
     messagebox.showinfo = lambda *a, **k: None
     messagebox.showwarning = lambda *a, **k: None
     messagebox.showerror = lambda *a, **k: print("   [showerror]", a)
@@ -67,7 +67,7 @@ def main():
                 folder_by_ext={"pdf": "Documentos"})
             self.after(10, self.destroy)
     from ui import gather_images_tab as TR                      # noqa: E402
-    TR.NonImageKindsWindow = FakeKinds   # el diálogo se usa desde la pestaña Reunir
+    TR.NonImageKindsWindow = FakeKinds   # the dialog is used from the Gather tab
 
     app = MW.MainWindow()
     app._mode = "avanzado"
@@ -110,7 +110,7 @@ def main():
         R["historial_n"] = len(ops)
         R["op_tipo"] = ops[0]["tipo"] if ops else None
 
-        # Deshacer la operación
+        # Undo the operation
         res = history.undo(ops[0]["id"])
         R["deshacer_ok"] = res["ok"]
         R["deshacer_fallos"] = len(res["fallos"])
@@ -139,7 +139,7 @@ def main():
         and set(R.get("subcarpetas_origen", [])) >= {"2023", "2024", "2024\\boda"}
         and R.get("historial_n") == 1
         and R.get("op_tipo") == "reunir"
-        and R.get("deshacer_ok") == 6   # 4 imágenes + 2 pdf agrupados
+        and R.get("deshacer_ok") == 6   # 4 images + 2 pdf grouped
         and R.get("deshacer_fallos") == 0
         and R.get("img_vuelta") is True
         and R.get("destino_vacio_img") is True

@@ -1,10 +1,10 @@
-"""Visor de imagen a (casi) pantalla completa, con zoom y desplazamiento.
+"""Image viewer at (almost) full screen, with zoom and panning.
 
-Se abre al pulsar una previsualización. Permite ver los detalles:
-- rueda del ratón (o botones +/−) para acercar/alejar,
-- arrastrar con el ratón para desplazarse,
-- "Ajustar" para encajar la imagen en la ventana, "100%" para verla a
-  tamaño real.
+It opens when a preview is clicked. It lets you see details:
+- mouse wheel (or +/− buttons) to zoom in/out,
+- drag with the mouse to pan,
+- "Fit" to fit the image to the window, "100%" to see it at
+  real size.
 """
 
 import os
@@ -18,8 +18,8 @@ from core.app_logging import log
 from . import styles
 from .thumbnails import IMAGE_EXT
 
-# Límite al cargar (px, lado mayor): evita reventar la memoria con fotos
-# enormes; el zoom sigue funcionando dentro de ese límite.
+# Limit when loading (px, longer side): avoids exhausting memory with huge
+# photos; zoom keeps working within that limit.
 _MAX_SIDE = 6000
 
 
@@ -41,7 +41,7 @@ class ImageViewer(ctk.CTkToplevel):
                 if max(im.size) > _MAX_SIDE:
                     im.thumbnail((_MAX_SIDE, _MAX_SIDE), Image.LANCZOS)
                 self._orig = im.copy()
-        except Exception:  # el visor enseña «no se puede abrir» en vez de romperse
+        except Exception:  # the viewer shows "cannot be opened" instead of breaking
             log.warning("No se pudo abrir la imagen %s en el visor", path, exc_info=True)
             self._orig = None
 
@@ -72,7 +72,7 @@ class ImageViewer(ctk.CTkToplevel):
 
         cont = ctk.CTkFrame(self, fg_color=styles.COLOR_TABLE_BACKGROUND)
         cont.pack(fill="both", expand=True, padx=8, pady=(0, 8))
-        # tk.Canvas no es de CustomTkinter: su color se resuelve a mano.
+        # tk.Canvas is not a CustomTkinter widget: its colour is resolved by hand.
         self.canvas = tk.Canvas(cont, bg=styles.col(styles.COLOR_TABLE_BACKGROUND),
                                 highlightthickness=0)
         vsb = ctk.CTkScrollbar(cont, command=self.canvas.yview)
@@ -148,6 +148,6 @@ class ImageViewer(ctk.CTkToplevel):
 
 
 def open_viewer(master, path):
-    """Abre el visor a pantalla casi completa si `ruta` es una imagen que se puede mostrar."""
+    """Opens the viewer at almost full screen if `path` is an image that can be shown."""
     if path and can_be_displayed(path) and os.path.isfile(path):
         ImageViewer(master, path)

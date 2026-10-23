@@ -1,5 +1,5 @@
-"""Prueba del filtro de escaneo (exclusión por extensión, nombre, carpeta
-y tamaño mínimo) y del desglose por extensión.
+"""Test of the scan filter (exclusion by extension, name, folder
+and minimum size) and of the breakdown by extension.
 
     python tests/check_filters.py
 """
@@ -33,28 +33,28 @@ def build(base: Path):
     tmp_data = b"basura temporal\n" * 20
     img_data = b"pixeles\n" * 50
 
-    # Grupo real de .txt (debe sobrevivir a todos los filtros salvo si se excluye .txt)
+    # Real .txt group (it must survive every filter unless .txt is excluded)
     write("a/doc.txt", doc)
     write("b/doc.txt", doc)
 
-    # Grupo de .tmp (se excluye por extensión en el filtro por defecto)
+    # .tmp group (excluded by extension in the default filter)
     write("a/cache.tmp", tmp_data)
     write("b/otra.tmp", tmp_data)
 
-    # Grupo dentro de node_modules (se excluye por carpeta)
+    # Group inside node_modules (excluded by folder)
     write("proj/node_modules/x.txt", img_data)
     write("proj/node_modules/y.txt", img_data)
-    write("proj/src/z.txt", img_data)   # copia fuera de node_modules -> queda sin pareja
+    write("proj/src/z.txt", img_data)   # copy outside node_modules -> left without a match
 
-    # Thumbs.db duplicado (se excluye por nombre)
+    # Duplicated Thumbs.db (excluded by name)
     write("a/Thumbs.db", b"thumbs\n")
     write("b/Thumbs.db", b"thumbs\n")
 
-    # Dos archivos vacíos (se excluyen con tamano_minimo=1)
+    # Two empty files (excluded with min_size=1)
     write("a/vacio.txt", b"")
     write("b/vacio.txt", b"")
 
-    # Grupo de fotos (.jpg) y grupo de audio (.mp3), para la lista blanca
+    # Photo group (.jpg) and audio group (.mp3), for the whitelist
     photo_data = b"binario de foto\n" * 15
     audio_data = b"binario de audio\n" * 15
     write("fotos/img1.jpg", photo_data)

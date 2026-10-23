@@ -1,12 +1,12 @@
-"""Prueba manual por consola del núcleo, sin interfaz gráfica.
+"""Manual console test of the core, without a graphical interface.
 
-Hace lo mismo que el script original desde el punto de vista del usuario:
-pide una carpeta, la escanea y deja un CSV. Sirve para probar el núcleo
-sobre carpetas reales antes de montar la ventana.
+It does the same as the original script from the user's point of view:
+asks for a folder, scans it and leaves a CSV. It is useful to try the core
+on real folders before building the window.
 
-Uso:
+Usage:
     python tests/check_scan.py
-    python tests/check_scan.py "D:\\Fotos"
+    python tests/check_scan.py "D:\\Photos"
 """
 
 import os
@@ -24,7 +24,7 @@ REPORT_NAME = "duplicados_reporte.csv"
 
 
 def _print_progress(p):
-    # \r para sobrescribir la misma línea
+    # \r to overwrite the same line
     print(f"  {p.message}".ljust(70), end="\r", flush=True)
 
 
@@ -46,7 +46,7 @@ def main():
         print("\nEscaneo cancelado.")
         return
     duration = time.time() - start
-    print()  # salto de línea tras el \r
+    print()  # line break after the \r
 
     report_path = os.path.join(os.getcwd(), REPORT_NAME)
     export_csv(result, report_path)

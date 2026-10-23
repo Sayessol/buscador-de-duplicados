@@ -1,14 +1,14 @@
-"""Primitivas para mover o copiar lotes de archivos.
+"""Primitives to move or copy batches of files.
 
-Reglas comunes:
-* NUNCA se pisa un archivo del destino: si ya existe, el nuevo se guarda
-  con sufijo `(1)`, `(2)`...
-* El destino no puede estar dentro de la carpeta de origen.
-* Se puede **mover** (quita del origen) o **copiar** (deja el original).
-* Se escribe un CSV de registro.
+Common rules:
+* A file in the destination is NEVER overwritten: if it already exists, the new
+  one is saved with a suffix `(1)`, `(2)`...
+* The destination cannot be inside the source folder.
+* It can **move** (removes from the source) or **copy** (leaves the original).
+* A CSV log is written.
 
-Lo usa la pestaña "Reunir imágenes". La cuarentena tiene su propia
-implementación (`core/quarantine.py`) con estas mismas reglas.
+Used by the "Gather images" tab. Quarantine has its own
+implementation (`core/quarantine.py`) with these same rules.
 """
 
 import csv
@@ -24,7 +24,7 @@ COPY = "copiar"
 
 
 class InvalidDestination(Exception):
-    """El destino elegido no sirve (p. ej. está dentro del origen)."""
+    """The chosen destination is not valid (e.g. it is inside the source)."""
 
 
 def _norm(p: str) -> str:
@@ -32,8 +32,8 @@ def _norm(p: str) -> str:
 
 
 def validate_destination(destination: str, source: str) -> str | None:
-    """None si todo bien, un str de aviso si conviene avisar, o lanza
-    InvalidDestination si no se puede continuar."""
+    """None if all is well, a warning str if it is worth warning, or raises
+    InvalidDestination if it cannot continue."""
     d, o = _norm(destination), _norm(source)
     if d == o:
         raise InvalidDestination(
@@ -49,7 +49,7 @@ def validate_destination(destination: str, source: str) -> str | None:
 
 
 def collision_free_path(destination: str) -> str:
-    """Si `destino` ya existe -> 'nombre (1).ext', 'nombre (2).ext'..."""
+    """If `destination` already exists -> 'name (1).ext', 'name (2).ext'..."""
     if not os.path.exists(destination):
         return destination
     base, ext = os.path.splitext(destination)
@@ -100,7 +100,7 @@ def execute(
     progress: ProgressCallback | None = None,
     cancelled: CancelledCallback | None = None,
 ) -> TransferResult:
-    """Ejecuta una lista de Traslado (mueve o copia cada archivo)."""
+    """Runs a list of Transfer (moves or copies each file)."""
     progress = progress or (lambda *_: None)
     cancelled = cancelled or (lambda: False)
     total = len(transfers)

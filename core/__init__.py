@@ -1,14 +1,14 @@
-"""Núcleo de la app de duplicados: lógica pura, sin interfaz gráfica.
+"""Core of the duplicates app: pure logic, no graphical interface.
 
-Todo lo de este paquete se puede probar por consola sin abrir ninguna
-ventana. La regla de oro se mantiene en todas las funciones que tocan
-el sistema de archivos: **nunca borrar, nunca modificar el original,
-solo leer y (cuando el usuario lo confirma) mover.**
+Everything in this package can be tested from the console without opening
+a window. The golden rule holds in every function that touches the file
+system: **never delete, never modify the original, only read and (when
+the user confirms) move.**
 """
 
-# Única fuente de la versión: la usan la ventana y el nombre de la release.
-# Al publicar una versión nueva, se cambia aquí y se añade su apartado en CHANGELOG.md
-# (una prueba comprueba que los dos coinciden).
+# Single source of the version: the window and the release name use it.
+# When publishing a new version, change it here and add its section to CHANGELOG.md
+# (a test checks that the two match).
 __version__ = "1.0.0"
 
 from .hashing import (

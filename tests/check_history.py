@@ -1,12 +1,12 @@
-"""Pruebas del historial de operaciones y del "deshacer" (core/history.py).
+"""Tests of the operation history and of "undo" (core/history.py).
 
-  * registrar y listar (más reciente primero),
-  * deshacer un MOVER -> los archivos vuelven a su sitio,
-  * deshacer un COPIAR -> se borran las copias del destino,
-  * deshacer conflictivo (ya hay algo en el origen) -> reporta el fallo,
-  * una operación ya deshecha no se deshace dos veces.
+  * record and list (most recent first),
+  * undo a MOVE -> the files go back to their place,
+  * undo a COPY -> the copies in the destination are deleted,
+  * conflicting undo (something already in the source) -> reports the failure,
+  * an operation that was already undone is not undone twice.
 
-No toca el historial real: redirige %APPDATA% a una carpeta temporal.
+It does not touch the real history: it redirects %APPDATA% to a temporary folder.
 
     python tests/check_history.py
 """
@@ -32,11 +32,11 @@ def main():
         import os
         os.environ["APPDATA"] = str(tmp / "appdata")
 
-        # importar DESPUÉS de fijar APPDATA
+        # import AFTER setting APPDATA
         from core import history
         from core.file_moves import execute, Transfer, MOVE, COPY
 
-        # --- montar un caso: mover 2 archivos a un destino ----------
+        # --- set up a case: move 2 files to a destination ----------
         source = tmp / "origen" / "sub"
         source.mkdir(parents=True)
         destination = tmp / "destino"
@@ -57,7 +57,7 @@ def main():
               and (destination / "sub" / "a.txt").exists(),
               "tras mover: los archivos están en el destino")
 
-        # --- deshacer el MOVER ------------------------------------
+        # --- undo the MOVE ------------------------------------
         r = history.undo(op_id)
         check(r["ok"] == 2 and not r["fallos"], "deshacer mover: 2 revertidos")
         check((source / "a.txt").exists() and (source / "b.txt").exists()
@@ -69,7 +69,7 @@ def main():
         r2 = history.undo(op_id)
         check(r2["ok"] == 0 and r2["fallos"], "no se puede deshacer dos veces")
 
-        # --- COPIAR y deshacer (borra las copias) ----------------
+        # --- COPY and undo (deletes the copies) ----------------
         plan_c = [Transfer(str(source / "a.txt"), str(destination / "c" / "a.txt"))]
         rc = execute(plan_c, action=COPY)
         op_c = history.record(
@@ -82,14 +82,14 @@ def main():
               and (source / "a.txt").exists(),
               "deshacer copia: se borra la copia, el original sigue")
 
-        # --- deshacer con conflicto -----------------------------
+        # --- undo with a conflict -----------------------------
         (source / "x.txt").write_text("x")
         plan_x = [Transfer(str(source / "x.txt"), str(destination / "x.txt"))]
         rx = execute(plan_x, action=MOVE)
         op_x = history.record(
             history.KIND_GATHER, "mover", str(tmp / "origen"), str(destination),
             [(t.source, t.destination) for t in rx.done])
-        (source / "x.txt").write_text("otra cosa")  # ocupamos la ruta original
+        (source / "x.txt").write_text("otra cosa")  # we occupy the original path
         rr = history.undo(op_x)
         check(rr["ok"] == 0 and rr["fallos"],
               "deshacer con la ruta original ocupada -> reporta fallo, no pisa")

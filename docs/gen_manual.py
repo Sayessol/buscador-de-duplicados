@@ -1,4 +1,4 @@
-"""Genera 'manual-de-usuario.pdf'."""
+"""Generates 'manual-de-usuario.pdf'."""
 
 from pathlib import Path
 

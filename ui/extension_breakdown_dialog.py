@@ -1,4 +1,4 @@
-"""Ventana con el desglose de duplicados por extensión."""
+"""Window with the breakdown of duplicates by extension."""
 
 import customtkinter as ctk
 
@@ -8,7 +8,7 @@ from . import icons
 
 
 class ExtensionBreakdownWindow(ctk.CTkToplevel):
-    """Desglose de los duplicados por extensión, con opción de excluir."""
+    """Breakdown of the duplicates by extension, with an option to exclude."""
 
     def __init__(self, master, result, on_exclude):
         super().__init__(master)

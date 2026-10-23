@@ -1,4 +1,4 @@
-"""Pruebas unitarias pequeñas (pytest puro): config, informe CSV y formato de tamaños."""
+"""Small unit tests (plain pytest): config, CSV report and size formatting."""
 
 import csv
 from types import SimpleNamespace
@@ -12,7 +12,7 @@ from core.report import COLUMNS, export_csv
 
 @pytest.fixture
 def appdata(tmp_path, monkeypatch):
-    """Aísla la configuración en una carpeta temporal (no toca la real)."""
+    """Isolates the configuration in a temporary folder (it does not touch the real one)."""
     monkeypatch.setenv("APPDATA", str(tmp_path))
     return tmp_path
 
@@ -32,8 +32,8 @@ def test_config_saves_and_remembers(appdata):
 
 def test_config_ignores_invalid_values(appdata):
     config.set_mode("avanzado")
-    config.set_mode("loquesea")           # se ignora
-    config.set_theme("fucsia")             # se ignora
+    config.set_mode("loquesea")           # ignored
+    config.set_theme("fucsia")             # ignored
     assert config.get_mode() == "avanzado"
     assert config.get_theme() == "auto"
 
@@ -42,15 +42,15 @@ def test_config_corrupt_does_not_break(appdata):
     path = appdata / "BuscadorDuplicados" / "config.json"
     path.parent.mkdir()
     path.write_text("{ esto no es json", encoding="utf-8")
-    assert config.get_mode() == "sencillo"   # vuelve al valor por defecto
+    assert config.get_mode() == "sencillo"   # back to the default value
 
 
 def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
-    # APPDATA apunta a un FICHERO, así que no se puede crear la carpeta debajo.
+    # APPDATA points to a FILE, so the folder underneath cannot be created.
     file = tmp_path / "soy_un_fichero"
     file.write_text("x")
     monkeypatch.setenv("APPDATA", str(file))
-    config.set_mode("avanzado")              # falla en silencio
+    config.set_mode("avanzado")              # fails silently
     assert config.get_mode() == "sencillo"
 
 
@@ -83,7 +83,7 @@ def test_format_size(bytes_, expected):
 
 
 def test_app_without_console_survives_writing(monkeypatch):
-    """En el .exe sin consola stdout/stderr son None; la app lo corrige al arrancar."""
+    """In the .exe without a console stdout/stderr are None; the app fixes it at startup."""
     import sys
 
     import app
@@ -91,13 +91,13 @@ def test_app_without_console_survives_writing(monkeypatch):
     monkeypatch.setattr(sys, "stdout", None)
     monkeypatch.setattr(sys, "stderr", None)
     app._ensure_outputs()
-    sys.stderr.write("aviso de una librería\n")      # antes: AttributeError
+    sys.stderr.write("aviso de una librería\n")      # before: AttributeError
     print("también con print")
     assert sys.stdout is not None and sys.stderr is not None
 
 
 def test_version_matches_the_changelog():
-    """La versión del código tiene su apartado en CHANGELOG.md (así no se desfasan)."""
+    """The code version has its section in CHANGELOG.md (so they do not drift apart)."""
     import re
     from pathlib import Path
 
