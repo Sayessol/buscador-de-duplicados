@@ -29,7 +29,7 @@ warnings = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
@@ -38,16 +38,16 @@ def main():
     messagebox.showerror = lambda *a, **k: warnings.append(a)
     styles.apply_theme()
     log_path = app_logging.start()
-    check(log_path is not None and log_path.exists(), "el archivo de registro se crea al iniciar")
+    check(log_path is not None and log_path.exists(), "the log file is created at start-up")
 
     app = MainWindow()
 
     def ui_failure():
-        raise RuntimeError("fallo provocado en la interfaz")
+        raise RuntimeError("failure triggered in the interface")
 
     def scan_failure():
         # The same method that runs in the scan thread; with a folder that does not exist.
-        app.exact._scan_job(str(TMP / "no_existe"), ScanFilter.no_filter())
+        app.exact._scan_job(str(TMP / "does_not_exist"), ScanFilter.no_filter())
 
     app.after(200, ui_failure)
     app.after(300, ui_failure)                 # repeated: it must warn only once
@@ -58,21 +58,21 @@ def main():
     for h in app_logging.log.handlers:
         h.flush()
     text = log_path.read_text(encoding="utf-8")
-    check("fallo provocado en la interfaz" in text, "el error de la interfaz queda en el registro")
+    check("failure triggered in the interface" in text, "the interface error is in the log")
     check(text.count("Unexpected error in the interface") == 2,
-          "los dos fallos repetidos se anotan")
-    check(len(warnings) == 1, "pero el aviso al usuario sale una sola vez")
+          "both repeated failures are logged")
+    check(len(warnings) == 1, "but the warning to the user appears only once")
     check("Scan of" in text and "NotADirectoryError" in text,
-          "el error del hilo de escaneo queda en el registro, con su traceback")
+          "the scan thread error is in the log, with its traceback")
     check(str(log_path) in warnings[0][1] if warnings else False,
-          "el aviso dice dónde está el registro")
+          "the warning says where the log is")
 
     app_logging.stop()
     print()
     if failures:
-        print(f"FALLARON {len(failures)} comprobaciones.")
+        print(f"{len(failures)} CHECKS FAILED.")
         sys.exit(1)
-    print("HUMO REGISTRO OK")
+    print("LOG SMOKE OK")
     sys.exit(0)
 
 

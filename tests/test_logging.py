@@ -84,19 +84,19 @@ def test_hooks_log_unhandled_errors(appdata, monkeypatch):
     app_logging.start()
     app_logging.install_hooks()
     try:
-        raise ValueError("fallo en el hilo principal")
+        raise ValueError("failure in the main thread")
     except ValueError:
         sys.excepthook(*sys.exc_info())
     try:
-        raise KeyError("fallo en otro hilo")
+        raise KeyError("failure in another thread")
     except KeyError:
         kind, value, trace = sys.exc_info()
         threading.excepthook(SimpleNamespace(
             exc_type=kind, exc_value=value, exc_traceback=trace,
-            thread=SimpleNamespace(name="Hilo-prueba")))
+            thread=SimpleNamespace(name="Test-thread")))
     text = _read(app_logging.file_path())
-    assert "fallo en el hilo principal" in text
-    assert "Hilo-prueba" in text and "KeyError" in text
+    assert "failure in the main thread" in text
+    assert "Test-thread" in text and "KeyError" in text
     assert calls == ["principal", "hilo"]                 # the previous hook is also called
     sys.excepthook, threading.excepthook = previous
 
@@ -112,7 +112,7 @@ def test_unexpected_ui_error_is_logged_and_warned_once(appdata, monkeypatch):
     window = SimpleNamespace(_error_warned=False)          # the attribute it uses is enough
     for _ in range(3):                                       # the same failure, three times
         try:
-            _ = {}["no existe"]
+            _ = {}["does not exist"]
         except KeyError:
             MainWindow.report_callback_exception(window, *sys.exc_info())
     text = _read(app_logging.file_path())

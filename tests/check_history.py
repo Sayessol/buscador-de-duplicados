@@ -21,7 +21,7 @@ failures = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
@@ -37,9 +37,9 @@ def main():
         from core.file_moves import execute, Transfer, MOVE, COPY
 
         # --- set up a case: move 2 files to a destination ----------
-        source = tmp / "origen" / "sub"
+        source = tmp / "source" / "sub"
         source.mkdir(parents=True)
-        destination = tmp / "destino"
+        destination = tmp / "destination"
         (source / "a.txt").write_text("aaa")
         (source / "b.txt").write_text("bbb")
 
@@ -47,60 +47,60 @@ def main():
                 Transfer(str(source / "b.txt"), str(destination / "sub" / "b.txt"))]
         res = execute(plan, action=MOVE)
         op_id = history.record(
-            history.KIND_GATHER, "move", str(tmp / "origen"), str(destination),
-            [(t.source, t.destination) for t in res.done], "2 archivos de prueba")
+            history.KIND_GATHER, "move", str(tmp / "source"), str(destination),
+            [(t.source, t.destination) for t in res.done], "2 test files")
 
         ops = history.list_all()
-        check(len(ops) == 1 and ops[0]["id"] == op_id, "la operación queda registrada")
-        check(ops[0]["undone"] is False, "arranca como no deshecha")
+        check(len(ops) == 1 and ops[0]["id"] == op_id, "the operation is recorded")
+        check(ops[0]["undone"] is False, "it starts as not undone")
         check(not (source / "a.txt").exists()
               and (destination / "sub" / "a.txt").exists(),
-              "tras mover: los archivos están en el destino")
+              "after the move: the files are in the destination")
 
         # --- undo the MOVE ------------------------------------
         r = history.undo(op_id)
-        check(r["reverted"] == 2 and not r["failures"], "deshacer mover: 2 revertidos")
+        check(r["reverted"] == 2 and not r["failures"], "undo move: 2 reverted")
         check((source / "a.txt").exists() and (source / "b.txt").exists()
               and not (destination / "sub" / "a.txt").exists(),
-              "los archivos han vuelto a su carpeta original")
+              "the files are back in their original folder")
         check(history.list_all()[0]["undone"] is True,
-              "la operación queda marcada como deshecha")
+              "the operation is marked as undone")
 
         r2 = history.undo(op_id)
-        check(r2["reverted"] == 0 and r2["failures"], "no se puede deshacer dos veces")
+        check(r2["reverted"] == 0 and r2["failures"], "it cannot be undone twice")
 
         # --- COPY and undo (deletes the copies) ----------------
         plan_c = [Transfer(str(source / "a.txt"), str(destination / "c" / "a.txt"))]
         rc = execute(plan_c, action=COPY)
         op_c = history.record(
-            history.KIND_GATHER, "copy", str(tmp / "origen"), str(destination),
+            history.KIND_GATHER, "copy", str(tmp / "source"), str(destination),
             [(t.source, t.destination) for t in rc.done])
         check((destination / "c" / "a.txt").exists() and (source / "a.txt").exists(),
-              "copiar: original y copia existen")
+              "copy: original and copy both exist")
         rd = history.undo(op_c)
         check(rd["reverted"] == 1 and not (destination / "c" / "a.txt").exists()
               and (source / "a.txt").exists(),
-              "deshacer copia: se borra la copia, el original sigue")
+              "undo copy: the copy is deleted, the original stays")
 
         # --- undo with a conflict -----------------------------
         (source / "x.txt").write_text("x")
         plan_x = [Transfer(str(source / "x.txt"), str(destination / "x.txt"))]
         rx = execute(plan_x, action=MOVE)
         op_x = history.record(
-            history.KIND_GATHER, "move", str(tmp / "origen"), str(destination),
+            history.KIND_GATHER, "move", str(tmp / "source"), str(destination),
             [(t.source, t.destination) for t in rx.done])
-        (source / "x.txt").write_text("otra cosa")  # we occupy the original path
+        (source / "x.txt").write_text("something else")  # we occupy the original path
         rr = history.undo(op_x)
         check(rr["reverted"] == 0 and rr["failures"],
-              "deshacer con la ruta original ocupada -> reporta fallo, no pisa")
-        check((source / "x.txt").read_text() == "otra cosa",
-              "el archivo que ocupaba la ruta original no se ha tocado")
+              "undo with the original path taken -> reports a failure, does not overwrite")
+        check((source / "x.txt").read_text() == "something else",
+              "the file that occupied the original path was not touched")
 
     print()
     if failures:
-        print(f"FALLARON {len(failures)} comprobaciones.")
+        print(f"{len(failures)} CHECKS FAILED.")
         sys.exit(1)
-    print("HISTORIAL OK")
+    print("HISTORY OK")
     sys.exit(0)
 
 

@@ -33,7 +33,7 @@ def test_config_saves_and_remembers(appdata):
 def test_config_ignores_invalid_values(appdata):
     config.set_mode("advanced")
     config.set_mode("loquesea")           # ignored
-    config.set_theme("fucsia")             # ignored
+    config.set_theme("fuchsia")             # ignored
     assert config.get_mode() == "advanced"
     assert config.get_theme() == "auto"
 
@@ -41,13 +41,13 @@ def test_config_ignores_invalid_values(appdata):
 def test_config_corrupt_does_not_break(appdata):
     path = appdata / "BuscadorDuplicados" / "config.json"
     path.parent.mkdir()
-    path.write_text("{ esto no es json", encoding="utf-8")
+    path.write_text("{ this is not json", encoding="utf-8")
     assert config.get_mode() == "simple"   # back to the default value
 
 
 def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
     # APPDATA points to a FILE, so the folder underneath cannot be created.
-    file = tmp_path / "soy_un_fichero"
+    file = tmp_path / "i_am_a_file"
     file.write_text("x")
     monkeypatch.setenv("APPDATA", str(file))
     config.set_mode("advanced")              # fails silently
@@ -55,16 +55,16 @@ def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
 
 
 def test_export_csv(tmp_path):
-    a1 = SimpleNamespace(path=r"C:\a\foto.jpg", size=2048)
-    a2 = SimpleNamespace(path=r"C:\b\foto.jpg", size=2048)
+    a1 = SimpleNamespace(path="C:\\a\\photo.jpg", size=2048)
+    a2 = SimpleNamespace(path="C:\\b\\photo.jpg", size=2048)
     result = SimpleNamespace(groups=[SimpleNamespace(files=[a1, a2], hash="abc123")])
-    destination = tmp_path / "informe.csv"
+    destination = tmp_path / "report.csv"
 
     assert export_csv(result, destination) == 1
 
     rows = list(csv.reader(destination.open(encoding="utf-8-sig", newline="")))
     assert rows[0] == columns()
-    assert rows[1] == ["Group 1", r"C:\a\foto.jpg", "2.0 KB", "2048", "abc123"]
+    assert rows[1] == ["Group 1", "C:\\a\\photo.jpg", "2.0 KB", "2048", "abc123"]
     assert len(rows) == 3
 
 
@@ -91,8 +91,8 @@ def test_app_without_console_survives_writing(monkeypatch):
     monkeypatch.setattr(sys, "stdout", None)
     monkeypatch.setattr(sys, "stderr", None)
     app._ensure_outputs()
-    sys.stderr.write("aviso de una librería\n")      # before: AttributeError
-    print("también con print")
+    sys.stderr.write("a library warning\n")      # before: AttributeError
+    print("also with print")
     assert sys.stdout is not None and sys.stderr is not None
 
 
@@ -106,4 +106,4 @@ def test_version_matches_the_changelog():
     assert re.fullmatch(r"\d+\.\d+\.\d+", __version__), __version__
     changelog = (Path(__file__).resolve().parents[1] / "CHANGELOG.md").read_text(encoding="utf-8")
     assert f"## [{__version__}]" in changelog, (
-        f"Falta el apartado «## [{__version__}]» en CHANGELOG.md")
+        f"Missing section “## [{__version__}]” in CHANGELOG.md")

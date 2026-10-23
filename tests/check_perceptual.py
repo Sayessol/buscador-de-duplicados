@@ -32,7 +32,7 @@ failures = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
@@ -58,31 +58,31 @@ def build(base: Path):
     original = photo_base(1)
 
     # --- versions of the SAME photo (they must end up in one group) --------
-    original.save(base / "playa_original.png")
-    original.save(base / "playa_calidad_baja.jpg", quality=25)
-    original.resize((450, 300)).save(base / "playa_pequena.jpg", quality=80)
+    original.save(base / "beach_original.png")
+    original.save(base / "beach_calidad_baja.jpg", quality=25)
+    original.resize((450, 300)).save(base / "beach_pequena.jpg", quality=80)
 
     filtered = ImageEnhance.Color(original).enhance(1.8)
     filtered = ImageEnhance.Brightness(filtered).enhance(1.15)
-    filtered.save(base / "playa_con_filtro.jpg", quality=85)
+    filtered.save(base / "beach_con_filtro.jpg", quality=85)
 
     mark = original.copy()
     d = ImageDraw.Draw(mark)
     d.rectangle([740, 550, 890, 590], fill=(255, 255, 255))
     d.text((748, 560), "©2024", fill=(0, 0, 0))
-    mark.save(base / "playa_marca_agua.jpg", quality=85)
+    mark.save(base / "beach_marca_agua.jpg", quality=85)
 
     # --- another, different photo, also with a couple of versions ----------
     other = photo_base(99)
-    other.save(base / "montana_original.png")
-    other.save(base / "montana_recomprimida.jpg", quality=30)
+    other.save(base / "mountain_original.png")
+    other.save(base / "mountain_recomprimida.jpg", quality=30)
 
     # --- loose, unrelated photos ---------------------------------
     for s in (7, 21, 42):
         photo_base(s).save(base / f"suelta_{s}.jpg", quality=80)
 
     # a corrupt image (it must go to 'errors', not break anything)
-    (base / "rota.jpg").write_bytes(b"esto no es una imagen")
+    (base / "rota.jpg").write_bytes(b"esto no es una image")
 
 
 def names(group):
@@ -91,62 +91,62 @@ def names(group):
 
 def main():
     with tempfile.TemporaryDirectory(prefix="dup_perc_") as tmp:
-        base = Path(tmp) / "fotos"
+        base = Path(tmp) / "photos"
         build(base)
 
         r = analyze_folder(str(base), hamming_threshold=12)
-        print(f"\n  {r.total_images} imágenes analizadas, "
-              f"{r.total_groups} grupos, {len(r.errors)} ilegibles\n")
+        print(f"\n  {r.total_images} images analyzed, {r.total_groups} groups, "
+              f"{len(r.errors)} unreadable\n")
         for i, g in enumerate(r.groups, 1):
-            print(f"  Grupo {i}  (mejor: {Path(g.files[0].path).name}, "
-                  f"{g.fingerprints[0].width}x{g.fingerprints[0].height}):")
+            best = g.fingerprints[0]
+            print(f"  Group {i}  (best: {Path(g.files[0].path).name}, {best.width}x{best.height}):")
             for a, s in zip(g.files, g.similarity):
                 print(f"      {s * 100:5.1f}%  {Path(a.path).name}")
 
         groups_by_name = {tuple(names(g)) for g in r.groups}
 
-        beach = {"playa_original.png", "playa_calidad_baja.jpg",
-                 "playa_pequena.jpg", "playa_con_filtro.jpg",
-                 "playa_marca_agua.jpg"}
-        mountain = {"montana_original.png", "montana_recomprimida.jpg"}
+        beach = {"beach_original.png", "beach_calidad_baja.jpg",
+                 "beach_pequena.jpg", "beach_con_filtro.jpg",
+                 "beach_marca_agua.jpg"}
+        mountain = {"mountain_original.png", "mountain_recomprimida.jpg"}
 
-        beach_group = next((g for g in groups_by_name if "playa_original.png" in g), None)
-        mountain_group = next((g for g in groups_by_name if "montana_original.png" in g), None)
+        beach_group = next((g for g in groups_by_name if "beach_original.png" in g), None)
+        mountain_group = next((g for g in groups_by_name if "mountain_original.png" in g), None)
 
         check(beach_group is not None and beach.issubset(set(beach_group)),
-              "las 5 versiones de la foto 'playa' caen en el mismo grupo")
+              "the 5 versions of the photo 'beach' fall in the same group")
         check(mountain_group is not None and set(mountain_group) == mountain,
-              "las 2 versiones de 'montana' forman su propio grupo")
-        check(all(not any(n.startswith("suelta_") for n in g)
+              "the 2 versions of 'mountain' form their own group")
+        check(all(not any(n.startswith("loose_") for n in g)
                   for g in groups_by_name),
-              "ninguna foto suelta se coló en un grupo")
+              "no loose photo slipped into a group")
         check(len(r.errors) == 1 and "rota.jpg" in r.errors[0][0],
-              "la imagen corrupta se reporta como error, no rompe el análisis")
+              "the corrupt image is reported as an error, it does not break the analysis")
 
         if beach_group:
-            g = next(g for g in r.groups if "playa_original.png" in names(g))
-            check(Path(g.files[0].path).name == "playa_original.png",
-                  "la 'mejor' copia de playa es el PNG original (más resolución)")
-            check(g.reclaimable_space > 0, "el grupo reporta espacio recuperable")
+            g = next(g for g in r.groups if "beach_original.png" in names(g))
+            check(Path(g.files[0].path).name == "beach_original.png",
+                  "the 'best' copy of beach is the original PNG (higher resolution)")
+            check(g.reclaimable_space > 0, "the group reports recoverable space")
 
     # --- optional real folder --------------------------------------
     if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
         threshold = int(sys.argv[2]) if len(sys.argv) > 2 else 10
-        print(f"\n=== Carpeta real: {sys.argv[1]}  (umbral {threshold}) ===")
+        print(f"\n=== Real folder: {sys.argv[1]}  (threshold {threshold}) ===")
         rr = analyze_folder(sys.argv[1], hamming_threshold=threshold,
                               progress=lambda a, t, m: print(f"  {m}", end="\r"))
-        print(f"\n  {rr.total_images} imágenes, {rr.total_groups} grupos de parecidas, "
-              f"recuperable {format_size(rr.total_reclaimable_space)}")
+        print(f"\n  {rr.total_images} images, {rr.total_groups} groups of similar ones, "
+              f"recoverable {format_size(rr.total_reclaimable_space)}")
         for i, g in enumerate(rr.groups[:15], 1):
-            print(f"\n  Grupo {i} ({g.count} fotos):")
+            print(f"\n  Group {i} ({g.count} photos):")
             for a, s in zip(g.files, g.similarity):
                 print(f"      {s * 100:5.1f}%  {a.path}")
 
     print()
     if failures:
-        print(f"FALLARON {len(failures)} comprobaciones.")
+        print(f"{len(failures)} CHECKS FAILED.")
         sys.exit(1)
-    print("NÚCLEO PERCEPTUAL OK")
+    print("PERCEPTUAL CORE OK")
     sys.exit(0)
 
 

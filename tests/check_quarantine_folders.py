@@ -30,7 +30,7 @@ failures = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
@@ -47,23 +47,23 @@ def _photo(seed, size=(600, 400)):
 
 
 def build(root: Path):
-    (root / "vacaciones").mkdir(parents=True)
-    (root / "familia" / "recortes").mkdir(parents=True)
-    (root / "descargas").mkdir(parents=True)
+    (root / "holidays").mkdir(parents=True)
+    (root / "family" / "crops").mkdir(parents=True)
+    (root / "downloads").mkdir(parents=True)
 
-    _photo(1).save(root / "vacaciones" / "playa.png")
-    _photo(2).save(root / "familia" / "retrato.png")
+    _photo(1).save(root / "holidays" / "beach.png")
+    _photo(2).save(root / "family" / "portrait.png")
     _photo(3).save(root / "unica.png")
 
-    # Group A EXACT: same bytes in vacaciones and descargas
-    bytes_a = (root / "vacaciones" / "playa.png").read_bytes()
-    (root / "descargas" / "playa.png").write_bytes(bytes_a)
+    # Group A EXACT: same bytes in holidays and downloads
+    bytes_a = (root / "holidays" / "beach.png").read_bytes()
+    (root / "downloads" / "beach.png").write_bytes(bytes_a)
     # Group B EXACT: same bytes in familia and familia/recortes
-    bytes_b = (root / "familia" / "retrato.png").read_bytes()
-    (root / "familia" / "recortes" / "retrato.png").write_bytes(bytes_b)
+    bytes_b = (root / "family" / "portrait.png").read_bytes()
+    (root / "family" / "crops" / "portrait.png").write_bytes(bytes_b)
     # SIMILAR versions (recompressed JPEG) for the other flow
-    _photo(1).save(root / "descargas" / "playa_baja.jpg", quality=35)
-    _photo(2).save(root / "familia" / "recortes" / "retrato_baja.jpg", quality=35)
+    _photo(1).save(root / "downloads" / "beach_baja.jpg", quality=35)
+    _photo(2).save(root / "family" / "crops" / "portrait_baja.jpg", quality=35)
 
 
 def _tree(p: Path):
@@ -74,8 +74,8 @@ def _tree(p: Path):
 def _run_case(name, make_selection):
     print(f"\n=== {name} ===")
     with tempfile.TemporaryDirectory(prefix="dup_cc_") as tmp:
-        root = Path(tmp) / "MisFotos"
-        quarantine = Path(tmp) / "Escritorio" / "Cuarentena fotos"
+        root = Path(tmp) / "MyPhotos"
+        quarantine = Path(tmp) / "Desktop" / "Photos quarantine"
         build(root)
 
         folders_before = {str(x.relative_to(root))
@@ -86,49 +86,48 @@ def _run_case(name, make_selection):
 
         # Inspect the PLAN before running it.
         plan = plan_moves(sel, root_arg, str(quarantine))
-        print("  plan de movimientos:")
+        print("  move plan:")
         for m in plan:
-            kind = ("CARPETA!!!" if Path(m.source).is_dir()
-                    else "archivo" if Path(m.source).is_file() else "??")
+            kind = ("FOLDER!!!" if Path(m.source).is_dir()
+                    else "file" if Path(m.source).is_file() else "??")
             print(f"    [{kind}] {Path(m.source).relative_to(root)}  ->  "
                   f"{Path(m.destination).relative_to(quarantine.parent)}")
             check(Path(m.source).is_file(),
-                  f"el origen a mover es un archivo, no una carpeta: {m.source}")
+                  f"the source to move is a file, not a folder: {m.source}")
 
         res = move_to_quarantine(sel, root_arg, str(quarantine))
-        check(not res.failed, "ningún movimiento falló")
+        check(not res.failed, "no move failed")
 
         # The source folders STILL exist.
         folders_after = {str(x.relative_to(root))
                             for x in root.rglob("*") if x.is_dir()}
         check(folders_before == folders_after,
-              f"las subcarpetas del origen no se han movido "
-              f"(antes={sorted(folders_before)}, después={sorted(folders_after)})")
+              f"the source subfolders were not moved (before={sorted(folders_before)}, "
+              f"after={sorted(folders_after)})")
 
         # The 'keep' copies stay in their place.
         for gi, group in enumerate(sel.result.groups):
             for a in group.files:
                 if sel.decision(gi, a.path) == KEEP:
                     check(Path(a.path).is_file(),
-                          f"la copia a conservar sigue existaste: "
-                          f"{Path(a.path).name}")
+                          f"the file to keep still exists: {Path(a.path).name}")
 
         # In the quarantine there are only FILES (+ the CSV log), hanging from
         # the recreated structure; no whole folder from the source.
         actually_moved = [x for x in quarantine.rglob("*")
                           if x.is_file() and not x.name.endswith(".csv")]
         check(len(actually_moved) == len(res.moved),
-              f"en la cuarentena hay {len(res.moved)} archivos movidos")
-        print("  árbol de la cuarentena:")
+              f"the quarantine has {len(res.moved)} files moved")
+        print("  quarantine tree:")
         for line in _tree(quarantine):
             print(f"    {line}")
 
         # Nothing lost: (left in the source) + (moved to quarantine) == (before)
         remain = [x for x in root.rglob("*") if x.is_file()]
         check(len(remain) + len(actually_moved) == files_before,
-              f"no se ha perdido nada ({len(remain)} quedan + "
-              f"{len(actually_moved)} movidos == {files_before} antes)")
-        check(len(res.moved) >= 1, "se ha movido al menos un archivo")
+              f"nothing was lost ({len(remain)} left + {len(actually_moved)} moved "
+              f"== {files_before} before)")
+        check(len(res.moved) >= 1, "at least one file was moved")
 
 
 def exact_selection(root):
@@ -147,14 +146,14 @@ def similar_selection(root):
 
 
 def main():
-    _run_case("Duplicados exactos", exact_selection)
-    _run_case("Fotos parecidas", similar_selection)
+    _run_case("Exact duplicates", exact_selection)
+    _run_case("Similar photos", similar_selection)
 
     print()
     if failures:
-        print(f"FALLARON {len(failures)} comprobaciones.")
+        print(f"{len(failures)} CHECKS FAILED.")
         sys.exit(1)
-    print("MUEVE ARCHIVOS, NO CARPETAS: OK")
+    print("MOVES FILES, NOT FOLDERS: OK")
     sys.exit(0)
 
 

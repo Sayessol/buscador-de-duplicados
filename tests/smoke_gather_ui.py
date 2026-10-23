@@ -17,7 +17,7 @@ failures = []
 
 
 def check(cond, msg):
-    print(f"  [{'OK  ' if cond else 'FALLA'}] {msg}")
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
     if not cond:
         failures.append(msg)
 
@@ -25,13 +25,13 @@ def check(cond, msg):
 def build(root: Path):
     from PIL import Image
     (root / "2023").mkdir(parents=True)
-    (root / "2024" / "boda").mkdir(parents=True)
-    for rel in ("portada.png", "2023/playa.jpg", "2024/retrato.jpg",
-                "2024/boda/grupo.jpeg"):
+    (root / "2024" / "wedding").mkdir(parents=True)
+    for rel in ("cover.png", "2023/beach.jpg", "2024/portrait.jpg",
+                "2024/wedding/group.jpeg"):
         Image.new("RGB", (64, 48), (90, 90, 90)).save(root / rel)
-    (root / "notas.txt").write_text("hola")
+    (root / "notes.txt").write_text("hello")
     (root / "2023" / "info.pdf").write_bytes(b"%PDF")
-    (root / "2024" / "gastos.pdf").write_bytes(b"%PDF")
+    (root / "2024" / "expenses.pdf").write_bytes(b"%PDF")
 
 
 def main():
@@ -46,8 +46,8 @@ def main():
 
     styles.apply_theme()
 
-    root = tmp / "Fotos revueltas"
-    destination = tmp / "Escritorio" / "Todas las fotos"
+    root = tmp / "Mixed photos"
+    destination = tmp / "Desktop" / "All photos"
     build(root)
 
     # Stubbed dialogs
@@ -64,7 +64,7 @@ def main():
             self.withdraw()
             self.rules = NonImageRules(
                 action_by_ext={"pdf": "group", "txt": "leave"},
-                folder_by_ext={"pdf": "Documentos"})
+                folder_by_ext={"pdf": "Documents"})
             self.after(10, self.destroy)
     from ui import gather_images_tab as TR                      # noqa: E402
     TR.NonImageKindsWindow = FakeKinds   # the dialog is used from the Gather tab
@@ -87,8 +87,8 @@ def main():
         app.after(800, run_step)
 
     def run_step():
-        R["encontradas"] = len(app.gather._images)
-        R["marcadas"] = len(app.gather._included)
+        R["found"] = len(app.gather._images)
+        R["marked"] = len(app.gather._included)
         R["otros"] = len(app.gather._others)
         app.gather._run()
         app.after(1800, verify)
@@ -97,25 +97,25 @@ def main():
         moved = sorted(str(p.relative_to(destination)).replace("\\", "/")
                          for p in destination.rglob("*")
                          if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
-        R["img_en_destino"] = moved
-        R["quedan_en_origen_img"] = [
+        R["img_in_destination"] = moved
+        R["left_in_source_img"] = [
             str(p.relative_to(root)) for p in root.rglob("*")
             if p.suffix.lower() in (".png", ".jpg", ".jpeg")]
-        R["txt_sigue"] = (root / "notas.txt").exists()
-        R["pdf_agrupado"] = (destination / "Documentos" / "2023" / "info.pdf").exists()
-        R["subcarpetas_origen"] = sorted(
+        R["txt_stays"] = (root / "notes.txt").exists()
+        R["pdf_grouped"] = (destination / "Documents" / "2023" / "info.pdf").exists()
+        R["source_subfolders"] = sorted(
             str(p.relative_to(root)) for p in root.rglob("*") if p.is_dir())
 
         ops = history.list_all()
-        R["historial_n"] = len(ops)
-        R["op_tipo"] = ops[0]["kind"] if ops else None
+        R["history_n"] = len(ops)
+        R["op_kind"] = ops[0]["kind"] if ops else None
 
         # Undo the operation
         res = history.undo(ops[0]["id"])
-        R["deshacer_ok"] = res["reverted"]
-        R["deshacer_fallos"] = len(res["failures"])
-        R["img_vuelta"] = (root / "2023" / "playa.jpg").exists()
-        R["destino_vacio_img"] = not any(
+        R["undo_ok"] = res["reverted"]
+        R["undo_failures"] = len(res["failures"])
+        R["img_back"] = (root / "2023" / "beach.jpg").exists()
+        R["destination_empty_img"] = not any(
             p.suffix.lower() in (".png", ".jpg", ".jpeg")
             for p in destination.rglob("*"))
 
@@ -129,22 +129,22 @@ def main():
         print(f"  {k:24} {v}")
 
     ok = (
-        R.get("encontradas") == 4
-        and R.get("marcadas") == 4
+        R.get("found") == 4
+        and R.get("marked") == 4
         and R.get("otros") == 3
-        and sorted(R.get("img_en_destino", [])) == sorted(imgs_before)
-        and R.get("quedan_en_origen_img") == []
-        and R.get("txt_sigue") is True
-        and R.get("pdf_agrupado") is True
-        and set(R.get("subcarpetas_origen", [])) >= {"2023", "2024", "2024\\boda"}
-        and R.get("historial_n") == 1
-        and R.get("op_tipo") == "gather"
-        and R.get("deshacer_ok") == 6   # 4 images + 2 pdf grouped
-        and R.get("deshacer_fallos") == 0
-        and R.get("img_vuelta") is True
-        and R.get("destino_vacio_img") is True
+        and sorted(R.get("img_in_destination", [])) == sorted(imgs_before)
+        and R.get("left_in_source_img") == []
+        and R.get("txt_stays") is True
+        and R.get("pdf_grouped") is True
+        and set(R.get("source_subfolders", [])) >= {"2023", "2024", "2024\\wedding"}
+        and R.get("history_n") == 1
+        and R.get("op_kind") == "gather"
+        and R.get("undo_ok") == 6   # 4 images + 2 pdf grouped
+        and R.get("undo_failures") == 0
+        and R.get("img_back") is True
+        and R.get("destination_empty_img") is True
     )
-    print("\n" + ("HUMO REUNIR OK" if ok else "HUMO REUNIR FALLA"))
+    print("\n" + ("GATHER SMOKE OK" if ok else "GATHER SMOKE FAILED"))
     sys.exit(0 if ok else 1)
 
 

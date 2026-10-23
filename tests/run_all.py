@@ -40,9 +40,9 @@ def main():
 
     print(f"\n{'=' * 60}")
     if failures:
-        print("PRUEBAS QUE FALLARON:", ", ".join(failures))
+        print("TESTS THAT FAILED:", ", ".join(failures))
         sys.exit(1)
-    print("TODAS LAS PRUEBAS PASARON")
+    print("ALL TESTS PASSED")
 
 
 if __name__ == "__main__":

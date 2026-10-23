@@ -38,8 +38,7 @@ def _load_original_script():
     path = REPO_ROOT / "buscar_duplicados.py"
     if not path.exists():
         raise FileNotFoundError(
-            f"No encuentro el script original en {path}. "
-            "Colócalo ahí para poder comparar."
+            f"I cannot find the original script at {path}. Put it there so the comparison can run."
         )
     spec = importlib.util.spec_from_file_location("buscar_duplicados_orig", path)
     module = importlib.util.module_from_spec(spec)
@@ -82,23 +81,23 @@ def build_test_tree(base: Path):
         p.write_bytes(data)
         return p
 
-    content_a = b"contenido identico A\n" * 10
-    content_b = b"otra cosa totalmente distinta B\n" * 7
+    content_a = b"content identico A\n" * 10
+    content_b = b"other thing totalmente distinta B\n" * 7
     large_1 = b"X" * 200_000 + b"final-1"
     large_2 = b"X" * 200_000 + b"final-2"   # same size, differs at the end
     large_3 = b"X" * 200_000 + b"final-1"   # real duplicate of large_1
 
     # Duplicate group 1: 3 copies of the same content in different folders
-    write("originales/doc.txt", content_a)
-    write("copias/doc (1).txt", content_a)
+    write("originals/doc.txt", content_a)
+    write("copies/doc (1).txt", content_a)
     write("backup/sub/doc.txt", content_a)
 
     # Duplicate group 2: 2 copies of other content
-    write("fotos/img.dat", content_b)
-    write("fotos/respaldo/img.dat", content_b)
+    write("photos/img.dat", content_b)
+    write("photos/backup/img.dat", content_b)
 
     # Trap: same size as content_b but different content -> NOT a dup
-    write("fotos/casi.dat", b"z" * len(content_b))
+    write("photos/casi.dat", b"z" * len(content_b))
 
     # Large files: large_1 and large_3 are duplicates; large_2 is not.
     write("grandes/a.bin", large_1)
@@ -106,41 +105,41 @@ def build_test_tree(base: Path):
     write("grandes/c.bin", large_3)
 
     # Trap: two empty files (same content: none) -> they ARE dups
-    write("vacios/uno.txt", b"")
-    write("vacios/dos.txt", b"")
+    write("empties/uno.txt", b"")
+    write("empties/dos.txt", b"")
 
     # Single file with no match
     write("solo/unico.txt", b"nadie mas tiene esto\n")
 
 
 def compare_folder(folder, orig, label):
-    print(f"\n=== Comparando: {label} ===")
-    print(f"    Ruta: {folder}")
+    print(f"\n=== Comparing: {label} ===")
+    print(f"    Path: {folder}")
 
     new, result = new_core_groups(folder)
     old = original_script_groups(folder, orig)
 
-    print(f"    Núcleo nuevo:    {len(new)} grupos, "
-          f"{result.total_files_duplicates} archivos duplicados, "
-          f"recuperable {result.total_reclaimable_space} bytes")
-    print(f"    Script original: {len(old)} grupos")
+    print(f"    New core:        {len(new)} groups, "
+          f"{result.total_files_duplicates} duplicate files, "
+          f"recoverable {result.total_reclaimable_space} bytes")
+    print(f"    Original script: {len(old)} groups")
 
     if result.errors:
-        print(f"    (avisos de lectura: {len(result.errors)})")
+        print(f"    (read warnings: {len(result.errors)})")
 
     if new == old:
-        print("    RESULTADO: IDENTICO  [OK]")
+        print("    RESULT: IDENTICAL  [OK]")
         return True
 
-    print("    RESULTADO: DIFERENCIAS  [FALLA]")
+    print("    RESULT: DIFFERENT  [FAIL]")
     only_new = new - old
     only_old = old - new
     for g in only_new:
-        print("      + solo lo detecta el núcleo nuevo:")
+        print("      + only the new core detects:")
         for r in sorted(g):
             print(f"          {r}")
     for g in only_old:
-        print("      - solo lo detecta el script original:")
+        print("      - only the original script detects:")
         for r in sorted(g):
             print(f"          {r}")
     return False
@@ -150,23 +149,23 @@ def main():
     orig = _load_original_script()
     ok = True
 
-    with tempfile.TemporaryDirectory(prefix="dup_prueba_") as tmp:
-        base = Path(tmp) / "arbol"
+    with tempfile.TemporaryDirectory(prefix="dup_test_") as tmp:
+        base = Path(tmp) / "tree"
         build_test_tree(base)
-        ok &= compare_folder(str(base), orig, "árbol sintético")
+        ok &= compare_folder(str(base), orig, "synthetic tree")
 
     for real_path in sys.argv[1:]:
         if os.path.isdir(real_path):
-            ok &= compare_folder(real_path, orig, "carpeta real")
+            ok &= compare_folder(real_path, orig, "real folder")
         else:
-            print(f"\n[AVISO] No es una carpeta, se ignora: {real_path}")
+            print(f"\n[WARNING] Not a folder, ignored: {real_path}")
 
     print()
     if ok:
-        print("TODO OK: el núcleo nuevo agrupa los duplicados igual que el original.")
+        print("ALL OK: the new core groups the duplicates the same way as the original.")
         sys.exit(0)
     else:
-        print("HAY DIFERENCIAS: revisar arriba.")
+        print("THERE ARE DIFFERENCES: see above.")
         sys.exit(1)
 
 
