@@ -1,8 +1,8 @@
-"""Cada pasada del escáner por separado (core/scanner.py).
+"""Each pass of the scanner on its own (core/scanner.py).
 
-`escanear()` encadena tres funciones; aquí se prueba cada una con casos pequeños
-y fáciles de entender. La función entera ya se compara con el script original
-en tests/compare_with_original.py.
+`scan()` chains three functions; here each one is tested with small, easy-to-understand
+cases. The whole function is already compared with the original script
+in tests/compare_with_original.py.
 """
 
 from pathlib import Path
@@ -19,7 +19,7 @@ from core.scanner import (
     scan,
 )
 
-LARGE = PARTIAL_HASH_SIZE * 3            # más de 64 KB: obliga al hash completo
+LARGE = PARTIAL_HASH_SIZE * 3            # over 64 KB: forces the full hash
 
 
 def _nothing(_progress):
@@ -35,9 +35,9 @@ def folder(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()
     (tmp_path / "a" / "foto.jpg").write_bytes(b"x" * 100)
-    (tmp_path / "b" / "foto copia.jpg").write_bytes(b"x" * 100)      # idéntico al anterior
-    (tmp_path / "a" / "otro.txt").write_bytes(b"y" * 100)            # mismo tamaño, otro contenido
-    (tmp_path / "a" / "unico.png").write_bytes(b"z" * 7)             # tamaño único
+    (tmp_path / "b" / "foto copia.jpg").write_bytes(b"x" * 100)      # identical to the previous one
+    (tmp_path / "a" / "otro.txt").write_bytes(b"y" * 100)            # same size, other content
+    (tmp_path / "a" / "unico.png").write_bytes(b"z" * 7)             # unique size
     (tmp_path / "a" / "vacio.log").write_bytes(b"")
     return tmp_path
 
@@ -54,7 +54,7 @@ def test_pass_1_respects_the_filter(folder):
     filter = ScanFilter(excluded_extensions={"log"}, min_size=10)
     by_size, total, excluded = _size_pass(
         str(folder), filter, _nothing, _dont_cancel, [])
-    assert set(by_size) == {100}                   # el .log y el de 7 bytes quedan fuera
+    assert set(by_size) == {100}                   # the .log and the 7-byte one are left out
     assert total == 3 and excluded == 2
 
 
@@ -67,7 +67,7 @@ def test_pass_2_discards_those_that_differ_at_the_start(folder):
     of_100_bytes = [str(p) for p in folder.rglob("*") if p.is_file() and p.stat().st_size == 100]
     candidates = {100: sorted(of_100_bytes)}
     finalists = _partial_hash_pass(candidates, _nothing, _dont_cancel, [])
-    # Solo sobreviven los dos idénticos; el .txt (mismo tamaño, otro contenido) se descarta.
+    # Only the two identical ones survive; the .txt (same size, other content) is discarded.
     assert len(finalists) == 1
     (paths,) = finalists.values()
     assert sorted(Path(r).name for r in paths) == ["foto copia.jpg", "foto.jpg"]
@@ -90,14 +90,14 @@ def test_pass_3_small_ones_are_identical_without_rereading(tmp_path):
 
 
 def test_pass_3_separates_those_that_only_differ_at_the_end(tmp_path):
-    """Mismo tamaño y mismos primeros 64 KB, pero distinto final: no son duplicados."""
+    """Same size and same first 64 KB, but a different end: they are not duplicates."""
     base = bytes(range(256)) * (LARGE // 256)
     equal = [tmp_path / "x1.bin", tmp_path / "x2.bin"]
     different = tmp_path / "x3.bin"
     for path in equal:
         path.write_bytes(base)
     assert base[-1] != 0
-    different.write_bytes(base[:-1] + b"\x00")      # solo cambia el último byte
+    different.write_bytes(base[:-1] + b"\x00")      # only the last byte changes
     res = scan(str(tmp_path))
     assert res.total_groups == 1
     assert sorted(a.path for a in res.groups[0].files) == sorted(str(r) for r in equal)

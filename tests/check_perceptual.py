@@ -1,19 +1,19 @@
-"""Prueba del núcleo de fotos parecidas.
+"""Test of the similar-photos core.
 
-Genera un juego de imágenes sintéticas (una foto "original" y varias
-versiones alteradas: recomprimida, redimensionada, con filtro de color,
-con marca de agua) más imágenes sin relación, y comprueba que la
-agrupación:
+It generates a set of synthetic images (an "original" photo and several
+altered versions: recompressed, resized, with a colour filter,
+with a watermark) plus unrelated images, and checks that the
+grouping:
 
-  * junta todas las versiones de la misma foto en un grupo,
-  * NO junta las imágenes que no tienen nada que ver,
-  * elige como "mejor" la de más resolución.
+  * puts all the versions of the same photo in one group,
+  * does NOT put together images that have nothing to do with each other,
+  * picks the one with the most resolution as "best".
 
-Con una ruta como argumento, además analiza esa carpeta real y lista
-los grupos encontrados (útil para calibrar el umbral con fotos propias):
+With a path as an argument, it also analyzes that real folder and lists
+the groups found (useful to calibrate the threshold with your own photos):
 
     python tests/check_perceptual.py
-    python tests/check_perceptual.py "D:\\Fotos" 10
+    python tests/check_perceptual.py "D:\\Photos" 10
 """
 
 import random
@@ -38,7 +38,7 @@ def check(cond, msg):
 
 
 def photo_base(seed, size=(900, 600)):
-    """Imagen con formas de colores: suficiente estructura para el dHash."""
+    """Image with coloured shapes: enough structure for the dHash."""
     rnd = random.Random(seed)
     im = Image.new("RGB", size, (rnd.randint(0, 60),) * 3)
     d = ImageDraw.Draw(im)
@@ -57,7 +57,7 @@ def build(base: Path):
     base.mkdir(parents=True, exist_ok=True)
     original = photo_base(1)
 
-    # --- versiones de la MISMA foto (deben acabar en un grupo) --------
+    # --- versions of the SAME photo (they must end up in one group) --------
     original.save(base / "playa_original.png")
     original.save(base / "playa_calidad_baja.jpg", quality=25)
     original.resize((450, 300)).save(base / "playa_pequena.jpg", quality=80)
@@ -72,16 +72,16 @@ def build(base: Path):
     d.text((748, 560), "©2024", fill=(0, 0, 0))
     mark.save(base / "playa_marca_agua.jpg", quality=85)
 
-    # --- otra foto distinta, también con un par de versiones ----------
+    # --- another, different photo, also with a couple of versions ----------
     other = photo_base(99)
     other.save(base / "montana_original.png")
     other.save(base / "montana_recomprimida.jpg", quality=30)
 
-    # --- fotos sueltas sin relación ---------------------------------
+    # --- loose, unrelated photos ---------------------------------
     for s in (7, 21, 42):
         photo_base(s).save(base / f"suelta_{s}.jpg", quality=80)
 
-    # una imagen corrupta (debe ir a 'errores', no romper nada)
+    # a corrupt image (it must go to 'errors', not break anything)
     (base / "rota.jpg").write_bytes(b"esto no es una imagen")
 
 
@@ -129,7 +129,7 @@ def main():
                   "la 'mejor' copia de playa es el PNG original (más resolución)")
             check(g.reclaimable_space > 0, "el grupo reporta espacio recuperable")
 
-    # --- carpeta real opcional -------------------------------------
+    # --- optional real folder --------------------------------------
     if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
         threshold = int(sys.argv[2]) if len(sys.argv) > 2 else 10
         print(f"\n=== Carpeta real: {sys.argv[1]}  (umbral {threshold}) ===")

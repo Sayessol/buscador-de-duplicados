@@ -1,9 +1,9 @@
-"""Tipos que se repiten en varios módulos del núcleo (solo nombres, sin lógica)."""
+"""Types repeated across several core modules (names only, no logic)."""
 
 from collections.abc import Callable
 
-# Función que recibe el avance de una operación larga: (hechos, total, mensaje).
+# Function that receives the progress of a long operation: (done, total, message).
 ProgressCallback = Callable[[int, int, str], None]
 
-# Función que dice si el usuario ha pedido cancelar.
+# Function that says whether the user has asked to cancel.
 CancelledCallback = Callable[[], bool]

@@ -1,8 +1,8 @@
-"""Prueba de humo de la ventana: la abre, escanea un árbol de prueba,
-ejercita el panel de filtros, el desglose por tipos y la decisión
-conservar/mover (regla automática + validación), y cierra sola.
+"""Window smoke test: opens it, scans a test tree,
+exercises the filter panel, the breakdown by kinds and the keep/move
+decision (automatic rule + validation), and closes by itself.
 
-No requiere interacción.
+It needs no interaction.
 
     python tests/smoke_window.py
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# No toca los datos reales del usuario (historial, configuración):
+# It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from tests.compare_with_original import build_test_tree  # noqa: E402
@@ -36,11 +36,11 @@ def main():
     quarantine = Path(tmp) / "CUARENTENA"
 
     app = MainWindow()
-    app._mode = "avanzado"         # esta prueba ejercita el flujo avanzado
-    app._apply_mode()           # (sin persistir en la config real)
+    app._mode = "avanzado"         # this test exercises the advanced flow
+    app._apply_mode()           # (without persisting to the real config)
     app.exact.entry_folder.insert(0, str(base))
-    app.exact._empty_filters()          # sin exclusiones -> 4 grupos
-    preferred_folder = str(base / "originales")  # contiene una copia del grupo doc.txt
+    app.exact._empty_filters()          # no exclusions -> 4 groups
+    preferred_folder = str(base / "originales")  # contains one copy of the doc.txt group
 
     def when_done():
         if app.exact._selection is None:
@@ -53,7 +53,7 @@ def main():
         button_state = str(app.exact.btn_quarantine.cget("state"))
         R["cuarentena_bloqueada_inicio"] = button_state == "disabled"
 
-        # Poner la carpeta preferida (ya habilitada tras el escaneo) y aplicar regla
+        # Set the preferred folder (already enabled after the scan) and apply the rule
         app.exact.entry_preferred_folder.delete(0, "end")
         app.exact.entry_preferred_folder.insert(0, preferred_folder)
         assert app.exact.entry_preferred_folder.get() == preferred_folder
@@ -64,7 +64,7 @@ def main():
         R["sin_coincidencia"] = unmatched
         R["pendientes_tras_regla"] = len(sel.pending_groups())
 
-        # Resolver a mano lo que quede
+        # Resolve by hand whatever is left
         for gi in list(sel.pending_groups()):
             first = sel.result.groups[gi].files[0].path
             sel.keep_only(gi, first)
@@ -77,7 +77,7 @@ def main():
         from core.report import export_csv
         R["grupos_csv"] = export_csv(sel.result, str(csv_output))
 
-        # Mover a cuarentena de verdad (misma lógica que usa el botón)
+        # Really move to quarantine (same logic the button uses)
         from core.quarantine import move_to_quarantine
         to_move_before = sel.count_to_move()
         res = move_to_quarantine(sel, app.exact._scanned_folder, str(quarantine))
@@ -89,7 +89,7 @@ def main():
 
         app.exact._toggle_options()
 
-        # Categorías rápidas: marcar "Imágenes" rellena el campo y el filtro
+        # Quick categories: ticking "Imágenes" fills in the field and the filter
         app.exact._empty_filters()
         app.exact.chk_categories["Imágenes"].select()
         app.exact._toggle_category("Imágenes")
@@ -113,7 +113,7 @@ def main():
 
     app.after(300, app.exact._start_scan)
     app.after(700, when_done)
-    app.after(8000, app.destroy)  # tope de seguridad
+    app.after(8000, app.destroy)  # safety cap
     app.mainloop()
 
     for k, v in R.items():
@@ -122,13 +122,13 @@ def main():
     ok = (
         R.get("grupos") == 4
         and R.get("nodos_tabla") == 4
-        and R.get("pendientes_inicio") == 4          # todo arranca sin decidir
+        and R.get("pendientes_inicio") == 4          # everything starts undecided
         and R.get("cuarentena_bloqueada_inicio") is True
-        and R.get("resueltos_regla") == 1            # solo el grupo con copia en /originales
+        and R.get("resueltos_regla") == 1            # only the group with a copy in /originales
         and R.get("pendientes_tras_regla") == 3
         and R.get("todo_listo") is True
         and R.get("cuarentena_habilitada_final") is True
-        and R.get("a_mover") == 5                    # 9 duplicados - 4 conservados
+        and R.get("a_mover") == 5                    # 9 duplicates - 4 kept
         and R.get("grupos_csv") == 4
         and csv_output.exists()
         and R.get("movidos") == 5

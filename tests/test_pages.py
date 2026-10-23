@@ -1,7 +1,7 @@
-"""Reparto de los grupos de «Fotos parecidas» en páginas.
+"""Splitting of the "Similar photos" groups into pages.
 
-Windows no dibuja ventanas de más de 32.767 px de alto: si la galería los
-supera se corta y desaparece la barra de desplazamiento.
+Windows does not draw windows taller than 32,767 px: if the gallery goes
+past that it gets cut off and the scrollbar disappears.
 """
 
 import pytest
@@ -27,10 +27,10 @@ def test_few_groups_fit_in_one_page():
 
 
 @pytest.mark.parametrize("counts", [
-    [2] * 500,                  # muchos grupos pequeños
-    [12] * 200,                 # grupos de varias filas
-    [3, 40, 2, 90, 2, 2, 7],    # mezcla
-    [900, 2, 2],                # un grupo enorme y otros
+    [2] * 500,                  # many small groups
+    [12] * 200,                 # groups of several rows
+    [3, 40, 2, 90, 2, 2, 7],    # mix
+    [900, 2, 2],                # a huge group and others
 ])
 def test_pages_cover_all_groups_without_gaps(counts):
     pages = split_into_pages(counts)
@@ -52,6 +52,6 @@ def test_a_huge_group_gets_its_own_page():
 
 
 def test_the_case_that_used_to_fail_is_now_split():
-    """69 grupos de ~9 fotos medían unos 52.000 px de una sola vez."""
+    """69 groups of ~9 photos measured about 52,000 px all at once."""
     assert sum(_height(9) for _ in range(69)) > WINDOWS_LIMIT
     assert len(split_into_pages([9] * 69)) > 1

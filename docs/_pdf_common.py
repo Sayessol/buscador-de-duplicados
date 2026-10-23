@@ -1,7 +1,7 @@
-"""Utilidades compartidas para generar los PDF de documentación.
+"""Shared utilities to generate the documentation PDFs.
 
-Portada + índice (tabla de contenidos con números de página reales) +
-contenido con cabecera/pie y numeración. Solo reportlab.
+Cover + index (table of contents with real page numbers) +
+content with header/footer and numbering. Only reportlab.
 """
 
 from datetime import date
@@ -141,7 +141,7 @@ class _Doc(BaseDocTemplate):
             self.notify("TOCEntry", (1, txt, self.page))
 
 
-# ---- helpers de contenido -------------------------------------------------
+# ---- content helpers -------------------------------------------------
 def h1(t):
     return Paragraph(t, STYLES["h1"])
 
@@ -169,7 +169,7 @@ def code(t):
 
 
 def pre(text):
-    """Bloque de código de varias líneas (monoespaciado, con recuadro)."""
+    """Multi-line code block (monospaced, boxed)."""
     return Preformatted(text.strip("\n"), STYLES["pre"])
 
 
@@ -225,7 +225,7 @@ def build(pdf_path, title, subtitle, short_title, body_flowables,
     doc = _Doc(pdf_path, short_title)
     story = []
 
-    # --- Portada ---
+    # --- Cover ---
     story.append(Spacer(1, 5.2 * cm))
     story.append(Paragraph(title, STYLES["titulo_portada"]))
     story.append(Spacer(1, 4))
@@ -242,7 +242,7 @@ def build(pdf_path, title, subtitle, short_title, body_flowables,
     story.append(NextPageTemplate("cuerpo"))
     story.append(PageBreak())
 
-    # --- Índice ---
+    # --- Index ---
     story.append(Paragraph("Índice", STYLES["titulo_llano"]))
     toc = TableOfContents()
     toc.levelStyles = [STYLES["toc1"], STYLES["toc2"]]
@@ -250,7 +250,7 @@ def build(pdf_path, title, subtitle, short_title, body_flowables,
     story.append(toc)
     story.append(PageBreak())
 
-    # --- Contenido ---
+    # --- Content ---
     story.extend(body_flowables)
 
     doc.multiBuild(story)

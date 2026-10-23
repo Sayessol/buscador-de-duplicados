@@ -1,11 +1,11 @@
-"""Contraste de color (WCAG 2.x): el texto debe poder leerse sobre su fondo.
+"""Colour contrast (WCAG 2.x): text must be readable on its background.
 
-Comprueba, en el tema claro y en el oscuro, cada pareja «texto sobre fondo» que
-usa la interfaz. El criterio es el nivel AA de WCAG: **4,5:1** para texto normal.
+It checks, in the light and the dark theme, every "text on background" pair that the
+interface uses. The criterion is WCAG level AA: **4.5:1** for normal text.
 
-Excepción: el botón deshabilitado. WCAG no exige contraste a los controles
-deshabilitados, y aquí además es intencionado que se vea «apagado»; lo que se
-comprueba es que siga siendo legible (≥ 2:1) y que se distinga de un botón activo.
+Exception: the disabled button. WCAG does not require contrast for disabled
+controls, and here it is also intentional that it looks "switched off"; what is
+checked is that it stays readable (≥ 2:1) and that it can be told apart from an active button.
 
     pytest tests/test_contrast.py
 """
@@ -15,12 +15,12 @@ import pytest
 from ui import styles
 
 THEMES = {"claro": 0, "oscuro": 1}
-AA_TEXT = 4.5           # WCAG AA, texto normal
+AA_TEXT = 4.5           # WCAG AA, normal text
 WHITE = "#ffffff"
 
 
 def _luminance(hex_):
-    """Luminancia relativa de un color #rrggbb (fórmula de WCAG)."""
+    """Relative luminance of a #rrggbb colour (WCAG formula)."""
     hex_ = hex_.lstrip("#")
     channels = []
     for i in (0, 2, 4):
@@ -31,12 +31,12 @@ def _luminance(hex_):
 
 
 def contrast(a, b):
-    """Razón de contraste entre dos colores: de 1 (iguales) a 21 (negro sobre blanco)."""
+    """Contrast ratio between two colours: from 1 (equal) to 21 (black on white)."""
     la, lb = sorted((_luminance(a), _luminance(b)), reverse=True)
     return (la + 0.05) / (lb + 0.05)
 
 
-# Texto del color X sobre el fondo Y (nombres de ui/styles.py)
+# Text of colour X on background Y (names from ui/styles.py)
 TEXT_ON_BACKGROUND = [
     (text, background)
     for text, backgrounds in {
@@ -53,7 +53,7 @@ TEXT_ON_BACKGROUND = [
     for background in backgrounds
 ]
 
-# Texto BLANCO sobre rellenos de botón o de selección
+# WHITE text on button or selection fills
 FILLS_WITH_WHITE_TEXT = {
     "selección de la tabla": styles.COLOR_SELECTION,
     "botón de acción (verde)": styles.COLOR_OK_BUTTON,
@@ -87,7 +87,7 @@ def test_disabled_button_looks_off_but_readable(theme):
     i = THEMES[theme]
     background, text = styles.COLOR_BUTTON_OFF[i], styles.COLOR_BUTTON_OFF_TEXT[i]
     assert contrast(text, background) >= 2.0, "el texto deshabilitado casi no se ve"
-    # Y no se confunde con un botón activo ni con uno de error:
+    # And it is not mistaken for an active button or an error one:
     for active in (styles.COLOR_OK_BUTTON, styles.COLOR_DANGER_BUTTON, styles.COLOR_SELECTION):
         assert background.lower() != active[i].lower()
         assert contrast(background, active[i]) >= 1.5, "deshabilitado y activo se parecen demasiado"
@@ -95,8 +95,8 @@ def test_disabled_button_looks_off_but_readable(theme):
 
 
 def test_contrast_meter_is_correct():
-    """Comprobación del propio medidor, con los valores de referencia de WCAG."""
+    """Check of the meter itself, with WCAG reference values."""
     assert contrast("#000000", "#ffffff") == pytest.approx(21.0)
     assert contrast("#ffffff", "#ffffff") == pytest.approx(1.0)
-    assert contrast("#767676", "#ffffff") == pytest.approx(4.54, abs=0.01)   # el gris AA más claro
-    assert contrast("#777777", "#ffffff") < AA_TEXT                          # ya no llega
+    assert contrast("#767676", "#ffffff") == pytest.approx(4.54, abs=0.01)   # lightest AA grey
+    assert contrast("#777777", "#ffffff") < AA_TEXT                          # no longer enough

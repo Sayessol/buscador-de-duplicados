@@ -1,8 +1,8 @@
-"""Exportar el resultado de un escaneo a CSV.
+"""Export the result of a scan to CSV.
 
-El formato de columnas es compatible con el reporte del script de
-consola original (`buscar_duplicados.py`), para que quien ya usaba
-ese CSV no tenga que cambiar nada.
+The column format is compatible with the report of the original
+console script (`buscar_duplicados.py`), so that whoever already used
+that CSV does not have to change anything.
 """
 
 import csv
@@ -21,9 +21,9 @@ COLUMNS = [
 
 
 def export_csv(result: ScanResult, csv_path: str | os.PathLike[str]) -> int:
-    """Escribe `resultado.grupos` en `ruta_csv`.
+    """Writes `result.groups` to `csv_path`.
 
-    Devuelve la cantidad de grupos escritos.
+    Returns the number of groups written.
     """
     with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)

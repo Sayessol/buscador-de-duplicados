@@ -1,7 +1,7 @@
-"""Pestaña "Reunir imágenes": junta en una carpeta las fotos repartidas por otra.
+""""Gather images" tab: collects into one folder the photos spread across another.
 
-Es un componente con su PROPIO estado (la lista de imágenes, las colas, el hilo...):
-la ventana principal solo la crea y le avisa del modo Sencilla / Avanzada.
+It is a component with its OWN state (the list of images, the queues, the thread...):
+the main window only creates it and notifies it of the Simple / Advanced mode.
 """
 
 import os
@@ -27,38 +27,38 @@ from .non_image_kinds_dialog import NonImageKindsWindow
 
 class GatherImagesTab(ctk.CTkFrame):
     def __init__(self, container):
-        """`contenedor` es la pestaña del CTkTabview donde se coloca este componente."""
+        """`container` is the CTkTabview tab where this component is placed."""
         super().__init__(container, fg_color="transparent")
-        container.grid_columnconfigure(0, weight=1)    # el componente llena toda la pestaña
+        container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(4, weight=1)
 
-        self._queue = queue.Queue()            # mensajes del hilo que mueve/copia
-        self._thumbs_queue = queue.Queue()     # mensajes del hilo que crea miniaturas
+        self._queue = queue.Queue()            # messages from the thread that moves/copies
+        self._thumbs_queue = queue.Queue()     # messages from the thread that creates thumbnails
         self._thread = None
         self._cancel = threading.Event()
         self._images = []
         self._others = []
         self._folder = None
-        self._included = set()   # rutas de imagen marcadas
+        self._included = set()   # ticked image paths
         self._thumbs = {}
-        self._img_cache = []      # referencias a CTkImage (si no, se recolectan)
+        self._img_cache = []      # references to CTkImage (otherwise they are garbage collected)
         self._tiles = {}
 
         self._build()
         self._initial_state()
 
     def apply_mode(self, advanced):
-        """Lo llama la ventana al cambiar entre Sencilla y Avanzada."""
+        """Called by the window when switching between Simple and Advanced."""
         (self._advanced.grid if advanced else self._advanced.grid_remove)()
         if not advanced:
             self.seg_action.set("Mover")
             self.seg_strategy.set("Por archivos")
 
     def cancel_jobs(self):
-        """Lo llama la ventana al cerrarse: si hay una operación en marcha, se cancela."""
+        """Called by the window when it closes: if an operation is running, it is cancelled."""
         if self._thread and self._thread.is_alive():
             self._cancel.set()
 
@@ -96,7 +96,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self.seg_scope.grid(row=3, column=0, sticky="w",
                                      padx=16, pady=(0, 14))
 
-        # --- opciones de destino / acción (fila) --------------------
+        # --- destination / action options (row) --------------------
         option = ctk.CTkFrame(card, fg_color="transparent")
         option.grid(row=4, column=0, sticky="ew", padx=16, pady=(0, 12))
         option.grid_columnconfigure(0, weight=1)
@@ -124,7 +124,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self.seg_strategy.set("Por archivos")
         self.seg_strategy.pack(side="left")
 
-        # Progreso
+        # Progress
         self.progress_area = ctk.CTkFrame(t, fg_color="transparent")
         self.progress_area.grid(row=1, column=0, sticky="ew",
                                        padx=16, pady=(8, 0))
@@ -138,7 +138,7 @@ class GatherImagesTab(ctk.CTkFrame):
             text_color=styles.COLOR_MUTED_TEXT, anchor="w")
         self.lbl_state.grid(row=1, column=0, sticky="ew")
 
-        # Estadísticas
+        # Statistics
         self.stats_row = ctk.CTkFrame(t, fg_color="transparent")
         self.stats_row.grid(row=2, column=0, sticky="ew", padx=6,
                                     pady=(10, 0))
@@ -151,7 +151,7 @@ class GatherImagesTab(ctk.CTkFrame):
                                self.stat_others)):
             b.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 6, 0))
 
-        # Galería
+        # Gallery
         self.gallery = ctk.CTkScrollableFrame(
             t, fg_color=styles.COLOR_TABLE_BACKGROUND)
         self.gallery.grid(row=4, column=0, sticky="nsew", padx=6,
@@ -165,7 +165,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self.empty_state.grid(row=4, column=0, sticky="nsew", padx=6,
                                       pady=(10, 0))
 
-        # Barra inferior
+        # Bottom bar
         bar = ctk.CTkFrame(t, fg_color=styles.COLOR_CARD)
         bar.grid(row=5, column=0, sticky="ew", padx=6, pady=(10, 6))
         bar.grid_columnconfigure(0, weight=1)
@@ -197,7 +197,7 @@ class GatherImagesTab(ctk.CTkFrame):
             self.gallery.grid_remove()
             self.empty_state.grid()
 
-    # -- buscar imágenes -----------------------------------------
+    # -- search images -----------------------------------------
     def _choose_folder(self):
         folder = filedialog.askdirectory(title="Elige la carpeta a revisar")
         if folder:
@@ -246,7 +246,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self._show_gallery(True)
         styles.action_button(self.btn_gather, True)
         self._update_totals()
-        # miniaturas en un hilo
+        # thumbnails in a thread
         threading.Thread(target=self._load_thumbs,
                          args=(list(images),), daemon=True).start()
         self.after(80, self._process_thumbs)
@@ -255,7 +255,7 @@ class GatherImagesTab(ctk.CTkFrame):
         for r in paths:
             try:
                 self._thumbs[r] = thumbnail_or_placeholder(r, 96)
-            except Exception as e:  # un archivo roto no debe parar la galería
+            except Exception as e:  # a broken file must not stop the gallery
                 log.info("No se pudo crear la miniatura de %s: %s", r, e)
                 self._thumbs[r] = None
             self._thumbs_queue.put(r)
@@ -337,10 +337,10 @@ class GatherImagesTab(ctk.CTkFrame):
             text=f"{n} imagen(es) marcadas · {len(self._others)} archivos "
                  f"que no son imágenes")
 
-    # -- ejecutar ------------------------------------------------
+    # -- run ----------------------------------------------------
     def _run(self):
-        """Botón "Reunir aquí". Pasos: validar destino -> según la
-        estrategia, confirmar y lanzar la operación en un hilo."""
+        """"Gather here" button. Steps: validate the destination -> depending on the
+        strategy, confirm and launch the operation in a thread."""
         source = self._folder
         if not source:
             return
@@ -351,7 +351,7 @@ class GatherImagesTab(ctk.CTkFrame):
             return
         destination = os.path.normpath(destination)
         try:
-            # rechaza que el destino esté dentro del origen
+            # reject a destination that is inside the source
             warning = validate_destination(destination, source)
         except InvalidDestination as e:
             messagebox.showerror("Destino no válido", str(e))
@@ -378,16 +378,16 @@ class GatherImagesTab(ctk.CTkFrame):
                 f"carpeta «{name}» entera")
             return
 
-        # --- Por archivos ---
+        # --- By files ---
         images = [r for r in self._images
-                    if r in self._included]     # solo las casillas marcadas
+                    if r in self._included]     # only the ticked boxes
         if not images:
             return
         others = self._others
-        rules = gather.NonImageRules()               # por defecto: dejar todo lo no-imagen
+        rules = gather.NonImageRules()               # default: leave all non-images
         if others:
-            # Diálogo MODAL: wait_window() bloquea aquí hasta que se cierre;
-            # después leemos dlg.reglas (o None si canceló).
+            # MODAL dialog: wait_window() blocks here until it is closed;
+            # afterwards we read dlg.rules (or None if the user cancelled).
             dlg = NonImageKindsWindow(self.winfo_toplevel(), gather.non_image_kinds(others))
             self.wait_window(dlg)
             if dlg.rules is None:
@@ -428,7 +428,7 @@ class GatherImagesTab(ctk.CTkFrame):
                     self._cancel.is_set)
                 self._queue.put(
                     ("hecho", (res, action, destination, kind, description, self._folder)))
-            except Exception as e:  # se anota en el registro y se muestra al usuario
+            except Exception as e:  # it is logged and shown to the user
                 log.exception("Falló la operación «%s» (%s)", kind, description)
                 self._queue.put(("error", e))
 
@@ -473,7 +473,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self.lbl_totals.configure(
             text=f"{len(done)} archivo(s) {verb}(s) a {destination}.")
 
-        # limpiar la lista (lo movido ya no está)
+        # clear the list (what was moved is no longer there)
         self._images = []
         self._included = set()
         self.stats_row.grid_remove()

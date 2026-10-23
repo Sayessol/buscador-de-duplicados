@@ -1,11 +1,11 @@
-"""Pruebas de la pestaña "Reunir imágenes" (core/gather.py):
+"""Tests of the "Gather images" tab (core/gather.py):
 
-  * listar imágenes: solo primer nivel vs recursivo,
-  * el diálogo por tipo de archivo: dejar / mover / agrupar,
-  * "Por archivos" preserva subcarpetas, con mover y con copiar,
-  * "Carpeta entera" mueve/copia la carpeta completa,
-  * colisiones de nombre -> sufijo (1),
-  * destino dentro del origen -> se rechaza.
+  * list images: first level only vs recursive,
+  * the per-file-kind dialog: leave / move / group,
+  * "By files" preserves subfolders, with move and with copy,
+  * "Whole folder" moves/copies the complete folder,
+  * name collisions -> suffix (1),
+  * destination inside the source -> rejected.
 
     python tests/check_gather.py
 """
@@ -38,8 +38,8 @@ def build(root: Path):
     (root / "vacaciones" / "montana.png").write_bytes(b"img2")
     (root / "2024" / "retrato.jpg").write_bytes(b"img3")
     (root / "2024" / "bodas" / "grupo.jpeg").write_bytes(b"img4")
-    (root / "portada.png").write_bytes(b"img5")            # primer nivel
-    # no imágenes
+    (root / "portada.png").write_bytes(b"img5")            # first level
+    # non-images
     (root / "notas.txt").write_bytes(b"texto")
     (root / "vacaciones" / "info.pdf").write_bytes(b"pdf")
     (root / "2024" / "gastos.pdf").write_bytes(b"pdf2")
@@ -51,7 +51,7 @@ def _rel(paths, base):
 
 
 def main():
-    # ---- listar ---------------------------------------------------
+    # ---- list -----------------------------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Fotos"
         build(root)
@@ -75,7 +75,7 @@ def main():
         check(set(kinds) == {"pdf", "mp3", "txt"} and len(kinds["pdf"]) == 2,
               "tipos_no_imagen agrupa por extensión (pdf x2, mp3, txt)")
 
-    # ---- planear_por_archivos con reglas -------------------------
+    # ---- plan_by_files with rules -------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Fotos"
         build(root)
@@ -98,7 +98,7 @@ def main():
         check(not any("notas.txt" in d for d in destinations),
               "txt 'dejar' -> no se planea")
 
-    # ---- reunir_por_archivos: MOVER ------------------------------
+    # ---- gather_by_files: MOVE ------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Fotos"
         build(root)
@@ -118,7 +118,7 @@ def main():
         check(res.log_path and Path(res.log_path).exists(),
               "se escribe el CSV de registro")
 
-    # ---- reunir_por_archivos: COPIAR ----------------------------
+    # ---- gather_by_files: COPY ----------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Fotos"
         build(root)
@@ -131,7 +131,7 @@ def main():
               and (root / "portada.png").exists(),
               "copiar deja el original intacto")
 
-    # ---- colisión de nombres -----------------------------------
+    # ---- name collision -----------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Fotos"
         (root / "a").mkdir(parents=True)
@@ -139,8 +139,8 @@ def main():
         (root / "a" / "foto.jpg").write_bytes(b"A")
         (root / "b" / "foto.jpg").write_bytes(b"B")
         destination = Path(tmp) / "Reunidas"
-        # aplanamos a propósito con reglas raras: usamos relpath normal,
-        # pero forzamos colisión moviendo ambas al mismo sitio.
+        # we flatten on purpose with odd rules: we use the normal relpath,
+        # but force a collision by moving both to the same place.
         from core.file_moves import Transfer, execute
         plan = [Transfer(str(root / "a" / "foto.jpg"), str(destination / "foto.jpg")),
                 Transfer(str(root / "b" / "foto.jpg"), str(destination / "foto.jpg"))]
@@ -148,7 +148,7 @@ def main():
         check((destination / "foto.jpg").exists() and (destination / "foto (1).jpg").exists(),
               "la segunda colisión se guarda como 'foto (1).jpg', sin pisar")
 
-    # ---- carpeta entera --------------------------------------
+    # ---- whole folder ----------------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "AlbumViaje"
         build(root)
@@ -160,7 +160,7 @@ def main():
               "carpeta entera incluye los no-imagen")
         check(not root.exists(), "mover: la carpeta original ya no está")
 
-    # ---- destino inválido -----------------------------------
+    # ---- invalid destination -----------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Fotos"
         root.mkdir()

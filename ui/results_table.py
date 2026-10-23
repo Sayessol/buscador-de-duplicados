@@ -1,15 +1,15 @@
-"""Tabla de resultados del escaneo de duplicados exactos.
+"""Results table of the exact-duplicates scan.
 
-Cada grupo es un nodo padre desplegable; cada archivo del grupo es un
-hijo con su miniatura (imagen real o un recuadro con la extensión).
+Each group is an expandable parent node; each file of the group is a
+child with its thumbnail (a real image or a box with the extension).
 
-Interacción con una fila de archivo:
-  * un clic normal        -> la selecciona (la ventana muestra la vista grande)
-  * clic en "Decisión"    -> alterna conservar / mover de ese archivo
-  * doble clic            -> deja ese archivo como la única copia a conservar
+Interaction with a file row:
+  * a normal click        -> selects it (the window shows the large preview)
+  * click on "Decision"   -> toggles keep / move for that file
+  * double click          -> leaves that file as the only copy to keep
 
-La tabla no decide nada por su cuenta: lee y escribe sobre una
-`DuplicateSelection` que le pasa la ventana principal.
+The table decides nothing by itself: it reads and writes on a
+`DuplicateSelection` handed to it by the main window.
 """
 
 import queue
@@ -50,9 +50,9 @@ class ResultsTable(ctk.CTkFrame):
         self._group_iid = {}
         self._file_iids = {}
 
-        self._img_refs = {}          # iid -> ImageTk.PhotoImage (hay que guardarlas)
+        self._img_refs = {}          # iid -> ImageTk.PhotoImage (they must be kept)
         self._thumbs_queue = queue.Queue()
-        self._gen = 0                # generación: descarta miniaturas de escaneos viejos
+        self._gen = 0                # generation: discards thumbnails from old scans
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -88,10 +88,10 @@ class ResultsTable(ctk.CTkFrame):
         self.tree.bind("<Double-Button-1>", self._on_double_click)
         self.tree.bind("<<TreeviewSelect>>", self._on_selection)
 
-    # -- estilo ttk: se re-aplica cuando cambia el tema claro/oscuro ----
+    # -- ttk style: re-applied when the light/dark theme changes ----
     def _configure_ttk_style(self):
-        # ttk.Treeview NO cambia solo con el tema de CustomTkinter, así que
-        # aquí se resuelve cada color con styles.col(...) para el tema activo.
+        # ttk.Treeview does NOT change by itself with the CustomTkinter theme, so
+        # here each colour is resolved with styles.col(...) for the active theme.
         c = styles.col
         style = ttk.Style()
         try:
@@ -128,7 +128,7 @@ class ResultsTable(ctk.CTkFrame):
 
     def _set_appearance_mode(self, mode_string):
         super()._set_appearance_mode(mode_string)
-        # el tema ha cambiado: re-pintar lo que ttk no actualiza solo
+        # the theme has changed: repaint what ttk does not update by itself
         try:
             self._configure_ttk_style()
             self._configure_tags()
@@ -176,22 +176,22 @@ class ResultsTable(ctk.CTkFrame):
 
         self._load_thumbnails(pending_thumb)
 
-    # -- miniaturas en un hilo aparte ------------------------------
-    # Decodificar imágenes es lento, así que se hace en un hilo. El hilo
-    # solo produce objetos PIL; convertirlos a ImageTk.PhotoImage y
-    # pegarlos en las filas se hace en el hilo principal (Tkinter).
-    # `self._gen` sube en cada limpiar(): si el usuario reescanea, las
-    # miniaturas a medio hacer del escaneo viejo se descartan.
+    # -- thumbnails in a separate thread ------------------------------
+    # Decoding images is slow, so it is done in a thread. The thread
+    # only produces PIL objects; converting them to ImageTk.PhotoImage and
+    # pasting them into the rows is done in the main thread (Tkinter).
+    # `self._gen` goes up on every clear(): if the user rescans, the
+    # half-done thumbnails of the old scan are discarded.
     def _load_thumbnails(self, items):
         gen = self._gen
 
         def job():
             for iid, path in items:
-                if gen != self._gen:        # llegó otro escaneo: abandonar
+                if gen != self._gen:        # another scan arrived: give up
                     return
                 try:
                     pil = thumbnail_or_placeholder(path, _MINI_SIDE)
-                except Exception as e:  # un archivo roto no debe parar las miniaturas
+                except Exception as e:  # a broken file must not stop the thumbnails
                     log.info("No se pudo crear la miniatura de %s: %s", path, e)
                     pil = None
                 self._thumbs_queue.put((gen, iid, pil))
@@ -202,16 +202,16 @@ class ResultsTable(ctk.CTkFrame):
     def _process_thumbs_queue(self):
         processed = 0
         try:
-            while processed < 40:          # como mucho 40 por tick, para no atascar
+            while processed < 40:          # at most 40 per tick, so as not to clog things up
                 gen, iid, pil = self._thumbs_queue.get_nowait()
                 processed += 1
                 if gen != self._gen or pil is None:
                     continue
-                if not self.tree.exists(iid):   # la fila ya no existe
+                if not self.tree.exists(iid):   # the row no longer exists
                     continue
                 photo = ImageTk.PhotoImage(pil)
-                self._img_refs[iid] = photo      # ¡hay que guardar la referencia!
-                self.tree.item(iid, image=photo)  # si no, Python la recolecta y desaparece
+                self._img_refs[iid] = photo      # the reference must be kept!
+                self.tree.item(iid, image=photo)  # otherwise Python collects it and it disappears
         except queue.Empty:
             return
         self.after(60, self._process_thumbs_queue)
@@ -255,13 +255,13 @@ class ResultsTable(ctk.CTkFrame):
         self.tree.selection_set(iid)
 
     # ------------------------------------------------------------------
-    # Gestión de clics. En la tabla (ttk.Treeview) hay que preguntarle a
-    # Tk QUÉ hay bajo el ratón: identify_row (qué fila), identify_column
-    # (qué columna: "#1" es "Decisión"), identify_region ("heading",
-    # "cell"...). Con eso decidimos qué hacer.
+    # Click handling. In the table (ttk.Treeview) we have to ask
+    # Tk WHAT is under the mouse: identify_row (which row), identify_column
+    # (which column: "#1" is "Decision"), identify_region ("heading",
+    # "cell"...). With that we decide what to do.
     def _file_row(self, event):
-        """(indice_grupo, ruta) si el ratón está sobre una fila de
-        archivo; None si está sobre una cabecera de grupo o fuera."""
+        """(group_index, path) if the mouse is over a file row;
+        None if it is over a group header or outside."""
         iid = self.tree.identify_row(event.y)
         if not iid:
             return None
@@ -276,8 +276,8 @@ class ResultsTable(ctk.CTkFrame):
         target = self._file_row(event)
         if target is None:
             return
-        # Un clic normal solo SELECCIONA (para la vista previa). Únicamente
-        # si cae en la columna "Decisión" alterna conservar/mover.
+        # A normal click only SELECTS (for the preview). Only
+        # if it falls on the "Decision" column does it toggle keep/move.
         if self.tree.identify_column(event.x) == "#1":
             gi, path = target
             self.selection.toggle(gi, path)
@@ -286,7 +286,7 @@ class ResultsTable(ctk.CTkFrame):
                 self.on_change()
 
     def _on_double_click(self, event):
-        # Doble clic = "quiero conservar ESTA copia" (y mover el resto).
+        # Double click = "I want to keep THIS copy" (and move the rest).
         target = self._file_row(event)
         if target is None:
             return None
@@ -295,7 +295,7 @@ class ResultsTable(ctk.CTkFrame):
         self._refresh_group(gi)
         if self.on_change:
             self.on_change()
-        return "break"       # evita que Tk además expanda/colapse el nodo
+        return "break"       # prevents Tk from also expanding/collapsing the node
 
     def _on_selection(self, _event):
         if not self.on_selection:

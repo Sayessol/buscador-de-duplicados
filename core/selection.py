@@ -1,15 +1,15 @@
-"""Qué copia se conserva y cuáles se mueven, en cada grupo de duplicados.
+"""Which copy is kept and which ones are moved, in each group of duplicates.
 
-La `DuplicateSelection` es el "estado editable" que hay entre el
-resultado del escaneo (inmutable) y el paso de mover a cuarentena.
+The `DuplicateSelection` is the "editable state" between the
+scan result (immutable) and the move-to-quarantine step.
 
-Regla que impone la app: al mover, cada grupo debe quedar con
-**exactamente una** copia marcada como CONSERVAR. Mientras eso no se
-cumpla en todos los grupos, no se puede mover nada.
+Rule the app enforces: when moving, every group must end up with
+**exactly one** copy marked as KEEP. Until that holds
+in all groups, nothing can be moved.
 
-Estado inicial: todo en CONSERVAR (es decir, no se movería nada). Así
-la app nunca "propone mover" algo sin que el usuario lo decida, ya sea
-a mano o aplicando la regla de carpeta preferida.
+Initial state: everything on KEEP (that is, nothing would be moved). This way
+the app never "proposes to move" anything unless the user decides it, either
+by hand or by applying the preferred-folder rule.
 """
 
 import os
@@ -22,19 +22,19 @@ from .scanner import DuplicateFile
 KEEP = "conservar"
 MOVE = "mover"
 
-# Nombres que "huelen" a copia y no al original.
+# Names that "smell" like a copy and not like the original.
 _LOOKS_LIKE_COPY = re.compile(
     r"cop(?:y|ia)\b|duplicad|\bnew\b|\(\d+\)|[ _-]copy|[ _-]copia|[ _-]\d+$",
     re.IGNORECASE)
 
-# Estados posibles de un grupo respecto de la regla "una sola copia".
-GROUP_OK = "ok"                 # exactamente una copia en CONSERVAR
-GROUP_NOTHING_KEPT = "sin_conservar"   # ninguna copia en CONSERVAR
-GROUP_MULTIPLE = "multiple"     # dos o más copias en CONSERVAR (sin decidir)
+# Possible states of a group with respect to the "single copy" rule.
+GROUP_OK = "ok"                 # exactly one copy on KEEP
+GROUP_NOTHING_KEPT = "sin_conservar"   # no copy on KEEP
+GROUP_MULTIPLE = "multiple"     # two or more copies on KEEP (undecided)
 
 
 def _is_inside(path: str, folder: str) -> bool:
-    """True si `ruta` está dentro de `carpeta` (comparación normalizada)."""
+    """True if `path` is inside `folder` (normalized comparison)."""
     try:
         abs_path = os.path.normcase(os.path.abspath(path))
         abs_folder = os.path.normcase(os.path.abspath(folder))
@@ -46,15 +46,15 @@ def _is_inside(path: str, folder: str) -> bool:
 
 
 class _Group(Protocol):
-    """Lo mínimo que se le pide a un grupo: una lista de archivos (los duplicados
-    exactos y las fotos parecidas lo cumplen, por eso comparten esta clase)."""
+    """The minimum asked of a group: a list of files (exact duplicates
+    and similar photos both meet it, which is why they share this class)."""
 
     @property
     def files(self) -> list[DuplicateFile]: ...
 
 
 class _Result(Protocol):
-    """Lo mínimo que se le pide a un resultado: una lista de grupos."""
+    """The minimum asked of a result: a list of groups."""
 
     @property
     def groups(self) -> Sequence[_Group]: ...
@@ -63,14 +63,14 @@ class _Result(Protocol):
 class DuplicateSelection:
     def __init__(self, result: _Result) -> None:
         self.result = result
-        # _decision[(indice_grupo, ruta)] -> CONSERVAR | MOVER
+        # _decision[(group_index, path)] -> KEEP | MOVE
         self._decision: dict[tuple[int, str], str] = {}
         for gi, group in enumerate(result.groups):
             for file in group.files:
                 self._decision[(gi, file.path)] = KEEP
 
     # ------------------------------------------------------------------
-    # Consultas y cambios sobre un archivo
+    # Queries and changes on a file
     # ------------------------------------------------------------------
     def decision(self, group_index: int, path: str) -> str:
         return self._decision.get((group_index, path), KEEP)
@@ -87,7 +87,7 @@ class DuplicateSelection:
         return new
 
     def keep_only(self, group_index: int, kept_path: str) -> None:
-        """Marca `ruta_conservada` como CONSERVAR y el resto del grupo como MOVER."""
+        """Marks `kept_path` as KEEP and the rest of the group as MOVE."""
         group = self.result.groups[group_index]
         for file in group.files:
             self.mark(
@@ -96,16 +96,16 @@ class DuplicateSelection:
             )
 
     # ------------------------------------------------------------------
-    # Regla automática por carpeta preferida
+    # Automatic rule by preferred folder
     # ------------------------------------------------------------------
     def apply_folder_rule(self, preferred_folder: str | None) -> tuple[int, int]:
-        """Por cada grupo: si alguna copia está dentro de `carpeta_buena`,
-        conserva esa (la de ruta más corta si hay varias) y marca el
-        resto como MOVER. Si ninguna copia está dentro, el grupo se deja
-        entero en CONSERVAR (queda "sin decidir" para que el usuario lo
-        resuelva a mano).
+        """For each group: if any copy is inside `preferred_folder`,
+        keeps that one (the one with the shortest path if there are several) and marks the
+        rest as MOVE. If no copy is inside, the group is left
+        entirely on KEEP (it stays "undecided" so the user can
+        resolve it by hand).
 
-        Devuelve (grupos_resueltos, grupos_sin_coincidencia).
+        Returns (resolved_groups, unmatched_groups).
         """
         preferred_folder = (preferred_folder or "").strip()
         resolved = 0
@@ -126,7 +126,7 @@ class DuplicateSelection:
         return resolved, no_match
 
     # ------------------------------------------------------------------
-    # Estado de los grupos y validación global
+    # State of the groups and global validation
     # ------------------------------------------------------------------
     def _kept_in(self, group_index: int) -> list[DuplicateFile]:
         group = self.result.groups[group_index]
@@ -149,10 +149,10 @@ class DuplicateSelection:
         return not self.pending_groups()
 
     # ------------------------------------------------------------------
-    # Resumen de lo que se movería
+    # Summary of what would be moved
     # ------------------------------------------------------------------
     def files_to_move(self) -> list[tuple[int, DuplicateFile]]:
-        """Lista de (indice_grupo, DuplicateFile) marcados como MOVER."""
+        """List of (group_index, DuplicateFile) marked as MOVE."""
         output: list[tuple[int, DuplicateFile]] = []
         for gi, group in enumerate(self.result.groups):
             for file in group.files:
@@ -167,14 +167,14 @@ class DuplicateSelection:
         return sum(a.size for _gi, a in self.files_to_move())
 
     # ------------------------------------------------------------------
-    # Preselección automática (modo Sencillo, o botón en Avanzado)
+    # Automatic preselection (Simple mode, or a button in Advanced)
     # ------------------------------------------------------------------
     def preselect_primary(self) -> None:
-        """En cada grupo, conserva la copia "principal" y marca el resto
-        para mover.
+        """In each group, keeps the "primary" copy and marks the rest
+        to be moved.
 
-        Principal = la que menos parece una copia por el nombre, luego la
-        menos anidada, luego la más antigua, luego la de ruta más corta.
+        Primary = the one that looks least like a copy by its name, then the
+        least nested, then the oldest, then the one with the shortest path.
         """
         for gi, group in enumerate(self.result.groups):
             best = min(group.files, key=_primary_score)
@@ -182,15 +182,15 @@ class DuplicateSelection:
 
 
 def _primary_score(file: DuplicateFile) -> tuple[int, int, float, int]:
-    """Puntuación para elegir la copia "principal": min() se queda con la
-    tupla más pequeña, así que cada campo va de "mejor" (menor) a "peor".
+    """Score to choose the "primary" copy: min() keeps the smallest
+    tuple, so each field goes from "best" (lower) to "worst".
     """
     path = file.path
     name = os.path.basename(path)
-    looks_like_copy = 1 if _LOOKS_LIKE_COPY.search(name) else 0  # 0 = no parece copia
-    depth = os.path.normpath(path).count(os.sep)        # menos anidada, mejor
+    looks_like_copy = 1 if _LOOKS_LIKE_COPY.search(name) else 0  # 0 = does not look like a copy
+    depth = os.path.normpath(path).count(os.sep)        # less nested is better
     try:
-        mtime = os.path.getmtime(path)                        # más antigua, mejor
+        mtime = os.path.getmtime(path)                        # older is better
     except OSError:
         mtime = float("inf")
-    return (looks_like_copy, depth, mtime, len(path))      # ruta más corta desempata
+    return (looks_like_copy, depth, mtime, len(path))      # shorter path breaks the tie

@@ -1,13 +1,13 @@
-"""Prueba real de mover a cuarentena: crea un árbol, mueve de verdad los
-duplicados marcados y comprueba que:
+"""Real test of moving to quarantine: creates a tree, really moves the marked
+duplicates and checks that:
 
-  * los archivos "conservar" siguen en su sitio,
-  * los "mover" ya no están en el origen y sí en la cuarentena,
-  * se preserva la estructura de subcarpetas,
-  * se escribe el CSV de log,
-  * se rechazan las situaciones inválidas (grupos sin resolver,
-    cuarentena dentro de la carpeta escaneada),
-  * los nombres que colisionan no se pisan.
+  * the "keep" files stay in their place,
+  * the "move" ones are no longer in the source and are in the quarantine,
+  * the subfolder structure is preserved,
+  * the CSV log is written,
+  * invalid situations are rejected (unresolved groups,
+    quarantine inside the scanned folder),
+  * names that collide are not overwritten.
 
     python tests/check_quarantine.py
 """
@@ -42,11 +42,11 @@ def build(base: Path):
     a = b"contenido A\n" * 30
     b = b"contenido B distinto\n" * 20
 
-    write("bueno/foto.jpg", a)          # conservar
-    write("descargas/foto.jpg", a)      # mover
-    write("descargas/sub/foto.jpg", a)  # mover (colisiona de nombre con el anterior)
-    write("bueno/doc.txt", b)           # conservar
-    write("viejo/doc.txt", b)           # mover
+    write("bueno/foto.jpg", a)          # keep
+    write("descargas/foto.jpg", a)      # move
+    write("descargas/sub/foto.jpg", a)  # move (its name collides with the previous one)
+    write("bueno/doc.txt", b)           # keep
+    write("viejo/doc.txt", b)           # move
 
 
 def main():
@@ -58,7 +58,7 @@ def main():
         r = scan(str(base))
         sel = DuplicateSelection(r)
 
-        # --- validaciones que deben fallar --------------------------
+        # --- validations that must fail --------------------------
         try:
             move_to_quarantine(sel, str(base), str(quarantine))
             check(False, "mover con grupos sin resolver debe lanzar ValueError")
@@ -71,7 +71,7 @@ def main():
         except InvalidQuarantine:
             check(True, "cuarentena dentro de la carpeta escaneada lanza InvalidQuarantine")
 
-        # --- resolver con la regla de carpeta preferida -------------
+        # --- resolve with the preferred-folder rule -------------
         resolved, without_c = sel.apply_folder_rule(str(base / "bueno"))
         check(resolved == 2 and without_c == 0, "la regla resuelve los 2 grupos")
         check(sel.all_ready(), "todo listo para mover")
@@ -79,11 +79,11 @@ def main():
         expected_to_move = sel.count_to_move()
         bytes_expected = sel.space_to_free()
 
-        # Forzar una colisión: ya hay un archivo en el destino de descargas/foto.jpg
+        # Force a collision: there is already a file at the destination of descargas/foto.jpg
         (quarantine / "descargas").mkdir(parents=True, exist_ok=True)
         (quarantine / "descargas" / "foto.jpg").write_bytes(b"otro archivo distinto")
 
-        # --- mover de verdad ---------------------------------------
+        # --- really move ---------------------------------------
         res = move_to_quarantine(sel, str(base), str(quarantine))
 
         check(len(res.moved) == expected_to_move,
@@ -91,17 +91,17 @@ def main():
         check(len(res.failed) == 0, "ningún movimiento falló")
         check(res.bytes_moved == bytes_expected, "bytes movidos correctos")
 
-        # conservar: siguen en su sitio
+        # keep: they stay in their place
         check((base / "bueno" / "foto.jpg").exists(), "la copia buena de foto.jpg sigue")
         check((base / "bueno" / "doc.txt").exists(), "la copia buena de doc.txt sigue")
 
-        # mover: ya no están en el origen
+        # move: they are no longer in the source
         check(not (base / "descargas" / "foto.jpg").exists(),
               "descargas/foto.jpg salió del origen")
         check(not (base / "viejo" / "doc.txt").exists(),
               "viejo/doc.txt salió del origen")
 
-        # mover: están en la cuarentena con la estructura preservada
+        # move: they are in the quarantine with the structure preserved
         check((quarantine / "viejo" / "doc.txt").exists(),
               "viejo/doc.txt está en la cuarentena con su ruta")
         check((quarantine / "descargas" / "sub" / "foto.jpg").exists(),
@@ -111,14 +111,14 @@ def main():
         check((quarantine / "descargas" / "foto.jpg").read_bytes() == b"otro archivo distinto",
               "el archivo que ya estaba en la cuarentena NO se pisó")
 
-        # log CSV
+        # CSV log
         check(res.log_path and Path(res.log_path).exists(), "se escribió el CSV de log")
         if res.log_path:
             content = Path(res.log_path).read_text(encoding="utf-8-sig")
             check("movido" in content and "Origen" in content,
                   "el CSV de log tiene encabezado y filas 'movido'")
 
-        # nada se borró: quedan 2 en el origen y se movieron 3 (+ el señuelo previo)
+        # nothing was deleted: 2 remain in the source and 3 were moved (+ the earlier decoy)
         n_orig = sum(1 for _ in base.rglob("*") if _.is_file())
         n_quar = sum(1 for _ in quarantine.rglob("*")
                      if _.is_file() and not _.name.endswith(".csv"))

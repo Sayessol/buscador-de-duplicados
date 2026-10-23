@@ -1,9 +1,9 @@
-"""Filtros de escaneo: qué archivos y carpetas ignorar.
+"""Scan filters: which files and folders to ignore.
 
-Sirve para que el usuario descarte de entrada lo que no le interesa
-deduplicar (temporales, cachés, descargas a medias, archivos de
-sistema...). Lo que se excluye aquí ni siquiera se hashea, así que
-además acelera el escaneo.
+They let the user discard up front what they do not want to
+deduplicate (temporary files, caches, half-finished downloads, system
+files...). What is excluded here is not even hashed, so it also
+speeds up the scan.
 """
 
 import os
@@ -11,29 +11,29 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Self
 
-# Extensiones que casi nunca vale la pena deduplicar. El usuario puede
-# editar esta lista desde la interfaz.
+# Extensions that are almost never worth deduplicating. The user can
+# edit this list from the interface.
 JUNK_EXTENSIONS = [
     "tmp", "temp", "bak", "old", "log", "cache", "dmp", "chk",
     "crdownload", "part", "partial", "download", "!ut", "aria2",
     "swp", "swo", "swn", "~lock",
 ]
 
-# Nombres de archivo completos a ignorar (no tienen extensión útil).
+# Full file names to ignore (they have no useful extension).
 JUNK_NAMES = [
     "thumbs.db", "desktop.ini", ".ds_store", ".localized", "$recycle.bin",
 ]
 
-# Nombres de carpeta a no entrar (se podan del recorrido entero).
+# Folder names not to enter (pruned from the whole walk).
 JUNK_FOLDERS = [
     "$recycle.bin", "system volume information",
     "node_modules", ".git", ".svn", ".hg", "__pycache__",
     ".cache", ".tmp", ".trash", ".trash-1000",
 ]
 
-# Categorías rápidas para "buscar solo estos tipos de archivo". Cada una
-# marca sus extensiones en el campo de inclusión; el usuario puede
-# combinar varias (p. ej. Imágenes + Vídeo) o añadir las suyas a mano.
+# Quick categories for "search only these kinds of file". Each one
+# ticks its extensions in the inclusion field; the user can combine
+# several (e.g. Images + Video) or add their own by hand.
 CATEGORY_EXTENSIONS = {
     "Imágenes": {
         "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "tif",
@@ -57,7 +57,7 @@ CATEGORY_EXTENSIONS = {
 
 
 def _tokens(text: str | None) -> list[str]:
-    """Parte 'tmp, .log; bak  old' en ['tmp', '.log', 'bak', 'old']."""
+    """Splits 'tmp, .log; bak  old' into ['tmp', '.log', 'bak', 'old']."""
     if not text:
         return []
     return [
@@ -67,7 +67,7 @@ def _tokens(text: str | None) -> list[str]:
 
 
 def parse_extensions(text: str | None) -> set[str]:
-    """Texto libre -> set de extensiones normalizadas sin punto ni mayúsculas."""
+    """Free text -> set of normalized extensions, without dot or capitals."""
     return {t.lower().lstrip(".") for t in _tokens(text) if t.strip(".")}
 
 
@@ -76,19 +76,19 @@ def parse_names(text: str | None) -> set[str]:
 
 
 def set_to_text(values: Iterable[str]) -> str:
-    """set -> texto ordenado para mostrar en un campo de la interfaz."""
+    """set -> sorted text to show in an interface field."""
     return "  ".join(sorted(values))
 
 
 @dataclass
 class ScanFilter:
-    """Reglas de inclusión/exclusión aplicadas durante la Pasada 1 del escaneo."""
+    """Include/exclude rules applied during pass 1 of the scan."""
 
     excluded_extensions: set[str] = field(default_factory=set)   # {'tmp', 'log'}
-    included_extensions: set[str] = field(default_factory=set)   # {'jpg', 'png'} — lista blanca
+    included_extensions: set[str] = field(default_factory=set)   # {'jpg', 'png'} — whitelist
     excluded_names: set[str] = field(default_factory=set)        # {'thumbs.db'}
     excluded_folders: set[str] = field(default_factory=set)       # {'node_modules'}
-    min_size: int = 0     # bytes; poné 1 para ignorar archivos vacíos
+    min_size: int = 0     # bytes; use 1 to ignore empty files
 
     @classmethod
     def no_filter(cls) -> Self:
@@ -103,7 +103,7 @@ class ScanFilter:
             min_size=1,
         )
 
-    # -- consultas que usa el escáner ---------------------------------
+    # -- queries used by the scanner ---------------------------------
     def excludes_folder(self, folder_name: str) -> bool:
         return folder_name.lower() in self.excluded_folders
 
@@ -112,8 +112,8 @@ class ScanFilter:
         if low in self.excluded_names:
             return True
         ext = os.path.splitext(low)[1].lstrip(".")
-        # Si hay lista blanca de extensiones, solo esas pasan (p. ej.
-        # "buscar solo imágenes"); todo lo demás se descarta aquí mismo.
+        # If there is a whitelist of extensions, only those pass (e.g.
+        # "search only images"); everything else is discarded right here.
         if self.included_extensions and ext not in self.included_extensions:
             return True
         return bool(ext) and ext in self.excluded_extensions

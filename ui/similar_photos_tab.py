@@ -1,7 +1,7 @@
-"""Pestaña "Fotos parecidas": agrupa la misma foto guardada con distinta calidad.
+""""Similar photos" tab: groups the same photo saved at different quality.
 
-Es un componente con su PROPIO estado (resultado, selección, colas, hilo, miniaturas...):
-la ventana principal solo la crea y le avisa del modo Sencilla / Avanzada.
+It is a component with its OWN state (result, selection, queues, thread, thumbnails...):
+the main window only creates it and notifies it of the Simple / Advanced mode.
 """
 
 import os
@@ -29,26 +29,26 @@ from .thumbnails import (
 )
 
 
-# Windows no dibuja ventanas de más de 32.767 px de alto: pasado ese punto la
-# galería se corta y la barra de desplazamiento desaparece. Por eso los grupos
-# se reparten en páginas cuya altura estimada nunca se acerca a ese límite.
-COLUMNS = 5                  # fotos por fila dentro de un grupo
-HEADER_HEIGHT = 70            # px que ocupa el título de un grupo y sus márgenes
-ROW_HEIGHT = 400               # px de una fila de fotos (cota por arriba)
-PAGE_MAX_HEIGHT = 20000       # px estimados por página (límite real: 32.767)
-MAX_GROUPS_PER_PAGE = 40        # y nunca más de 40 grupos: la página se dibuja rápido
+# Windows does not draw windows taller than 32,767 px: past that point the
+# gallery gets cut off and the scrollbar disappears. That is why the groups
+# are split into pages whose estimated height never gets close to that limit.
+COLUMNS = 5                  # photos per row inside a group
+HEADER_HEIGHT = 70            # px taken by the title of a group and its margins
+ROW_HEIGHT = 400               # px of a row of photos (an upper bound)
+PAGE_MAX_HEIGHT = 20000       # estimated px per page (real limit: 32,767)
+MAX_GROUPS_PER_PAGE = 40        # and never more than 40 groups: the page is drawn quickly
 
 
 def split_into_pages(counts):
-    """Reparte los grupos en páginas: devuelve una lista de (primero, último + 1).
+    """Splits the groups into pages: returns a list of (first, last + 1).
 
-    `cantidades` es el número de fotos de cada grupo. Todo grupo cabe en alguna
-    página (si uno solo supera el presupuesto, ocupa una página para él)."""
+    `counts` is the number of photos in each group. Every group fits in some
+    page (if a single one exceeds the budget, it gets a page of its own)."""
     pages = []
     start = 0
     height = 0
     for i, n in enumerate(counts):
-        h = HEADER_HEIGHT + ROW_HEIGHT * -(-n // COLUMNS)       # filas = n / 5 redondeado arriba
+        h = HEADER_HEIGHT + ROW_HEIGHT * -(-n // COLUMNS)       # rows = n / 5 rounded up
         if i > start and (height + h > PAGE_MAX_HEIGHT or i - start >= MAX_GROUPS_PER_PAGE):
             pages.append((start, i))
             start, height = i, 0
@@ -60,9 +60,9 @@ def split_into_pages(counts):
 
 class SimilarPhotosTab(ctk.CTkFrame):
     def __init__(self, container):
-        """`contenedor` es la pestaña del CTkTabview donde se coloca este componente."""
+        """`container` is the CTkTabview tab where this component is placed."""
         super().__init__(container, fg_color="transparent")
-        container.grid_columnconfigure(0, weight=1)    # el componente llena toda la pestaña
+        container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
         self.grid_columnconfigure(0, weight=1)
@@ -75,24 +75,24 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self._selection = None
         self._folder = None
         self._thumbs = {}
-        self._img_cache = []  # referencias a CTkImage (si no, se recolectan)
+        self._img_cache = []  # references to CTkImage (otherwise they are garbage collected)
         self._tiles = {}
         self._buttons = {}
-        self._pages = []    # [(primer grupo, último + 1)] de cada página de la galería
+        self._pages = []    # [(first group, last + 1)] of each page of the gallery
         self._page = 0
 
         self._build()
         self._initial_state()
 
     def apply_mode(self, advanced):
-        """Lo llama la ventana al cambiar entre Sencilla y Avanzada."""
+        """Called by the window when switching between Simple and Advanced."""
         (self._sensitivity_row.grid if advanced else self._sensitivity_row.grid_remove)()
         if not advanced:
             self.sensitivity_slider.set(10)
             self._sensitivity_changed(10)
 
     def cancel_jobs(self):
-        """Lo llama la ventana al cerrarse: si hay un análisis en marcha, se cancela."""
+        """Called by the window when it closes: if an analysis is running, it is cancelled."""
         if self._thread and self._thread.is_alive():
             self._cancel.set()
 
@@ -146,7 +146,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
             text_color=styles.COLOR_MUTED_TEXT)
         self.lbl_sensitivity.pack(side="left", padx=(6, 0))
 
-        # Progreso
+        # Progress
         self.progress_area = ctk.CTkFrame(t, fg_color="transparent")
         self.progress_area.grid(row=1, column=0, sticky="ew",
                                     padx=16, pady=(8, 0))
@@ -160,7 +160,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
             text_color=styles.COLOR_MUTED_TEXT, anchor="w")
         self.lbl_state.grid(row=1, column=0, sticky="ew")
 
-        # Estadísticas
+        # Statistics
         self.stats_row = ctk.CTkFrame(t, fg_color="transparent")
         self.stats_row.grid(row=2, column=0, sticky="ew", padx=6, pady=(8, 0))
         for i in range(4):
@@ -173,7 +173,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
                                self.stat_move, self.stat_space)):
             b.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 6, 0))
 
-        # Galería de resultados
+        # Results gallery
         self.gallery = ctk.CTkScrollableFrame(t, fg_color=styles.COLOR_TABLE_BACKGROUND)
         self.gallery.grid(row=4, column=0, sticky="nsew", padx=6, pady=(8, 0))
         self.gallery.grid_columnconfigure(0, weight=1)
@@ -185,7 +185,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.empty_state.grid(row=4, column=0, sticky="nsew", padx=6,
                                    pady=(10, 0))
 
-        # Paginador (solo se ve si los grupos no caben en una página)
+        # Pager (only visible if the groups do not fit in one page)
         self.pager = ctk.CTkFrame(t, fg_color="transparent")
         self.pager.grid(row=5, column=0, sticky="ew", padx=6, pady=(8, 0))
         self.pager.grid_columnconfigure(1, weight=1)
@@ -205,7 +205,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.btn_page_next.grid(row=0, column=2)
         self.pager.grid_remove()
 
-        # Barra inferior
+        # Bottom bar
         bar = ctk.CTkFrame(t, fg_color=styles.COLOR_CARD)
         bar.grid(row=6, column=0, sticky="ew", padx=6, pady=(10, 6))
         bar.grid_columnconfigure(0, weight=1)
@@ -220,7 +220,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
             command=self._move_to_quarantine)
         self.btn_quarantine.grid(row=0, column=1, padx=(4, 16), pady=12)
 
-    # -- estado -------------------------------------------------------
+    # -- state --------------------------------------------------------
     def _initial_state(self):
         self.progress_bar.set(0)
         self.lbl_state.configure(text="")
@@ -250,7 +250,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
                 text=f"{icons.CAT_IMAGES}  Analizar",
                 command=self._start)
 
-    # -- acciones ---------------------------------------------------
+    # -- actions ---------------------------------------------------
     def _choose_folder(self):
         folder = filedialog.askdirectory(title="Elige la carpeta con fotos")
         if folder:
@@ -317,13 +317,13 @@ class SimilarPhotosTab(ctk.CTkFrame):
                             f"Cargando miniaturas… ({processed_count}/{total})")))
                     try:
                         thumbs[h.path] = load_thumbnail(h.path)
-                    except Exception as e:  # un archivo roto no debe parar la galería
+                    except Exception as e:  # a broken file must not stop the gallery
                         log.info("No se pudo crear la miniatura de %s: %s", h.path, e)
                         thumbs[h.path] = None
             self._queue.put(("hecho", (res, thumbs)))
         except ComparisonCancelled:
             self._queue.put(("cancelado", None))
-        except Exception as e:  # se anota en el registro y se muestra al usuario
+        except Exception as e:  # it is logged and shown to the user
             log.exception("Falló el análisis de fotos parecidas de %s", folder)
             self._queue.put(("error", e))
 
@@ -377,9 +377,9 @@ class SimilarPhotosTab(ctk.CTkFrame):
             self._show_gallery(False)
             return
 
-        # Preselección: en cada grupo se conserva la "mejor" copia (la
-        # primera, que perceptual ordena por resolución). El usuario lo
-        # cambia con un clic si no está de acuerdo.
+        # Preselection: in each group the "best" copy is kept (the
+        # first one, which perceptual sorts by resolution). The user
+        # changes it with one click if they disagree.
         self._selection = DuplicateSelection(res)
         for gi, g in enumerate(res.groups):
             self._selection.keep_only(gi, g.files[0].path)
@@ -417,9 +417,9 @@ class SimilarPhotosTab(ctk.CTkFrame):
         messagebox.showerror("Error durante el análisis",
                              f"{type(e).__name__}: {e}")
 
-    # -- galería ---------------------------------------------------
+    # -- gallery ---------------------------------------------------
     def _show_gallery(self, show):
-        """Alterna galería / mensaje de estado vacío (mismo hueco)."""
+        """Toggles gallery / empty-state message (same spot)."""
         if show:
             self.empty_state.grid_remove()
             self.gallery.grid()
@@ -431,8 +431,8 @@ class SimilarPhotosTab(ctk.CTkFrame):
         for child in self.gallery.winfo_children():
             child.destroy()
         self._img_cache.clear()
-        self._tiles = {}   # (gi, ruta) -> frame del tile
-        self._buttons = {}      # (gi, ruta) -> botón conservar/mover
+        self._tiles = {}   # (gi, path) -> frame of the tile
+        self._buttons = {}      # (gi, path) -> keep/move button
         self._pages = []
         self._page = 0
         self.pager.grid_remove()
@@ -449,7 +449,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
             self._show_page(new)
 
     def _show_page(self, page):
-        """Dibuja los grupos de una página (los de las demás no existen como widgets)."""
+        """Draws the groups of one page (those of the other pages do not exist as widgets)."""
         for child in self.gallery.winfo_children():
             child.destroy()
         self._img_cache.clear()
@@ -537,11 +537,11 @@ class SimilarPhotosTab(ctk.CTkFrame):
         if tile is None or button is None:
             return
         if dec == _KEEP:
-            # Es la que se conserva: botón en verde y sin acción (ya lo es).
+            # It is the one being kept: green button and no action (it already is).
             tile.configure(border_color=styles.COLOR_OK)
             button.configure(text=f"{icons.OK}  Se conserva", state="disabled",
                             fg_color=styles.COLOR_OK_BUTTON,
-                            text_color_disabled="#ffffff")  # legible, no "roto"
+                            text_color_disabled="#ffffff")  # readable, not "broken"
         else:
             tile.configure(border_color=styles.COLOR_WARNING)
             button.configure(text="Conservar esta", state="normal",
@@ -561,7 +561,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
     def _on_selection_change(self):
         if self._selection is None:
             return
-        # repintar los grupos de la página que se está viendo
+        # repaint the groups of the page being viewed
         if self._pages:
             for gi in range(*self._pages[self._page]):
                 self._refresh_group(gi)
@@ -614,7 +614,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
 
         try:
             res = move_to_quarantine(self._selection, root, destination)
-        except Exception as e:  # se anota en el registro y se muestra al usuario
+        except Exception as e:  # it is logged and shown to the user
             log.exception("Falló el movimiento a cuarentena de fotos parecidas")
             messagebox.showerror("Error al mover", f"{type(e).__name__}: {e}")
             return

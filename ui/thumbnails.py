@@ -1,12 +1,12 @@
-"""Miniaturas y previsualizaciones de archivos.
+"""Thumbnails and previews of files.
 
-Devuelve objetos PIL.Image (se pueden crear en un hilo secundario); la
-conversión a CTkImage / ImageTk.PhotoImage se hace luego en el hilo de
-la interfaz.
+Returns PIL.Image objects (they can be created in a secondary thread); the
+conversion to CTkImage / ImageTk.PhotoImage is done later in the
+interface thread.
 
-- Archivos de imagen  -> miniatura real.
-- Cualquier otro       -> un recuadro con la extensión (".pdf", ".mp3"…)
-                          y un color según la categoría.
+- Image files   -> real thumbnail.
+- Anything else -> a box with the extension (".pdf", ".mp3"…)
+                   and a colour according to the category.
 """
 
 import os
@@ -18,10 +18,10 @@ from core.filters import CATEGORY_EXTENSIONS
 from core.app_logging import log
 
 THUMBNAIL_SIDE = 150
-ROW_THUMBNAIL_SIDE = 40          # miniatura pequeña de cada fila de la tabla
-PREVIEW_SIDE = 250        # panel de vista grande
+ROW_THUMBNAIL_SIDE = 40          # small thumbnail for each row of the table
+PREVIEW_SIDE = 250        # large preview panel
 
-# Color de fondo del placeholder según la categoría del archivo.
+# Background colour of the placeholder according to the category of the file.
 _COLOR_CATEGORY = {
     "Imágenes": "#3f6d52",
     "Audio": "#54487a",
@@ -34,7 +34,7 @@ _COLOR_TEXT = "#eaeef4"
 
 IMAGE_EXT = CATEGORY_EXTENSIONS["Imágenes"] | {"jpe", "ppm", "pgm"}
 
-# Caché en memoria: (ruta, lado) -> PIL.Image. Se limpia al reescanear.
+# In-memory cache: (path, side) -> PIL.Image. Cleared on rescan.
 _cache = {}
 _cache_lock = threading.Lock()
 
@@ -75,21 +75,21 @@ def placeholder_extension(path, side=THUMBNAIL_SIDE):
 
 
 def load_thumbnail(path, side=THUMBNAIL_SIDE):
-    """PIL.Image cuadrada `lado`x`lado` (recorte centrado) de una imagen.
+    """Square PIL.Image `side`x`side` (centred crop) of an image.
 
-    Lanza si el archivo no se puede abrir como imagen.
+    Raises if the file cannot be opened as an image.
     """
     with Image.open(path) as im:
         try:
             im.draft("RGB", (side * 2, side * 2))
-        except (ValueError, OSError):  # draft es opcional
+        except (ValueError, OSError):  # draft is optional
             pass
         im = ImageOps.exif_transpose(im).convert("RGB")
         return ImageOps.fit(im, (side, side), Image.BOX)
 
 
 def thumbnail_or_placeholder(path, side=ROW_THUMBNAIL_SIDE):
-    """Miniatura real si es imagen; si no (o si falla), placeholder."""
+    """Real thumbnail if it is an image; otherwise (or if it fails), a placeholder."""
     key = (path, side)
     with _cache_lock:
         if key in _cache:
@@ -100,7 +100,7 @@ def thumbnail_or_placeholder(path, side=ROW_THUMBNAIL_SIDE):
     if ext in IMAGE_EXT:
         try:
             img = load_thumbnail(path, side)
-        except Exception as e:  # un archivo roto no debe romper la lista
+        except Exception as e:  # a broken file must not break the list
             log.info("No se pudo crear la miniatura de %s: %s", path, e)
             img = None
     if img is None:
@@ -112,20 +112,20 @@ def thumbnail_or_placeholder(path, side=ROW_THUMBNAIL_SIDE):
 
 
 def large_preview(path, side=PREVIEW_SIDE):
-    """PIL.Image para el panel de vista previa: imagen a tamaño (sin
-    recortar, encajada en un cuadrado) o placeholder grande."""
+    """PIL.Image for the preview panel: image at size (not
+    cropped, fitted into a square) or a large placeholder."""
     ext = os.path.splitext(path)[1].lower().lstrip(".")
     if ext in IMAGE_EXT:
         try:
             with Image.open(path) as im:
                 try:
                     im.draft("RGB", (side * 2, side * 2))
-                except (ValueError, OSError):  # draft es opcional
+                except (ValueError, OSError):  # draft is optional
                     pass
                 im = ImageOps.exif_transpose(im).convert("RGB")
                 im = im.copy()
             im.thumbnail((side, side), Image.LANCZOS)
             return im
-        except Exception as e:  # si falla, se enseña el recuadro con la extensión
+        except Exception as e:  # if it fails, the box with the extension is shown
             log.info("No se pudo cargar la vista previa de %s: %s", path, e)
     return placeholder_extension(path, side)

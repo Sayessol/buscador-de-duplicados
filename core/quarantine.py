@@ -1,16 +1,16 @@
-"""Mover los duplicados descartados a una carpeta de cuarentena.
+"""Move the discarded duplicates to a quarantine folder.
 
-Reglas de seguridad (heredadas del script de consola):
+Safety rules (inherited from the console script):
 
-* NUNCA se borra ni se sobrescribe nada. Solo se **mueve**.
-* El original solo desaparece de su sitio cuando su copia ya está a
-  salvo en la cuarentena (lo garantiza `shutil.move`).
-* Se preserva la estructura de subcarpetas relativa a la carpeta
-  escaneada, para poder devolver cada archivo a su lugar si hace falta.
-* Si en el destino ya hay un archivo con ese nombre, el nuevo se guarda
-  con un sufijo `(1)`, `(2)`... en vez de pisarlo.
-* Al terminar se escribe un CSV de log con cada movimiento (origen,
-  destino, estado), para poder deshacer a mano.
+* NOTHING is ever deleted or overwritten. Files are only **moved**.
+* The original only leaves its place once its copy is already safe in
+  the quarantine (`shutil.move` guarantees that).
+* The structure of subfolders relative to the scanned folder is preserved,
+  so every file can be put back in its place if needed.
+* If the destination already has a file with that name, the new one is
+  saved with a suffix `(1)`, `(2)`... instead of overwriting it.
+* When finished, a CSV log is written with every move (source,
+  destination, status), so it can be undone by hand.
 """
 
 import csv
@@ -52,8 +52,8 @@ class QuarantineResult:
 
 
 class InvalidQuarantine(Exception):
-    """La carpeta de cuarentena elegida no sirve (p. ej. está dentro de
-    la carpeta escaneada)."""
+    """The chosen quarantine folder is not valid (e.g. it is inside
+    the scanned folder)."""
 
 
 def _norm(p: str) -> str:
@@ -61,12 +61,11 @@ def _norm(p: str) -> str:
 
 
 def validate_quarantine_folder(quarantine_folder: str, root_folder: str) -> str | None:
-    """Devuelve un mensaje de advertencia (str) o None si todo bien.
+    """Returns a warning message (str) or None if all is well.
 
-    Lanza InvalidQuarantine si la carpeta de cuarentena está dentro de
-    la carpeta escaneada (provocaría que el próximo escaneo vuelva a
-    encontrar los archivos ya movidos, o mover una carpeta dentro de sí
-    misma).
+    Raises InvalidQuarantine if the quarantine folder is inside the
+    scanned folder (the next scan would find the files already moved
+    again, or a folder would be moved into itself).
     """
     cq = _norm(quarantine_folder)
     cr = _norm(root_folder)
@@ -85,20 +84,20 @@ def validate_quarantine_folder(quarantine_folder: str, root_folder: str) -> str 
 
 
 def _destination_for(source: str, root_folder: str, quarantine_folder: str) -> str:
-    """Ruta destino preservando la estructura relativa a la carpeta escaneada."""
+    """Destination path preserving the structure relative to the scanned folder."""
     try:
         rel = os.path.relpath(source, root_folder)
     except ValueError:
         rel = os.path.basename(source)
     if rel.startswith(".." + os.sep) or rel == "..":
-        # El archivo está fuera de la carpeta escaneada: lo colgamos de
-        # una subcarpeta "_fuera_de_la_carpeta" con su nombre.
+        # The file is outside the scanned folder: we hang it from a
+        # "_fuera_de_la_carpeta" subfolder with its name.
         rel = os.path.join("_fuera_de_la_carpeta", os.path.basename(source))
     return os.path.join(quarantine_folder, rel)
 
 
 def _avoid_collision(destination: str) -> str:
-    """Si `destino` ya existe, devuelve 'nombre (1).ext', 'nombre (2).ext'..."""
+    """If `destination` already exists, returns 'name (1).ext', 'name (2).ext'..."""
     if not os.path.exists(destination):
         return destination
     base, ext = os.path.splitext(destination)
@@ -111,7 +110,7 @@ def _avoid_collision(destination: str) -> str:
 def plan_moves(
     selection: DuplicateSelection, root_folder: str, quarantine_folder: str,
 ) -> list[Move]:
-    """Lista de Movimiento (sin ejecutar) para los archivos marcados como MOVER."""
+    """List of Move (not executed) for the files marked as MOVE."""
     plan: list[Move] = []
     for gi, file in selection.files_to_move():
         destination = _destination_for(file.path, root_folder, quarantine_folder)
@@ -128,12 +127,12 @@ def move_to_quarantine(
     progress: ProgressCallback | None = None,
     cancelled: CancelledCallback | None = None,
 ) -> QuarantineResult:
-    """Ejecuta el movimiento. Devuelve un QuarantineResult.
+    """Carries out the move. Returns a QuarantineResult.
 
-    progreso : callable(actual, total, mensaje) opcional.
-    cancelado: callable() -> bool opcional. Si pasa a True, se deja de
-               mover (lo ya movido queda movido) y se escribe el log
-               igual.
+    progress : optional callable(current, total, message).
+    cancelled: optional callable() -> bool. If it turns True, moving stops
+               (what was already moved stays moved) and the log is
+               still written.
     """
     if not selection.all_ready():
         raise ValueError(

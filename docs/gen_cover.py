@@ -1,8 +1,8 @@
-"""Genera docs/img/social-preview.png (1280x640): la imagen que se ve al compartir el repo.
+"""Generates docs/img/social-preview.png (1280x640): the image shown when sharing the repo.
 
     python docs/gen_cover.py
 
-Se sube a mano en GitHub: Settings -> General -> Social preview.
+It is uploaded by hand on GitHub: Settings -> General -> Social preview.
 """
 
 from pathlib import Path
@@ -24,7 +24,7 @@ BACKGROUND, TEXT, MUTED, ACCENT = (30, 33, 38), (240, 243, 247), (169, 176, 186)
 
 canvas = Image.new("RGB", (1280, 640), BACKGROUND)
 d = ImageDraw.Draw(canvas)
-d.rectangle([0, 0, 12, 640], fill=ACCENT)             # franja de color a la izquierda
+d.rectangle([0, 0, 12, 640], fill=ACCENT)             # colour band on the left
 
 d.text((70, 110), "Buscador de\nduplicados", font=font("segoeuib.ttf", 64), fill=TEXT,
        spacing=4)
@@ -43,7 +43,7 @@ for text in ("Python", "CustomTkinter", "Windows", "MIT"):
 
 d.text((72, 560), "Hecho con Claude como copiloto", font=font("segoeui.ttf", 26), fill=MUTED)
 
-# Captura de la app, inclinada hacia la derecha y con sombra.
+# Screenshot of the app, tilted to the right and with a shadow.
 capture = Image.open(IMG / "01_sencilla.png").convert("RGB")
 capture = capture.resize((560, round(capture.height * 560 / capture.width)), Image.LANCZOS)
 shadow = Image.new("RGBA", (capture.width + 80, capture.height + 80), (0, 0, 0, 0))

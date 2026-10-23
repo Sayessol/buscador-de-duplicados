@@ -1,7 +1,7 @@
-"""Genera 'guia-del-codigo.pdf'.
+"""Generates 'guia-del-codigo.pdf'.
 
-Documento para quien quiera entender CÓMO está hecho el código y
-aprender a partir de él.
+A document for whoever wants to understand HOW the code is built and
+learn from it.
 """
 
 from pathlib import Path

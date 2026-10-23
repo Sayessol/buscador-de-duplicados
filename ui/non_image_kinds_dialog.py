@@ -1,9 +1,9 @@
-"""Diálogo: qué hacer con los archivos que no son imágenes.
+"""Dialog: what to do with the files that are not images.
 
-Por cada tipo (extensión) encontrado, el usuario elige:
-  · Dejar     -> no se mueve, se queda en el origen.
-  · Mover     -> va al destino con su misma subruta (como las imágenes).
-  · Agrupar   -> va a  destino/<carpeta que nombra el usuario>/<subruta>.
+For each kind (extension) found, the user chooses:
+  · Leave     -> it is not moved, it stays in the source.
+  · Move      -> it goes to the destination with its same subpath (like the images).
+  · Group     -> it goes to  destination/<folder named by the user>/<subpath>.
 """
 
 import customtkinter as ctk
@@ -23,7 +23,7 @@ _FOLDER_NAME = {
 
 class NonImageKindsWindow(ctk.CTkToplevel):
     def __init__(self, master, kinds):
-        """tipos: dict  ext -> lista de rutas."""
+        """kinds: dict  ext -> list of paths."""
         super().__init__(master)
         self.title("Archivos que no son imágenes")
         self.geometry("620x460")
@@ -31,7 +31,7 @@ class NonImageKindsWindow(ctk.CTkToplevel):
         self.transient(master)
         self.grab_set()
 
-        self.rules = None          # se rellena al pulsar "Aplicar"
+        self.rules = None          # filled in when "Apply" is pressed
         self._rows = {}            # ext -> (segmented, entry)
 
         self.grid_columnconfigure(0, weight=1)

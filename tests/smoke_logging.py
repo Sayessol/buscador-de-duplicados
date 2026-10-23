@@ -1,9 +1,9 @@
-"""Prueba de humo del registro de errores con la ventana de verdad.
+"""Smoke test of the error log with the real window.
 
-Provoca dos fallos y comprueba que quedan anotados en el archivo de registro:
-  1. un error dentro de una función de la interfaz (un temporizador de Tkinter);
-  2. un error en el hilo que escanea (se le pasa una carpeta que no existe).
-Y que el aviso al usuario sale UNA sola vez aunque el fallo se repita.
+It causes two failures and checks that they are recorded in the log file:
+  1. an error inside an interface function (a Tkinter timer);
+  2. an error in the thread that scans (it is given a folder that does not exist).
+And that the warning to the user appears ONLY ONCE even if the failure repeats.
 
     python tests/smoke_logging.py
 """
@@ -17,7 +17,7 @@ from tkinter import messagebox
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 TMP = Path(tempfile.mkdtemp(prefix="dup_reg_"))
-os.environ["APPDATA"] = str(TMP / "appdata")          # no toca el registro real
+os.environ["APPDATA"] = str(TMP / "appdata")          # does not touch the real log
 
 from core import app_logging                              # noqa: E402
 from core.filters import ScanFilter                  # noqa: E402
@@ -46,11 +46,11 @@ def main():
         raise RuntimeError("fallo provocado en la interfaz")
 
     def scan_failure():
-        # El mismo método que corre en el hilo del escaneo; con una carpeta inexistente.
+        # The same method that runs in the scan thread; with a folder that does not exist.
         app.exact._scan_job(str(TMP / "no_existe"), ScanFilter.no_filter())
 
     app.after(200, ui_failure)
-    app.after(300, ui_failure)                 # repetido: solo debe avisar una vez
+    app.after(300, ui_failure)                 # repeated: it must warn only once
     app.after(400, scan_failure)
     app.after(1200, app.destroy)
     app.mainloop()

@@ -1,14 +1,14 @@
-"""Reunir todas las imágenes de una carpeta en una carpeta común.
+"""Gather all the images of a folder into a common folder.
 
-Dos estrategias:
+Two strategies:
 
-* **por_archivos**: mueve/copia cada imagen a `destino/<misma subruta>`.
-  Los archivos que no son imágenes se tratan según `NonImageRules`
-  (dejarlos, moverlos igual, o agruparlos por tipo en una carpeta con el
-  nombre que elija el usuario).
+* **by files** (`gather_by_files`): moves/copies each image to `destination/<same subpath>`.
+  Files that are not images are handled according to `NonImageRules`
+  (leave them, move them anyway, or group them by kind in a folder with the
+  name the user chooses).
 
-* **carpeta_entera**: mueve/copia la carpeta a analizar completa (con
-  todo lo que hay dentro) a `destino/<nombre de la carpeta>/`.
+* **whole folder** (`gather_whole_folder`): moves/copies the whole folder to analyze (with
+  everything inside it) to `destination/<folder name>/`.
 """
 
 import os
@@ -22,12 +22,12 @@ from .file_moves import (
     validate_destination, collision_free_path, size,
 )
 
-# Extensiones que se consideran "imagen" (más amplio que lo que Pillow
-# puede previsualizar: incluye raw, heic, etc.).
+# Extensions considered "image" (broader than what Pillow
+# can preview: it includes raw, heic, etc.).
 IMAGE_EXT = {e.lower() for e in CATEGORY_EXTENSIONS["Imágenes"]}
 
 LEAVE = "dejar"
-# (para no-imágenes: DEJAR | MOVER | "agrupar")
+# (for non-images: LEAVE | MOVE | GROUP)
 GROUP = "agrupar"
 
 
@@ -36,7 +36,7 @@ def _ext(path: str) -> str:
 
 
 def list_all(root_folder: str, recursive: bool = True) -> tuple[list[str], list[str]]:
-    """Devuelve (imagenes, no_imagenes): dos listas de rutas absolutas."""
+    """Returns (images, non_images): two lists of absolute paths."""
     images: list[str] = []
     others: list[str] = []
     if recursive:
@@ -53,7 +53,7 @@ def list_all(root_folder: str, recursive: bool = True) -> tuple[list[str], list[
 
 
 def non_image_kinds(others: list[str]) -> dict[str, list[str]]:
-    """dict: extensión -> lista de rutas, para el diálogo por tipo."""
+    """dict: extension -> list of paths, for the per-kind dialog."""
     d: dict[str, list[str]] = {}
     for path in others:
         d.setdefault(_ext(path) or "(sin extensión)", []).append(path)
@@ -62,10 +62,10 @@ def non_image_kinds(others: list[str]) -> dict[str, list[str]]:
 
 @dataclass
 class NonImageRules:
-    """Qué hacer con cada tipo de archivo que no es imagen.
+    """What to do with each kind of file that is not an image.
 
-    accion_por_ext: ext -> "dejar" | "mover" | "agrupar"
-    carpeta_por_ext: ext -> nombre de carpeta (solo si "agrupar")
+    action_by_ext: ext -> "dejar" | "mover" | "agrupar"
+    folder_by_ext: ext -> folder name (only if "agrupar")
     """
 
     action_by_ext: dict[str, str] = field(default_factory=dict)
@@ -85,26 +85,26 @@ def plan_by_files(
     destination: str,
     rules: NonImageRules | None = None,
 ) -> list[Transfer]:
-    """Lista de Traslado (sin ejecutar)."""
+    """List of Transfer (not executed)."""
     rules = rules or NonImageRules()
     plan: list[Transfer] = []
 
-    # Imágenes: siempre a destino/<misma subruta que tenían en el origen>.
+    # Images: always to destination/<same subpath they had in the source>.
     for path in images:
-        rel = os.path.relpath(path, root_folder)   # p. ej. "vacaciones/playa.jpg"
+        rel = os.path.relpath(path, root_folder)   # e.g. "vacaciones/playa.jpg"
         plan.append(Transfer(path, os.path.join(destination, rel), size(path)))
 
-    # No imágenes: según lo que haya elegido el usuario para cada tipo.
+    # Non-images: according to what the user chose for each kind.
     for path in others:
         ext = _ext(path) or "(sin extensión)"
         acc = rules.action(ext)
         if acc == LEAVE:
-            continue                                # no se toca
+            continue                                # left alone
         rel = os.path.relpath(path, root_folder)
         if acc == GROUP:
-            # destino/<carpeta que nombró el usuario>/<subruta>
+            # destination/<folder named by the user>/<subpath>
             final_destination = os.path.join(destination, rules.folder(ext), rel)
-        else:  # "mover": igual que las imágenes
+        else:  # "mover": same as the images
             final_destination = os.path.join(destination, rel)
         plan.append(Transfer(path, final_destination, size(path)))
 
@@ -133,7 +133,7 @@ def gather_whole_folder(
     root_folder: str, destination: str, action: str = MOVE,
     progress: ProgressCallback | None = None,
 ) -> TransferResult:
-    """Mueve/copia la carpeta a analizar completa dentro del destino."""
+    """Moves/copies the whole folder to analyze into the destination."""
     validate_destination(destination, root_folder)
     os.makedirs(destination, exist_ok=True)
     progress = progress or (lambda *_: None)

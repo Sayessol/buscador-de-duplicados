@@ -1,11 +1,11 @@
-"""Graba docs/img/demo.gif: escanear -> mover a cuarentena -> deshacer.
+"""Records docs/img/demo.gif: scan -> move to quarantine -> undo.
 
     python docs/record_gif.py
 
-Abre la propia app con carpetas de ejemplo y hace capturas de SU ventana
-(nunca del escritorio entero) cada pocas décimas de segundo. Los diálogos del
-sistema se simulan para que el guion corra solo. Necesita escritorio de Windows.
-Usa una ruta neutra (C:/Demo) para que no salga tu nombre de usuario.
+It opens the app itself with sample folders and takes screenshots of ITS window
+(never of the whole desktop) every few tenths of a second. The system dialogs
+are simulated so the script runs on its own. It needs a Windows desktop.
+It uses a neutral path (C:/Demo) so that your user name does not show up.
 """
 
 import os
@@ -19,13 +19,13 @@ from tkinter import filedialog, messagebox
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = Path(__file__).resolve().parent / "img" / "demo.gif"
-GIF_WIDTH = 960                    # ancho final del GIF (más pequeño = menos MB)
-INTERVAL_MS = 90                  # cada cuánto se captura un fotograma
+GIF_WIDTH = 960                    # final width of the GIF (smaller = fewer MB)
+INTERVAL_MS = 90                  # how often a frame is captured
 
 BASE_DEMO = Path(os.environ.get("CAPTURAS_BASE", "C:/Demo"))
 BASE_DEMO.mkdir(parents=True, exist_ok=True)
 tmp = Path(tempfile.mkdtemp(prefix="", dir=BASE_DEMO))
-os.environ["APPDATA"] = str(tmp / "appdata")        # no toca tu configuración real
+os.environ["APPDATA"] = str(tmp / "appdata")        # does not touch your real configuration
 sys.path.insert(0, str(ROOT))
 
 from PIL import Image, ImageChops, ImageDraw, ImageGrab     # noqa: E402
@@ -48,7 +48,7 @@ def photo(seed, size=(240, 160)):
     return im
 
 
-# ---- carpetas de ejemplo --------------------------------------------------
+# ---- sample folders --------------------------------------------------
 base = tmp / "Fotos"
 names = {"2023/verano/playa.png": 1, "2023/verano/atardecer.png": 2,
            "2023/cumple.png": 3, "Descargas/montaña.png": 4, "Escritorio/portada.png": 5}
@@ -64,10 +64,10 @@ for source, copy in [("2023/verano/playa.png", "Descargas/playa.png"),
 quarantine = tmp / "Cuarentena"
 quarantine.mkdir()
 
-# ---- diálogos simulados -----------------------------------------------------
+# ---- simulated dialogs -----------------------------------------------------
 filedialog.askdirectory = lambda *a, **k: str(quarantine)
 messagebox.askyesno = lambda *a, **k: True
-os.startfile = lambda *a, **k: None   # sin esto se abriría el Explorador de verdad
+os.startfile = lambda *a, **k: None   # without this the real Explorer would open
 messagebox.showinfo = lambda *a, **k: None
 messagebox.showwarning = lambda *a, **k: None
 messagebox.showerror = lambda *a, **k: None
@@ -78,7 +78,7 @@ app._mode = "sencillo"
 app._apply_mode()
 app.geometry("1280x860+12+6")
 
-frames = []                    # (instante, imagen)
+frames = []                    # (instant, image)
 
 
 def capture():
@@ -90,7 +90,7 @@ def capture():
     app.after(INTERVAL_MS, capture)
 
 
-# ---- guion ---------------------------------------------------------------------
+# ---- script ---------------------------------------------------------------------
 text_path = str(base)
 state = {"i": 0}
 
@@ -151,7 +151,7 @@ def close():
 
 
 def rescan():
-    # Tras deshacer, los archivos están otra vez en su sitio: se vuelve a escanear.
+    # After undoing, the files are back in their place: scan again.
     previous = app.exact._result
     app.exact._start_scan()
     wait(lambda: app.exact._result is not previous, lambda: app.after(2200, app.destroy))
@@ -162,14 +162,14 @@ app.after(1200, write_path)
 app.after(60000, app.destroy)
 app.mainloop()
 
-# ---- montar el GIF ------------------------------------------------------------
+# ---- assemble the GIF ------------------------------------------------------------
 height = round(frames[0][1].height * GIF_WIDTH / frames[0][1].width)
 imgs, durations, previous = [], [], None
 for (t0, im), next in zip(frames, frames[1:] + [(frames[-1][0] + .6, None)]):
     dur = max(int((next[0] - t0) * 1000), 40)
     small = im.resize((GIF_WIDTH, height), Image.LANCZOS)
     if previous is not None and ImageChops.difference(small, previous).getbbox() is None:
-        durations[-1] += dur                     # fotograma igual: se alarga el anterior
+        durations[-1] += dur                     # same frame: the previous one is lengthened
         continue
     imgs.append(small.quantize(colors=128, method=Image.Quantize.MEDIANCUT,
                                dither=Image.Dither.NONE))
@@ -180,7 +180,7 @@ imgs[0].save(OUTPUT, save_all=True, append_images=imgs[1:], duration=durations,
 print(f"{OUTPUT.name}: {len(imgs)} fotogramas, {OUTPUT.stat().st_size / 1e6:.1f} MB, "
       f"{sum(durations) / 1000:.1f} s")
 
-# Limpieza: borra solo la carpeta de ejemplo que creó este script.
+# Cleanup: deletes only the sample folder created by this script.
 shutil.rmtree(tmp, ignore_errors=True)
 try:
     BASE_DEMO.rmdir()

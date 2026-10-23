@@ -1,9 +1,9 @@
-"""Reproduce EXACTAMENTE lo que hace el usuario: abre la ventana, analiza
-una carpeta con fotos repartidas en subcarpetas, y pulsa "Mover a
-cuarentena" eligiendo una carpeta nueva (se simulan los diálogos).
+"""Reproduces EXACTLY what the user does: opens the window, analyzes
+a folder with photos spread across subfolders, and presses "Move to
+quarantine" choosing a new folder (the dialogs are stubbed).
 
-Comprueba que se mueven los ARCHIVOS y NO las carpetas, tanto en la
-pestaña "Fotos parecidas" como en "Duplicados exactos".
+It checks that FILES are moved and NOT folders, both in the
+"Similar photos" tab and in "Exact duplicates".
 
     python tests/smoke_quarantine_ui.py
 """
@@ -16,7 +16,7 @@ from tkinter import filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# No toca los datos reales del usuario (historial, configuración):
+# It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from PIL import Image                                # noqa: E402
@@ -49,10 +49,10 @@ def build(root: Path):
     (root / "2024").mkdir(parents=True)
     (root / "sin ordenar").mkdir(parents=True)
     _photo(1).save(root / "2023" / "verano" / "playa.jpg", quality=92)
-    _photo(1).save(root / "2024" / "playa.jpg", quality=45)          # parecida
-    _photo(1).save(root / "sin ordenar" / "playa (copia).jpg", quality=70)  # parecida
+    _photo(1).save(root / "2024" / "playa.jpg", quality=45)          # similar
+    _photo(1).save(root / "sin ordenar" / "playa (copia).jpg", quality=70)  # similar
     _photo(2).save(root / "2023" / "retrato.jpg", quality=92)
-    _photo(2).save(root / "sin ordenar" / "retrato.jpg", quality=45)  # parecida
+    _photo(2).save(root / "sin ordenar" / "retrato.jpg", quality=45)  # similar
 
 
 def main():
@@ -60,14 +60,14 @@ def main():
     tmp = tempfile.mkdtemp(prefix="dup_uic_")
     root = Path(tmp) / "Fotos móvil"
     build(root)
-    # Carpeta de cuarentena "en el escritorio", creada por el usuario:
+    # Quarantine folder "on the desktop", created by the user:
     quarantine = Path(tmp) / "Escritorio" / "Cuarentena"
     quarantine.mkdir(parents=True)
 
-    # Simular los diálogos.
+    # Stub the dialogs.
     filedialog.askdirectory = lambda *a, **k: str(quarantine)
     messagebox.askyesno = lambda *a, **k: True
-    os.startfile = lambda *a, **k: None   # sin esto se abriría el Explorador de verdad
+    os.startfile = lambda *a, **k: None   # without this the real Explorer would open
     messagebox.showinfo = lambda *a, **k: None
     messagebox.showwarning = lambda *a, **k: None
     messagebox.showerror = lambda *a, **k: print("   [showerror]", a)

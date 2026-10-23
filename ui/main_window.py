@@ -1,22 +1,22 @@
-"""Ventana principal de la app.
+"""Main window of the app.
 
-Aquí queda solo la "carcasa": cabecera (tema, vista, historial), el
-selector de pestañas y el modo Sencilla / Avanzada. Cada pestaña es un
-COMPONENTE con su propio estado, en su propio módulo:
+Only the "shell" stays here: header (theme, view, history), the
+tab selector and the Simple / Advanced mode. Each tab is a
+COMPONENT with its own state, in its own module:
 
-  exact_duplicates_tab.py     ExactDuplicatesTab     "Duplicados exactos"  -> self.exactos
-  similar_photos_tab.py   SimilarPhotosTab   "Fotos parecidas"     -> self.parecidas
-  gather_images_tab.py      GatherImagesTab      "Reunir imágenes"     -> self.reunir
+  exact_duplicates_tab.py   ExactDuplicatesTab   "Exact duplicates"  -> self.exact
+  similar_photos_tab.py     SimilarPhotosTab      "Similar photos"    -> self.similar
+  gather_images_tab.py      GatherImagesTab       "Gather images"     -> self.gather
 
-La ventana solo crea los tres componentes y les avisa de dos cosas:
-`aplicar_modo(avanzado)` al cambiar entre Sencilla y Avanzada y
-`cancel_jobs()` al cerrar. Ninguno toca el estado de los otros.
+The window only creates the three components and notifies them of two things:
+`apply_mode(advanced)` when switching between Simple and Advanced, and
+`cancel_jobs()` when closing. None of them touches the state of the others.
 
-Toda tarea larga (escanear, analizar, mover) usa el mismo patrón
-hilo + cola + after(); está explicado en
-exact_duplicates_tab.py:_trabajo_escaneo.
+Every long task (scan, analyze, move) uses the same pattern:
+thread + queue + after(); it is explained in
+exact_duplicates_tab.py:_scan_job.
 
-Interfaz en español de España, tema claro/oscuro, iconos con glifos Unicode.
+Interface in European Spanish, light/dark theme, icons made of Unicode glyphs.
 """
 from pathlib import Path
 from tkinter import TclError, messagebox
@@ -43,7 +43,7 @@ class MainWindow(ctk.CTk):
         self._set_window_icon()
 
         self._mode = config.get_mode()  # "sencillo" | "avanzado"
-        self._error_warned = False     # el aviso de error inesperado sale una sola vez
+        self._error_warned = False     # the unexpected-error warning appears only once
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -64,11 +64,11 @@ class MainWindow(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def report_callback_exception(self, exc, val, tb):
-        """Tkinter llama aquí cuando falla una función de un botón o un temporizador.
+        """Tkinter calls this when a button or timer callback fails.
 
-        Por defecto el error solo salía por la consola, que en el .exe no existe.
-        Se anota en el registro y se avisa una vez, para no llenar la pantalla
-        de ventanas si el mismo fallo se repite.
+        By default the error only went to the console, which does not exist in the .exe.
+        It is logged and the user is warned once, so as not to fill the screen
+        with windows if the same failure repeats.
         """
         log.error("Error inesperado en la interfaz", exc_info=(exc, val, tb))
         if self._error_warned:
@@ -84,21 +84,21 @@ class MainWindow(ctk.CTk):
             "vuelve a abrirla. Tus archivos no se han tocado.")
 
     def _set_window_icon(self):
-        """Icono de la barra de título / barra de tareas.
+        """Icon of the title bar / taskbar.
 
-        CustomTkinter pone su propio icono 200 ms después de crear la
-        ventana, salvo que ya se haya llamado a iconbitmap() antes — por
-        eso se usa iconbitmap() con un .ico (no iconphoto con un
-        PhotoImage), para que la comprobación interna lo detecte y no lo
-        pise. icono.ico se genera con `python gen_icon.py`; si no
-        existe (por ejemplo, en un checkout limpio sin generarlo todavía)
-        la ventana sigue funcionando con el icono por defecto.
+        CustomTkinter sets its own icon 200 ms after creating the
+        window, unless iconbitmap() has already been called — that is
+        why iconbitmap() is used with an .ico (not iconphoto with a
+        PhotoImage), so that its internal check detects it and does not
+        overwrite it. icono.ico is generated with `python gen_icon.py`; if it does not
+        exist (for example, in a clean checkout where it has not been generated yet)
+        the window keeps working with the default icon.
         """
         ico_path = Path(__file__).resolve().parent.parent / "icono.ico"
         try:
             if ico_path.exists():
                 self.iconbitmap(str(ico_path))
-        except TclError:  # el icono es opcional
+        except TclError:  # the icon is optional
             log.info("No se pudo poner el icono de la ventana", exc_info=True)
 
     def _build_header(self):
@@ -128,7 +128,7 @@ class MainWindow(ctk.CTk):
             hover_color=styles.COLOR_TILE, command=self._open_history)
         self.btn_history.grid(row=0, column=2, rowspan=2, padx=(8, 12), pady=12)
 
-        # Panel derecho: selector de tema (arriba) y de vista (abajo).
+        # Right panel: theme selector (top) and view selector (bottom).
         right = ctk.CTkFrame(header, fg_color="transparent")
         right.grid(row=0, column=3, rowspan=2, padx=(0, 16), pady=10)
 
@@ -157,33 +157,33 @@ class MainWindow(ctk.CTk):
     def _change_theme(self, label):
         theme = {"Automático": "auto", "Claro": "claro", "Oscuro": "oscuro"}[label]
         config.set_theme(theme)
-        styles.change_theme(theme)     # CustomTkinter re-pinta; ttk lo hace en _set_appearance_mode
+        styles.change_theme(theme)     # CustomTkinter repaints; ttk does it in _set_appearance_mode
 
     def _change_mode(self, value):
-        """Lo llama el interruptor de la cabecera."""
+        """Called by the switch in the header."""
         self._mode = "sencillo" if value == "Sencilla" else "avanzado"
-        config.set_mode(self._mode)          # se recuerda para la próxima vez
+        config.set_mode(self._mode)          # remembered for next time
         self._apply_mode()
         if self._mode == "sencillo":
             self.exact.on_switch_to_simple()
 
     def _apply_mode(self):
-        """Muestra u oculta los controles "avanzados". No borra widgets:
-        solo los quita/pone en el grid con grid_remove()/grid(), así el
-        estado se conserva al alternar."""
+        """Shows or hides the "advanced" controls. It does not delete widgets:
+        it only removes/puts them back in the grid with grid_remove()/grid(), so the
+        state is kept when toggling."""
         advanced = self._mode == "avanzado"
 
-        # Pestaña "Duplicados exactos": en Sencilla se ocultan el panel de opciones,
-        # la carpeta preferida, "Ver tipos" y "Exportar CSV".
+        # "Exact duplicates" tab: in Simple mode the options panel,
+        # the preferred folder, "View kinds" and "Export CSV" are hidden.
         self.exact.apply_mode(advanced)
 
-        # Pestaña "Fotos parecidas": el deslizador de sensibilidad solo en Avanzada.
+        # "Similar photos" tab: the sensitivity slider only in Advanced.
         self.similar.apply_mode(advanced)
 
-        # "Historial" solo en Avanzada.
+        # "History" only in Advanced.
         (self.btn_history.grid if advanced else self.btn_history.grid_remove)()
 
-        # "Reunir imágenes": «Carpeta entera» y Mover/Copiar solo en Avanzada.
+        # "Gather images": "Whole folder" and Move/Copy only in Advanced.
         self.gather.apply_mode(advanced)
 
     def _on_close(self):
@@ -194,7 +194,7 @@ class MainWindow(ctk.CTk):
 
 
 def launch():
-    # Aplica el tema guardado (auto/claro/oscuro) ANTES de crear la ventana.
+    # Applies the saved theme (auto/light/dark) BEFORE creating the window.
     styles.apply_theme(config.get_theme())
     app = MainWindow()
     app.mainloop()

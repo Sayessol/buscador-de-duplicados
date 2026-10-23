@@ -1,4 +1,4 @@
-"""Genera 'proceso-de-creacion.pdf'."""
+"""Generates 'proceso-de-creacion.pdf'."""
 
 from pathlib import Path
 

@@ -1,14 +1,14 @@
-"""Genera las capturas de pantalla para la documentación.
+"""Generates the screenshots for the documentation.
 
-    python docs/capture.py             # tema oscuro  -> 01_sencilla.png ...
-    python docs/capture.py claro       # tema claro   -> 01_sencilla_claro.png ...
+    python docs/capture.py             # dark theme   -> 01_sencilla.png ...
+    python docs/capture.py claro       # light theme  -> 01_sencilla_claro.png ...
 
-Guarda PNG en docs/img/ (o en la carpeta de la variable CAPTURAS_SALIDA). Cada
-captura acota el recorte a la ventana de la propia app (nunca al escritorio completo).
+It saves PNGs in docs/img/ (or in the folder of the CAPTURAS_SALIDA variable). Each
+capture limits the crop to the window of the app itself (never to the whole desktop).
 
-Es DETERMINISTA: carpeta de ejemplo con nombre fijo, fotos generadas siempre iguales y
-fechas fijas. Dos ejecuciones seguidas dan imágenes idénticas píxel a píxel, y eso sirve
-para comprobar que un cambio interno de la app no ha alterado su aspecto.
+It is DETERMINISTIC: sample folder with a fixed name, photos always generated the same, and
+fixed dates. Two runs in a row give pixel-identical images, and that is useful
+to check that an internal change to the app has not altered its appearance.
 """
 
 import os
@@ -26,12 +26,12 @@ IMG.mkdir(exist_ok=True)
 THEME = sys.argv[1] if len(sys.argv) > 1 else "oscuro"
 SUFFIX = "" if THEME == "oscuro" else f"_{THEME}"
 
-# Carpeta de ejemplo con ruta neutra, para que en las capturas no salga el
-# nombre de usuario de Windows (como pasaría con la carpeta temporal).
+# Sample folder with a neutral path, so that the Windows user name
+# does not appear in the screenshots (as it would with the temporary folder).
 BASE_DEMO = Path(os.environ.get("CAPTURAS_BASE", "C:/Demo"))
 BASE_DEMO.mkdir(parents=True, exist_ok=True)
 tmp = BASE_DEMO / "muestra"
-shutil.rmtree(tmp, ignore_errors=True)       # solo la carpeta de ejemplo de este script
+shutil.rmtree(tmp, ignore_errors=True)       # only this script's sample folder
 tmp.mkdir()
 os.environ["APPDATA"] = str(tmp / "appdata")
 sys.path.insert(0, str(APP))
@@ -48,7 +48,7 @@ FIXED_DATE = datetime(2026, 1, 15, 12, 0, 0)
 
 
 class _FixedNow(datetime):
-    """datetime.now() con fechas fijas (una más por llamada, para que los ids no choquen)."""
+    """datetime.now() with fixed dates (one more per call, so that the ids do not clash)."""
 
     _n = 0
 
@@ -85,7 +85,7 @@ def snap(widget, name):
     print("  ", name)
 
 
-# ---- montar carpetas de ejemplo -----------------------------------
+# ---- set up sample folders -----------------------------------
 base_dup = tmp / "Fotos"
 for rel in ("2023/verano/playa.png", "2023/verano/atardecer.png",
             "Descargas/playa.png", "Descargas/atardecer (1).png",
@@ -93,7 +93,7 @@ for rel in ("2023/verano/playa.png", "2023/verano/atardecer.png",
     p = base_dup / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     photo(zlib.crc32(rel.encode()) % 999).save(p)
-# duplicados EXACTOS
+# EXACT duplicates
 b = (base_dup / "2023/verano/playa.png").read_bytes()
 (base_dup / "Descargas/playa.png").write_bytes(b)
 b2 = (base_dup / "2023/verano/atardecer.png").read_bytes()
@@ -108,11 +108,11 @@ for rel in ("WhatsApp/img1.jpg", "WhatsApp/img2.jpg", "Camara/DCIM/foto.jpg",
 (gather_base / "Camara/notas.txt").write_text("x")
 (gather_base / "Descargas/factura.pdf").write_bytes(b"%PDF")
 
-# Fechas de modificación fijas (la vista previa las enseña).
+# Fixed modification dates (the preview shows them).
 for _f in tmp.rglob('*'):
     os.utime(_f, (FIXED_DATE.timestamp(), FIXED_DATE.timestamp()))
 
-# historial de ejemplo
+# sample history
 history.record("cuarentena", "mover", str(base_dup), str(tmp / "Cuarentena"),
                     [(str(base_dup / "x"), str(tmp / "Cuarentena" / "x"))] * 4,
                     "4 duplicados exactos")
@@ -140,7 +140,7 @@ def run():
     app.after(delay, run)
 
 
-# --- Sencilla ----------------------------------------------------
+# --- Simple --------------------------------------------------------
 def p_simple_scan():
     app._mode = "sencillo"
     app._apply_mode()
@@ -158,7 +158,7 @@ def p_simple_shot():
     snap(app, "01_sencilla.png")
 
 
-# --- Avanzada --------------------------------------------------
+# --- Advanced --------------------------------------------------
 def p_advanced():
     app._mode = "avanzado"
     app._apply_mode()
@@ -182,7 +182,7 @@ def p_options_shot():
     app.exact._toggle_options()
 
 
-# --- Parecidas ------------------------------------------------
+# --- Similar ------------------------------------------------
 def p_similar():
     app.tabs.set(f"{icons.CAT_IMAGES}  Fotos parecidas")
     app.similar.entry_folder.insert(0, str(base_dup))
@@ -194,7 +194,7 @@ def p_similar_shot():
     snap(app, "04_parecidas.png")
 
 
-# --- Reunir --------------------------------------------------
+# --- Gather --------------------------------------------------
 def p_gather():
     app.tabs.set(f"{icons.GATHER}  Reunir imágenes")
     app.gather.entry_folder.insert(0, str(gather_base))
@@ -206,7 +206,7 @@ def p_gather_shot():
     snap(app, "05_reunir.png")
 
 
-# --- Diálogos -----------------------------------------------
+# --- Dialogs -----------------------------------------------
 def p_kinds():
     from core.gather import non_image_kinds, list_all
     _img, others = list_all(str(gather_base))
@@ -276,9 +276,9 @@ app.after(40000, app.destroy)
 app.mainloop()
 print("Capturas en", IMG)
 
-# Limpieza: borra solo la carpeta de ejemplo que creó este script.
+# Cleanup: deletes only the sample folder created by this script.
 shutil.rmtree(tmp, ignore_errors=True)
 try:
-    BASE_DEMO.rmdir()          # solo si ha quedado vacía
+    BASE_DEMO.rmdir()          # only if it has been left empty
 except OSError:
     pass

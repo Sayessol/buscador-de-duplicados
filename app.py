@@ -1,4 +1,4 @@
-"""Punto de entrada de la app de duplicados.
+"""Entry point of the duplicates app.
 
     python app.py
 """
@@ -6,18 +6,18 @@
 import os
 import sys
 
-# Permite ejecutar tanto `python app.py` como otros lanzadores.
+# Allows running both `python app.py` and other launchers.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 def _ensure_outputs():
-    """Evita que la app se caiga por un simple aviso en el .exe sin consola.
+    """Keeps the app from crashing over a simple warning in the .exe without a console.
 
-    En un .exe de ventana (sin consola) sys.stdout y sys.stderr valen None. Si
-    una librería intenta escribir un aviso (por ejemplo CustomTkinter cuando no
-    puede cargar una fuente porque la ruta de la carpeta es demasiado larga),
-    daría «'NoneType' object has no attribute 'write'» y la app no abriría.
-    Se sustituyen por un destino que descarta lo escrito.
+    In a windowed .exe (no console) sys.stdout and sys.stderr are None. If
+    a library tries to write a warning (for example CustomTkinter when it
+    cannot load a font because the folder path is too long),
+    it would raise "'NoneType' object has no attribute 'write'" and the app would not open.
+    They are replaced by a destination that discards what is written.
     """
     for name in ("stdout", "stderr"):
         if getattr(sys, name) is None:
@@ -28,8 +28,8 @@ _ensure_outputs()
 
 from core import app_logging  # noqa: E402
 
-app_logging.start()              # empieza a anotar en %APPDATA%\BuscadorDuplicados\registro
-app_logging.install_hooks()     # y anota también los errores que nadie ha capturado
+app_logging.start()              # starts logging to %APPDATA%\BuscadorDuplicados\registro
+app_logging.install_hooks()     # and also log the errors nobody has caught
 
 from ui.main_window import launch  # noqa: E402
 

@@ -1,10 +1,10 @@
-"""Prueba de humo de las ventanas auxiliares, con la interfaz de verdad:
+"""Smoke test of the auxiliary windows, with the real interface:
 
-  · el visor de imagen (zoom, ajustar, rueda, imagen rota, archivo que no es imagen),
-  · el historial (deshacer un «mover», deshacer un «copiar», y un deshacer que falla),
-  · el diálogo de qué hacer con los archivos que no son imágenes (aplicar y cancelar),
-  · el desglose por extensión (excluir una),
-  · la exportación a CSV y las miniaturas / vista previa de imágenes.
+  · the image viewer (zoom, fit, wheel, broken image, a file that is not an image),
+  · the history (undo a "mover", undo a "copiar", and an undo that fails),
+  · the dialog about what to do with files that are not images (apply and cancel),
+  · the breakdown by extension (excluding one),
+  · the CSV export and the thumbnails / image preview.
 
     python tests/smoke_dialogs.py
 """
@@ -18,7 +18,7 @@ from tkinter import filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# No toca los datos reales del usuario (historial, configuración):
+# It does not touch the user's real data (history, configuration):
 TMP = Path(tempfile.mkdtemp(prefix="dup_dlg_"))
 os.environ["APPDATA"] = str(TMP / "appdata")
 
@@ -37,7 +37,7 @@ from ui.extension_breakdown_dialog import ExtensionBreakdownWindow     # noqa: E
 
 failures = []
 warnings = {"preguntas": 0, "info": 0, "aviso": 0, "error": 0}
-warning_texts = []       # para explicar un fallo si una comprobación no se cumple
+warning_texts = []       # to explain a failure if a check is not met
 
 
 def check(cond, msg):
@@ -66,7 +66,7 @@ def main():
     app = MainWindow()
     app.update()
 
-    # ------------------------------------------------------------ visor de imagen
+    # ------------------------------------------------------------ image viewer
     print("Visor de imagen")
     photo = TMP / "foto.png"
     Image.new("RGB", (800, 600), (30, 120, 200)).save(photo)
@@ -98,12 +98,12 @@ def main():
     check(broken_viewer._orig is None, "una imagen rota no hace caer el visor")
     broken_viewer.destroy()
 
-    open_viewer(app, str(TMP / "notas.txt"))                      # no es imagen: no abre nada
-    open_viewer(app, str(TMP / "no_existe.png"))                  # no existe: tampoco
+    open_viewer(app, str(TMP / "notas.txt"))                      # not an image: it opens nothing
+    open_viewer(app, str(TMP / "no_existe.png"))                  # does not exist: neither
     check(not any(isinstance(h, ImageViewer) for h in app.winfo_children()),
           "no abre el visor para archivos que no son imágenes o no existen")
 
-    # ------------------------------------------------- miniaturas y vista previa
+    # ------------------------------------------------- thumbnails and preview
     print("Miniaturas")
     mini = thumbnails.thumbnail_or_placeholder(str(photo), 40)
     check(mini.size == (40, 40), "miniatura cuadrada de una imagen real")
@@ -115,7 +115,7 @@ def main():
           "vista previa de imagen rota: recuadro")
     check(icons.window_icon(32).width() == 32, "el icono de la ventana se dibuja")
 
-    # ------------------------------------------------------------------ historial
+    # ------------------------------------------------------------------ history
     print("Historial")
     empty = HistoryWindow(app)
     app.update()
@@ -127,7 +127,7 @@ def main():
     destination.mkdir()
     moved = source / "movido.txt"
     moved.write_text("hola")
-    (destination / "movido.txt").write_text("hola")     # simula el archivo ya movido
+    (destination / "movido.txt").write_text("hola")     # simulates the file already moved
     moved.unlink()
     copied_source = source / "copiado.txt"
     copied_source.write_text("original")
@@ -140,7 +140,7 @@ def main():
     app.update()
     ops = history.list_all()
     check(len(ops) == 2, "el historial lista las dos operaciones")
-    op_copy, op_move = ops[0], ops[1]          # la más reciente primero
+    op_copy, op_move = ops[0], ops[1]          # the most recent first
     window._undo(op_move)
     check(moved.exists() and not (destination / "movido.txt").exists(),
           "deshacer un «mover» devuelve el archivo a su sitio")
@@ -159,7 +159,7 @@ def main():
           "si no se puede deshacer, se avisa y la operación sigue sin marcarse")
     window.destroy()
 
-    # --------------------------------------- qué hacer con los archivos que no son imágenes
+    # --------------------------------------- what to do with files that are not images
     print("Diálogo de tipos no imagen")
     kinds = {"pdf": ["a.pdf"], "txt": ["b.txt", "c.txt"], "mp3": ["d.mp3"]}
     dlg = NonImageKindsWindow(app, kinds)
@@ -184,7 +184,7 @@ def main():
     dlg2._cancel()
     check(dlg2.rules is None, "cancelar devuelve None (no se hace nada)")
 
-    # ---------------------------------------- desglose por extensión + exportar CSV
+    # ---------------------------------------- breakdown by extension + export CSV
     print("Desglose por extensión y CSV")
     data = TMP / "datos"
     (data / "a").mkdir(parents=True)
@@ -210,7 +210,7 @@ def main():
     check(len(rows) == 1 + 4 and rows[0][0] == "Grupo_Duplicado",
           "el CSV tiene cabecera y los 4 archivos duplicados")
     filedialog.asksaveasfilename = lambda *a, **k: ""
-    exact._export_csv()                          # cancelar: no hace nada ni falla
+    exact._export_csv()                          # cancel: it does nothing and does not fail
     filedialog.asksaveasfilename = lambda *a, **k: str(TMP / "no" / "existe" / "i.csv")
     errors_before = warnings["error"]
     exact._export_csv()

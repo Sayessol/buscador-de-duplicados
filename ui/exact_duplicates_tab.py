@@ -1,7 +1,7 @@
-"""Pestaña "Duplicados exactos": escanea una carpeta y decide qué copia conservar.
+""""Exact duplicates" tab: scans a folder and decides which copy to keep.
 
-Es un componente con su PROPIO estado (resultado del escaneo, selección, colas, hilos...):
-la ventana principal solo lo crea, le avisa del modo Sencilla / Avanzada y de que se cierra.
+It is a component with its OWN state (scan result, selection, queues, threads...):
+the main window only creates it, notifies it of the Simple / Advanced mode and that it is closing.
 """
 
 import datetime
@@ -38,23 +38,23 @@ from .extension_breakdown_dialog import ExtensionBreakdownWindow
 
 class ExactDuplicatesTab(ctk.CTkFrame):
     def __init__(self, container, advanced):
-        """`contenedor` es la pestaña del CTkTabview donde se coloca este componente;
-        `avanzado` es el modo con el que arranca la ventana."""
+        """`container` is the CTkTabview tab where this component is placed;
+        `advanced` is the mode the window starts with."""
         super().__init__(container, fg_color="transparent")
-        container.grid_columnconfigure(0, weight=1)    # el componente llena toda la pestaña
+        container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(6, weight=1)
 
         self._advanced = advanced
-        self._queue = queue.Queue()            # mensajes del hilo que escanea
+        self._queue = queue.Queue()            # messages from the thread that scans
         self._thread = None
         self._cancel_event = threading.Event()
         self._result = None
         self._selection = None
         self._scanned_folder = None
-        self._quarantine_queue = queue.Queue()       # mensajes del hilo que mueve a cuarentena
+        self._quarantine_queue = queue.Queue()       # messages from the quarantine thread
         self._excl_text = ""
 
         self._build_scan_card()
@@ -67,29 +67,30 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._set_initial_state()
 
     # ------------------------------------------------------------------
-    # Lo que la ventana principal le pide
+    # What the main window asks of it
     # ------------------------------------------------------------------
     def apply_mode(self, advanced):
-        """Muestra u oculta los controles «avanzados» (sin borrar widgets: así el
-        estado se conserva al alternar)."""
+        """Shows or hides the "advanced" controls (without deleting widgets, so the
+        state is kept when toggling)."""
         self._advanced = advanced
-        # En Sencilla se ocultan: panel de opciones, la fila de "carpeta
-        # preferida", "Ver tipos" y "Exportar CSV".
+        # In Simple mode these are hidden: the options panel, the "preferred
+        # folder" row, "View kinds" and "Export CSV".
         for w in (self._options_container, self.decision_card_header,
                   self.decision_card_row, self.btn_kinds, self.btn_export):
             (w.grid if advanced else w.grid_remove)()
         if not advanced and self._options_open.get():
-            self._toggle_options()       # colapsar el panel si estaba abierto
+            self._toggle_options()       # collapse the panel if it was open
 
     def on_switch_to_simple(self):
-        """Si ya hay resultados y se vuelve a Sencilla, la app decide sola otra vez."""
+        """If there are already results and the user goes back to Simple,
+        the app decides by itself again."""
         if self._selection is not None:
             self._selection.preselect_primary()
             self.table.refresh_all()
             self._on_selection_change()
 
     def cancel_jobs(self):
-        """Lo llama la ventana al cerrarse: si hay un escaneo en marcha, se cancela."""
+        """Called by the window when it closes: if a scan is running, it is cancelled."""
         if self._thread and self._thread.is_alive():
             self._cancel_event.set()
 
@@ -135,7 +136,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.options_panel.grid_remove()
         p = self.options_panel
 
-        # --- Buscar solo estos tipos (lista blanca) ------------------
+        # --- Search only these kinds (whitelist) ------------------
         ctk.CTkLabel(p, text="Buscar solo estos tipos de archivo:",
                      font=styles.base_font(12, "bold")).grid(
             row=0, column=0, columnspan=3, padx=16, pady=(12, 4), sticky="w")
@@ -168,7 +169,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         ctk.CTkFrame(p, height=1, fg_color=styles.COLOR_ALTERNATE_ROW).grid(
             row=4, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 8))
 
-        # --- Ignorar (lista negra) ----------------------------------
+        # --- Ignore (blacklist) ------------------------------------
         ctk.CTkLabel(p, text="Ignorar además:",
                      font=styles.base_font(12, "bold")).grid(
             row=5, column=0, columnspan=3, padx=16, pady=(0, 4), sticky="w")
@@ -282,7 +283,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.table_wrap.grid_rowconfigure(0, weight=1)
         self.table_wrap.grid_columnconfigure(0, weight=1)
 
-        # Contenedor izquierdo: tabla + estado vacío (mismo hueco).
+        # Left container: table + empty state (same spot).
         self.table_area = ctk.CTkFrame(self.table_wrap, fg_color="transparent")
         self.table_area.grid(row=0, column=0, sticky="nsew")
         self.table_area.grid_rowconfigure(0, weight=1)
@@ -300,7 +301,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             "Los grupos de archivos duplicados aparecerán aquí.")
         self.empty_state.grid(row=0, column=0, sticky="nsew")
 
-        # Panel de vista previa a la derecha.
+        # Preview panel on the right.
         self.panel_preview = ctk.CTkFrame(
             self.table_wrap, fg_color=styles.COLOR_CARD, width=290)
         self.panel_preview.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
@@ -371,7 +372,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             self.options_panel.grid_remove()
 
     def _toggle_category(self, name):
-        """Marca/desmarca las extensiones de una categoría en el campo."""
+        """Ticks/unticks the extensions of a category in the field."""
         current_set = parse_extensions(self.entry_include.get())
         exts = CATEGORY_EXTENSIONS[name]
         if self.chk_categories[name].get():
@@ -382,8 +383,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.entry_include.insert(0, set_to_text(current_set))
 
     def _sync_categories(self, _event=None):
-        """Tras editar el campo a mano, deja marcadas solo las categorías
-        cuyas extensiones estén todas presentes."""
+        """After editing the field by hand, leaves ticked only the categories
+        whose extensions are all present."""
         present = parse_extensions(self.entry_include.get())
         for name, chk in self.chk_categories.items():
             complete = CATEGORY_EXTENSIONS[name] <= present
@@ -441,7 +442,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.empty_state.tkraise()
 
     def _enable_actions(self, active):
-        # "Ver tipos" y "Exportar CSV" son botones "secundarios" (borde).
+        # "View kinds" and "Export CSV" are "secondary" buttons (with a border).
         for btn in (self.btn_kinds, self.btn_export):
             styles.activate_button(btn, active, fg="transparent",
                                  hover=styles.COLOR_TILE)
@@ -449,9 +450,9 @@ class ExactDuplicatesTab(ctk.CTkFrame):
     def _enable_decision(self, active):
         state = "normal" if active else "disabled"
         self.entry_preferred_folder.configure(state=state)
-        styles.activate_button(self.btn_choose_preferred, active)   # botón primario (azul)
-        styles.activate_button(self.btn_rule, active)          # botón primario (azul)
-        styles.activate_button(self.btn_primary, active,      # botón secundario (borde)
+        styles.activate_button(self.btn_choose_preferred, active)   # primary button (blue)
+        styles.activate_button(self.btn_rule, active)          # primary button (blue)
+        styles.activate_button(self.btn_primary, active,      # secondary button (border)
                              fg="transparent", hover=styles.COLOR_TILE)
         styles.action_button(self.btn_quarantine, active)
 
@@ -463,8 +464,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._on_selection_change()
 
     def _set_scanning(self, scanning):
-        # Mientras se escanea: "Elegir" y el campo de carpeta se apagan,
-        # y "Escanear" se convierte en "Cancelar" (rojo).
+        # While scanning: "Choose" and the folder field are switched off,
+        # and "Scan" turns into "Cancel" (red).
         styles.activate_button(self.btn_choose, not scanning)
         self.entry_folder.configure(state="disabled" if scanning else "normal")
         if scanning:
@@ -526,28 +527,28 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._enable_decision(False)
         self._set_scanning(True)
 
-        # --- PATRÓN hilo + cola + after() (se repite en toda la app) ---
-        # Tkinter no es "thread-safe": solo el hilo principal puede tocar
-        # widgets. Entonces:
-        #   · el trabajo pesado (escanear) corre en un hilo aparte,
-        #   · ese hilo NO toca la interfaz: solo mete mensajes en una cola,
-        #   · la interfaz llama a _revisar_cola() cada 100 ms, saca los
-        #     mensajes y actualiza los widgets desde el hilo principal.
-        # Así la ventana no se congela y se puede cancelar a mitad.
+        # --- thread + queue + after() PATTERN (repeated throughout the app) ---
+        # Tkinter is not thread-safe: only the main thread can touch
+        # widgets. So:
+        # · the heavy work (scanning) runs in a separate thread,
+        # · that thread does NOT touch the interface: it only puts messages in a queue,
+        # · the interface calls _poll_queue() every 100 ms, takes out the
+        # messages and updates the widgets from the main thread.
+        # This way the window does not freeze and the scan can be cancelled halfway.
         self._thread = threading.Thread(target=self._scan_job,
                                       args=(folder, filter), daemon=True)
         self._thread.start()
         self.after(100, self._poll_queue)
 
     def _cancel_scan(self):
-        # El hilo comprueba este evento entre archivo y archivo.
+        # The thread checks this event between one file and the next.
         self._cancel_event.set()
         self.lbl_state.configure(text="Cancelando…")
         self.btn_scan.configure(state="disabled")
 
     def _scan_job(self, folder, filter):
-        """Corre en el HILO SECUNDARIO. No toca ni un widget: todo va por
-        la cola como tuplas (tipo, dato)."""
+        """Runs in the SECONDARY THREAD. It does not touch a single widget: everything goes through
+        the queue as tuples (kind, data)."""
         try:
             result = scan(
                 folder,
@@ -558,17 +559,17 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             self._queue.put(("hecho", result))
         except ScanCancelled:
             self._queue.put(("cancelado", None))
-        except Exception as e:  # cualquier fallo se anota en el registro y se muestra
+        except Exception as e:  # any failure is logged and shown
             log.exception("Falló el escaneo de %s", folder)
             self._queue.put(("error", e))
 
     def _poll_queue(self):
-        """Corre en el HILO PRINCIPAL. Vacía la cola y actúa según el tipo
-        de mensaje. Se vuelve a programar sola hasta que llega "hecho",
-        "cancelado" o "error"."""
+        """Runs in the MAIN THREAD. Empties the queue and acts according to the type
+        of message. It reschedules itself until "hecho",
+        "cancelado" or "error" arrives."""
         try:
             while True:
-                kind, datum = self._queue.get_nowait()   # lanza queue.Empty si no hay
+                kind, datum = self._queue.get_nowait()   # raises queue.Empty if there is none
                 if kind == "progreso":
                     self._apply_progress(datum)
                 elif kind == "hecho":
@@ -582,7 +583,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                     return
         except queue.Empty:
             pass
-        self.after(100, self._poll_queue)          # seguir mirando
+        self.after(100, self._poll_queue)          # keep polling
 
     def _apply_progress(self, p):
         self.lbl_state.configure(text=p.message)
@@ -781,7 +782,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                 selection, root, quarantine_folder,
                 progress=lambda a, t, m: self._quarantine_queue.put(("progreso", (a, t, m))))
             self._quarantine_queue.put(("hecho", (res, quarantine_folder)))
-        except Exception as e:  # se anota en el registro y se muestra al usuario
+        except Exception as e:  # it is logged and shown to the user
             log.exception("Falló el movimiento a cuarentena (origen %s, destino %s)",
                           root, quarantine_folder)
             self._quarantine_queue.put(("error", e))
@@ -855,18 +856,18 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         open_viewer(self.winfo_toplevel(), path or self._preview_path)
 
     def _clear_preview_image(self):
-        """Borra la imagen del panel de vista previa.
+        """Clears the image of the preview panel.
 
-        CTkLabel.configure(image=None) NO quita la imagen que ya se estaba
-        mostrando (fallo conocido de CustomTkinter 5.2.2), así que se limpia el
-        Label de tkinter que hay por dentro.
+        CTkLabel.configure(image=None) does NOT remove the image that was already being
+        shown (a known CustomTkinter 5.2.2 bug), so the tkinter
+        Label inside is cleared instead.
         """
         self.preview_img.configure(image=None)
         self.preview_img._label.configure(image="")
         self._preview_ctkimg = None
 
     def _preview_file(self, path):
-        """Muestra la vista grande del archivo seleccionado en la tabla."""
+        """Shows the large preview of the file selected in the table."""
         self._preview_path = path
         if not path:
             self._clear_preview_image()
@@ -879,13 +880,13 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         try:
             pil = large_preview(path)
-        except Exception:  # sin vista previa; se anota para poder investigarlo
+        except Exception:  # no preview; it is logged so it can be investigated
             log.warning("No se pudo mostrar la vista previa de %s", path, exc_info=True)
             pil = None
         if pil is not None:
             img = ctk.CTkImage(light_image=pil, dark_image=pil,
                                size=(pil.width, pil.height))
-            self._preview_ctkimg = img  # guardar referencia
+            self._preview_ctkimg = img  # keep the reference
             self.preview_img.configure(image=img, text="")
         else:
             self._clear_preview_image()
@@ -900,7 +901,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                 from PIL import Image
                 with Image.open(path) as im:
                     data.append(f"{im.width}×{im.height}")
-            except (OSError, ValueError):  # si no se puede leer, se omite la resolución
+            except (OSError, ValueError):  # if it cannot be read, the resolution is omitted
                 pass
         try:
             st = os.stat(path)

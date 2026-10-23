@@ -1,76 +1,76 @@
-"""Colores, fuentes y tema de la interfaz.
+"""Colours, fonts and theme of the interface.
 
-Todo centralizado para que la app tenga un aspecto coherente y sea fácil
-de retocar en un solo sitio.
+Everything is centralized so the app has a coherent look and is easy
+to tweak in a single place.
 
-Tema claro / oscuro
--------------------
-La app puede ir en modo **claro**, **oscuro** o **automático** (sigue al
-sistema). Cada color se define como una tupla ``(claro, oscuro)``:
+Light / dark theme
+------------------
+The app can run in **light**, **dark** or **automatic** mode (it follows the
+system). Each colour is defined as a ``(light, dark)`` tuple:
 
-* Los widgets de CustomTkinter aceptan esa tupla tal cual y cambian solos
-  cuando cambia el tema.
-* Para lo que NO es CustomTkinter (la tabla ``ttk.Treeview`` y algún
-  ``tk.Canvas``) se usa ``col(tupla)``, que devuelve el color que toca
-  según el tema activo. Esos elementos se re-pintan a mano cuando el tema
-  cambia (ver ``_set_appearance_mode`` en main_window y results_table).
+* CustomTkinter widgets accept that tuple as it is and switch on their own
+  when the theme changes.
+* For what is NOT CustomTkinter (the ``ttk.Treeview`` table and some
+  ``tk.Canvas``) ``col(tuple)`` is used, which returns the colour that applies
+  for the active theme. Those elements are repainted by hand when the theme
+  changes (see ``_set_appearance_mode`` in main_window and results_table).
 
-Contraste
----------
-Los colores de texto están elegidos para cumplir contraste WCAG AA
-(>= 4.5:1) sobre su fondo real, en los dos temas.
+Contrast
+--------
+The text colours are chosen to meet WCAG AA contrast
+(>= 4.5:1) against their real background, in both themes.
 """
 
 import tkinter.font as tkfont
 
 import customtkinter as ctk
 
-THEME_COLOR = "blue"        # tema base de CustomTkinter para los botones
+THEME_COLOR = "blue"        # base CustomTkinter theme for the buttons
 
-# "auto" (sistema) | "claro" | "oscuro"  ->  valor interno de CustomTkinter
+# "auto" (system) | "claro" (light) | "oscuro" (dark)  ->  internal CustomTkinter value
 _THEME_MAP = {"auto": "system", "claro": "light", "oscuro": "dark"}
 THEMES = ("auto", "claro", "oscuro")
 
 # ----------------------------------------------------------------------
-# Paleta   (claro, oscuro)
+# Palette   (light, dark)
 # ----------------------------------------------------------------------
-# Superficies
-COLOR_BACKGROUND        = ("#f2f4f7", "#242424")   # fondo de la ventana
-COLOR_HEADER     = ("#e7eaef", "#1e1e1e")   # barra de título de la app
-COLOR_CARD      = ("#ffffff", "#2b2b2b")   # tarjetas de sección
-COLOR_TILE      = ("#eef1f5", "#333333")   # baldosas de estadística
-COLOR_TABLE_BACKGROUND  = ("#ffffff", "#2b2b2b")   # fondo de la tabla ttk
+# Surfaces
+COLOR_BACKGROUND        = ("#f2f4f7", "#242424")   # window background
+COLOR_HEADER     = ("#e7eaef", "#1e1e1e")   # title bar of the app
+COLOR_CARD      = ("#ffffff", "#2b2b2b")   # section cards
+COLOR_TILE      = ("#eef1f5", "#333333")   # statistics tiles
+COLOR_TABLE_BACKGROUND  = ("#ffffff", "#2b2b2b")   # background of the ttk table
 COLOR_ALTERNATE_ROW = ("#eef1f5", "#323232")
-COLOR_BORDER        = ("#c9d0d9", "#4a4d52")   # borde de botones "secundarios"
+COLOR_BORDER        = ("#c9d0d9", "#4a4d52")   # border of "secondary" buttons
 
-# Texto
-COLOR_TEXT        = ("#1e2227", "#e6ebf2")   # texto principal
-COLOR_MUTED_TEXT  = ("#586069", "#a9b0ba")   # texto secundario / pistas
+# Text
+COLOR_TEXT        = ("#1e2227", "#e6ebf2")   # main text
+COLOR_MUTED_TEXT  = ("#586069", "#a9b0ba")   # secondary text / hints
 
-# Acentos (como color de TEXTO; ya contrastan sobre tarjeta y fondo)
+# Accents (as TEXT colour; they already contrast on card and background)
 COLOR_ACCENT       = ("#1f6aa5", "#4aa3df")
-COLOR_OK           = ("#1c7c4a", "#57c98b")   # "conservar" / validación correcta
-COLOR_WARNING  = ("#8a5a00", "#e6bf49")   # "mover" / avisos
-COLOR_DANGER      = ("#b5372c", "#ea6f66")   # errores (texto)
+COLOR_OK           = ("#1c7c4a", "#57c98b")   # "keep" / validation passed
+COLOR_WARNING  = ("#8a5a00", "#e6bf49")   # "move" / warnings
+COLOR_DANGER      = ("#b5372c", "#ea6f66")   # errors (text)
 
-# Rellenos de botón (llevan texto BLANCO encima en los dos temas)
-COLOR_SELECTION     = ("#1f6aa5", "#1f6aa5")  # fila seleccionada de la tabla
-COLOR_OK_BUTTON      = ("#1e7850", "#25805a")  # botón de acción (mover, reunir)
-COLOR_DANGER_BUTTON = ("#c0392b", "#b5372c")  # botón peligroso (cancelar)
+# Button fills (they carry WHITE text on top in both themes)
+COLOR_SELECTION     = ("#1f6aa5", "#1f6aa5")  # selected row of the table
+COLOR_OK_BUTTON      = ("#1e7850", "#25805a")  # action button (move, gather)
+COLOR_DANGER_BUTTON = ("#c0392b", "#b5372c")  # dangerous button (cancel)
 
-# Botón DESHABILITADO: relleno y texto grises, para que se entienda que
-# está apagado y no se confunda con un color de error o de acción.
+# DISABLED button: grey fill and text, so it is understood that it
+# is switched off and not mistaken for an error or action colour.
 COLOR_BUTTON_OFF        = ("#dfe3e8", "#3a3d42")
 COLOR_BUTTON_OFF_TEXT  = ("#98a0aa", "#6b7078")
 
-# Fila de un grupo todavía sin resolver (fondo suave).
+# Row of a group that is still unresolved (soft background).
 COLOR_PENDING_GROUP = ("#fbf1d5", "#4a3a12")
 
 
 def col(t):
-    """De una tupla (claro, oscuro) devuelve el color del tema activo.
+    """From a (light, dark) tuple returns the colour of the active theme.
 
-    Para elementos que no son de CustomTkinter (ttk, tk.Canvas).
+    For elements that are not CustomTkinter (ttk, tk.Canvas).
     """
     if isinstance(t, (list, tuple)):
         return t[0] if ctk.get_appearance_mode() == "Light" else t[1]
@@ -78,23 +78,23 @@ def col(t):
 
 
 # ----------------------------------------------------------------------
-# Tema
+# Theme
 # ----------------------------------------------------------------------
-# Azul de los controles y texto que llevan encima. El tema base de CustomTkinter
-# usa #3B8ED0 en modo claro (texto blanco encima = 3,5:1) y texto #DCE4EE (2,7:1):
-# no llega a AA. Con #1F6AA5 y blanco puro el contraste es 5,7:1 en los dos temas.
+# Blue of the controls and the text on top of them. The base CustomTkinter theme
+# uses #3B8ED0 in light mode (white text on it = 3.5:1) and #DCE4EE text (2.7:1):
+# it does not reach AA. With #1F6AA5 and pure white the contrast is 5.7:1 in both themes.
 _BLUE = "#1F6AA5"
 _BLUE_HOVER = "#144870"
 _WHITE = "#FFFFFF"
-_TAB_GRAY = "#6B7078"        # pestañas sin seleccionar en modo claro (4,98:1 con blanco)
+_TAB_GRAY = "#6B7078"        # unselected tabs in light mode (4.98:1 with white)
 _TAB_GRAY_HOVER = "#565B5E"
 
 
 def _adjust_contrast():
-    """Sustituye los colores por defecto de CustomTkinter que no alcanzan AA."""
+    """Replaces the default CustomTkinter colours that do not reach AA."""
     t = ctk.ThemeManager.theme
 
-    def par(c):                      # mismo color en modo claro y oscuro
+    def par(c):                      # same colour in light and dark mode
         return [c, c]
 
     for name in ("CTkButton", "CTkOptionMenu", "CTkSegmentedButton"):
@@ -122,14 +122,14 @@ def _adjust_contrast():
 
 
 def apply_theme(theme="auto"):
-    """Llamar una vez al arrancar, antes de crear la ventana."""
+    """Call once at startup, before creating the window."""
     ctk.set_default_color_theme(THEME_COLOR)
 
-    # Retoques al tema base de CustomTkinter para que todos los botones
-    # sean coherentes:
-    #  · borde visible en los botones "secundarios" (los transparentes),
-    #  · texto claramente atenuado cuando están deshabilitados (que se
-    #    entienda que están apagados y no que hay un error).
+    # Tweaks to the base CustomTkinter theme so that all the buttons
+    # are consistent:
+    # · visible border on "secondary" buttons (the transparent ones),
+    # · clearly dimmed text when they are disabled (so that it is
+    # understood they are switched off and that it is not an error).
     b = ctk.ThemeManager.theme["CTkButton"]
     b["border_color"] = list(COLOR_BORDER)
     b["text_color_disabled"] = list(COLOR_BUTTON_OFF_TEXT)
@@ -139,26 +139,26 @@ def apply_theme(theme="auto"):
 
 
 def change_theme(theme):
-    """Cambia el tema en caliente. CustomTkinter re-pinta sus widgets solo;
-    lo demás lo re-pinta _set_appearance_mode en las ventanas."""
+    """Switches the theme on the fly. CustomTkinter repaints its widgets by itself;
+    the rest is repainted by _set_appearance_mode in the windows."""
     ctk.set_appearance_mode(_THEME_MAP.get(theme, "system"))
 
 
 # ----------------------------------------------------------------------
-# Botones: activar / desactivar dejando claro el estado
+# Buttons: enable / disable making the state clear
 # ----------------------------------------------------------------------
 def _button_theme(key):
     return ctk.ThemeManager.theme["CTkButton"][key]
 
 
 def activate_button(btn, active, *, fg=None, hover=None, text=None):
-    """Activa o desactiva un botón.
+    """Enables or disables a button.
 
-    Al desactivar: relleno y texto grises + cursor de "no". Así se ve que
-    está apagado y no parece un error ni una acción disponible.
-    Al activar: `fg`/`hover`/`texto` opcionales. Si el relleno es
-    "transparent" el texto pasa a ser el color de texto normal (oscuro en
-    claro, claro en oscuro); si es un relleno de color, texto claro.
+    When disabling: grey fill and text + a "no" cursor. This way it is clear that it
+    is switched off and it does not look like an error or an available action.
+    When enabling: optional `fg`/`hover`/`text`. If the fill is
+    "transparent" the text becomes the normal text colour (dark in
+    light, light in dark); if it is a colour fill, light text.
     """
     if active:
         if text is None:
@@ -174,18 +174,18 @@ def activate_button(btn, active, *, fg=None, hover=None, text=None):
                       text_color=COLOR_BUTTON_OFF_TEXT)
 
 
-# Verde «al pasar el ratón» del botón de acción (mover a cuarentena, reunir).
+# Green on mouse hover of the action button (move to quarantine, gather).
 ACTION_HOVER = ("#16623f", "#1f6b47")
 
 
 def action_button(btn, active):
-    """Botón verde de acción (mover a cuarentena, reunir): al desactivar se
-    pone gris para que se vea que está apagado."""
+    """Green action button (move to quarantine, gather): when disabled it
+    turns grey so it is clear it is switched off."""
     activate_button(btn, active, fg=COLOR_OK_BUTTON, hover=ACTION_HOVER)
 
 
 # ----------------------------------------------------------------------
-# Fuentes
+# Fonts
 # ----------------------------------------------------------------------
 def base_font(size=13, weight="normal"):
     return ctk.CTkFont(size=size, weight=weight)
@@ -200,7 +200,7 @@ def number_font(size=22):
 
 
 def table_font():
-    """Fuente para la tabla ttk (no acepta CTkFont, necesita tkfont)."""
+    """Font for the ttk table (it does not accept CTkFont, it needs tkfont)."""
     return tkfont.Font(family="Segoe UI", size=10)
 
 

@@ -1,16 +1,16 @@
-"""Puente con pytest: cada suite de esta carpeta aparece como una prueba.
+"""Bridge to pytest: each suite in this folder shows up as one test.
 
-    pytest                          # todo
-    pytest -m "not gui"             # solo lógica (rápido, sin ventanas)
-    pytest --cov                    # cobertura de core/ (ver pyproject.toml)
+    pytest                          # everything
+    pytest -m "not gui"             # logic only (fast, no windows)
+    pytest --cov                    # coverage of core/ (see pyproject.toml)
 
-Los scripts siguen funcionando solos (`python tests/check_filters.py`) y
-con `python tests/run_all.py`; esto solo los ejecuta desde pytest.
+The scripts still work on their own (`python tests/check_filters.py`) and
+with `python tests/run_all.py`; this only runs them from pytest.
 
-· Suites de lógica -> se importan y se llama a su main() DENTRO del proceso,
-  así pytest-cov puede medir qué líneas de core/ se ejecutan.
-· Suites con ventana (humo_*) -> un proceso aparte cada una: Tkinter no
-  lleva bien crear y destruir varias ventanas principales en el mismo proceso.
+· Logic suites -> imported and their main() is called INSIDE the process,
+  so pytest-cov can measure which lines of core/ run.
+· Window suites (smoke_*) -> a separate process each: Tkinter does not
+  cope well with creating and destroying several main windows in the same process.
 """
 
 import importlib
@@ -24,30 +24,30 @@ import pytest
 FOLDER = Path(__file__).resolve().parent
 
 LOGIC = [
-    "compare_with_original",      # paridad con el script original
-    "check_filters",             # filtro de exclusión + desglose por extensión
-    "check_selection",           # conservar/mover, regla de carpeta, validación
-    "check_quarantine",          # mover de verdad, log CSV, casos inválidos
-    "check_quarantine_folders",  # mueve ARCHIVOS, no carpetas
-    "check_perceptual",          # fotos parecidas: agrupación por hash perceptual
-    "check_gather",              # "Reunir imágenes": estrategias y reglas
-    "check_history",           # historial de operaciones + deshacer
+    "compare_with_original",      # parity with the original script
+    "check_filters",             # exclusion filter + breakdown by extension
+    "check_selection",           # keep/move, folder rule, validation
+    "check_quarantine",          # really moves, CSV log, invalid cases
+    "check_quarantine_folders",  # moves FILES, not folders
+    "check_perceptual",          # similar photos: grouping by perceptual hash
+    "check_gather",              # "Gather images": strategies and rules
+    "check_history",           # operation history + undo
 ]
 
 WINDOW = [
-    "smoke_window",               # ventana de punta a punta (flujo avanzado)
-    "smoke_similar",             # pestaña "Fotos parecidas"
-    "smoke_simple",              # modo Sencilla / Avanzada
-    "smoke_quarantine_ui",         # cuarentena desde la UI: archivos, no carpetas
-    "smoke_gather_ui",             # pestaña "Reunir imágenes" + historial + deshacer
-    "smoke_logging",              # errores inesperados quedan en el registro
-    "smoke_dialogs",              # visor, historial, diálogos, CSV y miniaturas
+    "smoke_window",               # window from end to end (advanced flow)
+    "smoke_similar",             # "Similar photos" tab
+    "smoke_simple",              # Simple / Advanced mode
+    "smoke_quarantine_ui",         # quarantine from the UI: files, not folders
+    "smoke_gather_ui",             # "Gather images" tab + history + undo
+    "smoke_logging",              # unexpected errors end up in the log
+    "smoke_dialogs",              # viewer, history, dialogs, CSV and thumbnails
 ]
 
 
 @pytest.fixture(autouse=True)
 def clean_env():
-    """Algunas suites cambian APPDATA o sys.path; se restaura al terminar."""
+    """Some suites change APPDATA or sys.path; it is restored when they finish."""
     env, path = dict(os.environ), list(sys.path)
     yield
     os.environ.clear()
@@ -69,7 +69,7 @@ def test_logic(name):
 @pytest.mark.gui
 @pytest.mark.parametrize("name", WINDOW)
 def test_window(name, tmp_path):
-    # Cada suite corre con su propio APPDATA: nunca toca el historial ni la config reales.
+    # Each suite runs with its own APPDATA: it never touches the real history or config.
     environment = {**os.environ, "APPDATA": str(tmp_path / "appdata")}
     r = subprocess.run([sys.executable, str(FOLDER / f"{name}.py")],
                        capture_output=True, text=True, encoding="utf-8",

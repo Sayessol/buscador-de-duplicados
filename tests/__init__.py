@@ -1,1 +1,1 @@
-"""Pruebas por consola del núcleo y de la ventana."""
+"""Console tests of the core and of the window."""

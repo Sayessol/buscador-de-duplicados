@@ -1,22 +1,22 @@
-"""Prueba de paridad: el núcleo nuevo detecta los mismos duplicados que
-el script de consola original `buscar_duplicados.py`.
+"""Parity test: the new core detects the same duplicates as
+the original console script `buscar_duplicados.py`.
 
-Qué hace:
-  1. Crea un árbol de carpetas de prueba con duplicados conocidos
-     (y varias trampas: mismo tamaño pero distinto contenido, archivos
-     vacíos, archivos grandes que solo difieren al final, etc.).
-  2. Lo escanea con el núcleo nuevo (core.scanner.escanear).
-  3. Lo escanea con la lógica del script original.
-  4. Compara los grupos de duplicados de ambos: deben ser idénticos
-     (mismos conjuntos de rutas). El valor del hash puede diferir
-     (uno usa BLAKE2b, el otro SHA-256); lo que importa es la
-     agrupación.
-  5. Si se pasa una ruta como argumento, repite la comparación sobre
-     esa carpeta real además del árbol sintético.
+What it does:
+  1. Creates a tree of test folders with known duplicates
+     (and several traps: same size but different content, empty
+     files, large files that only differ at the end, etc.).
+  2. Scans it with the new core (core.scanner.scan).
+  3. Scans it with the logic of the original script.
+  4. Compares the groups of duplicates from both: they must be identical
+     (same sets of paths). The hash value may differ
+     (one uses BLAKE2b, the other SHA-256); what matters is the
+     grouping.
+  5. If a path is passed as an argument, repeats the comparison on
+     that real folder as well as on the synthetic tree.
 
-Uso:
+Usage:
     python tests/compare_with_original.py
-    python tests/compare_with_original.py "D:\\CarpetaReal"
+    python tests/compare_with_original.py "D:\\RealFolder"
 """
 
 import importlib.util
@@ -25,16 +25,16 @@ import sys
 import tempfile
 from pathlib import Path
 
-# --- imports del proyecto ------------------------------------------------
-APP_ROOT = Path(__file__).resolve().parents[1]          # raíz del repo
-REPO_ROOT = APP_ROOT / "docs" / "origin"                 # aquí está el script original
+# --- project imports ------------------------------------------------
+APP_ROOT = Path(__file__).resolve().parents[1]          # root of the repo
+REPO_ROOT = APP_ROOT / "docs" / "origin"                 # the original script is here
 sys.path.insert(0, str(APP_ROOT))
 
 from core.scanner import scan                        # noqa: E402
 
 
 def _load_original_script():
-    """Importa buscar_duplicados.py desde docs/origin/ como módulo."""
+    """Imports buscar_duplicados.py from docs/origin/ as a module."""
     path = REPO_ROOT / "buscar_duplicados.py"
     if not path.exists():
         raise FileNotFoundError(
@@ -48,8 +48,8 @@ def _load_original_script():
 
 
 # ----------------------------------------------------------------------
-# Normalización de resultados a "conjunto de grupos", donde cada grupo
-# es un frozenset de rutas absolutas normalizadas.
+# Normalization of results to a "set of groups", where each group
+# is a frozenset of normalized absolute paths.
 # ----------------------------------------------------------------------
 def _norm(path):
     return os.path.normcase(os.path.abspath(path))
@@ -73,7 +73,7 @@ def original_script_groups(folder, orig):
 
 
 # ----------------------------------------------------------------------
-# Árbol de prueba sintético.
+# Synthetic test tree.
 # ----------------------------------------------------------------------
 def build_test_tree(base: Path):
     def write(rel, data: bytes):
@@ -85,31 +85,31 @@ def build_test_tree(base: Path):
     content_a = b"contenido identico A\n" * 10
     content_b = b"otra cosa totalmente distinta B\n" * 7
     large_1 = b"X" * 200_000 + b"final-1"
-    large_2 = b"X" * 200_000 + b"final-2"   # mismo tamaño, difiere al final
-    large_3 = b"X" * 200_000 + b"final-1"   # duplicado real de grande_1
+    large_2 = b"X" * 200_000 + b"final-2"   # same size, differs at the end
+    large_3 = b"X" * 200_000 + b"final-1"   # real duplicate of large_1
 
-    # Grupo duplicado 1: 3 copias del mismo contenido en carpetas distintas
+    # Duplicate group 1: 3 copies of the same content in different folders
     write("originales/doc.txt", content_a)
     write("copias/doc (1).txt", content_a)
     write("backup/sub/doc.txt", content_a)
 
-    # Grupo duplicado 2: 2 copias de otro contenido
+    # Duplicate group 2: 2 copies of other content
     write("fotos/img.dat", content_b)
     write("fotos/respaldo/img.dat", content_b)
 
-    # Trampa: mismo tamaño que contenido_b pero distinto contenido -> NO dup
+    # Trap: same size as content_b but different content -> NOT a dup
     write("fotos/casi.dat", b"z" * len(content_b))
 
-    # Archivos grandes: grande_1 y grande_3 son duplicados; grande_2 no.
+    # Large files: large_1 and large_3 are duplicates; large_2 is not.
     write("grandes/a.bin", large_1)
     write("grandes/b.bin", large_2)
     write("grandes/c.bin", large_3)
 
-    # Trampa: dos archivos vacíos (mismo contenido: ninguno) -> SÍ son dup
+    # Trap: two empty files (same content: none) -> they ARE dups
     write("vacios/uno.txt", b"")
     write("vacios/dos.txt", b"")
 
-    # Archivo único sin pareja
+    # Single file with no match
     write("solo/unico.txt", b"nadie mas tiene esto\n")
 
 
