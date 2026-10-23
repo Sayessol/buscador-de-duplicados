@@ -357,7 +357,7 @@ C += [p(
     "<font face='Courier'>messagebox</font> se sustituyen por funciones que "
     "devuelven un valor fijo) y pulsan los métodos de los botones.")]
 C += [pre(
-    "pytest   # 128 pruebas;  pytest --cov = cobertura (núcleo 93 %, interfaz 79 %)\n"
+    "pytest   # 134 pruebas;  pytest --cov = cobertura (núcleo 93 %, interfaz 79 %)\n"
     "python pruebas/probar_perceptual.py \"D:\\Fotos\" 10   # con datos reales")]
 
 C += [h1("6. Añadir una función nueva: receta")]

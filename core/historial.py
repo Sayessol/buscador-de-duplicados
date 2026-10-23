@@ -14,6 +14,7 @@ Deshacer:
 import json
 import os
 import shutil
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,11 @@ from .registro import log
 from .tipos import FuncProgreso
 
 _MAX_OPERACIONES = 80
+
+# Windows (antivirus, indexer) can lock a freshly created file for a moment, and
+# `os.remove` then fails with PermissionError: retry for a few tenths of a second.
+_REMOVE_ATTEMPTS = 5
+_REMOVE_DELAY = 0.1     # seconds, growing with each attempt (0.1 + 0.2 + 0.3 + 0.4)
 
 TIPO_CUARENTENA = "cuarentena"
 TIPO_REUNIR = "reunir"
@@ -97,6 +103,25 @@ def _marcar_deshecha(op_id: str) -> None:
     _guardar(lista)
 
 
+def _remove_with_retries(path: str) -> None:
+    """Delete a file or folder, retrying briefly if Windows reports it as in use.
+
+    If it is still locked after the last attempt, the PermissionError (an OSError) is
+    raised again and the caller records it as a failure, like any other undo error.
+    """
+    for attempt in range(1, _REMOVE_ATTEMPTS + 1):
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            elif os.path.exists(path):
+                os.remove(path)
+            return
+        except PermissionError:
+            if attempt == _REMOVE_ATTEMPTS:
+                raise
+            time.sleep(_REMOVE_DELAY * attempt)
+
+
 def deshacer(op_id: str, progreso: FuncProgreso | None = None) -> dict[str, Any]:
     """Revierte la operación `op_id`.
 
@@ -122,10 +147,7 @@ def deshacer(op_id: str, progreso: FuncProgreso | None = None) -> dict[str, Any]
             if op["accion"] == "copiar":
                 # Deshacer una copia = borrar lo que la app copió en el
                 # destino. El original nunca se toca.
-                if os.path.isdir(destino):
-                    shutil.rmtree(destino)
-                elif os.path.exists(destino):
-                    os.remove(destino)
+                _remove_with_retries(destino)
                 ok += 1
             else:  # "mover" -> llevar el archivo de vuelta a su origen
                 if not os.path.exists(destino):
