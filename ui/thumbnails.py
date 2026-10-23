@@ -14,118 +14,118 @@ import threading
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from core.filtros import CATEGORIAS_EXTENSIONES
-from core.registro import log
+from core.filters import CATEGORY_EXTENSIONS
+from core.app_logging import log
 
-LADO_MINIATURA = 150
-LADO_FILA = 40          # miniatura pequeña de cada fila de la tabla
-LADO_VISTA = 250        # panel de vista grande
+THUMBNAIL_SIDE = 150
+ROW_THUMBNAIL_SIDE = 40          # miniatura pequeña de cada fila de la tabla
+PREVIEW_SIDE = 250        # panel de vista grande
 
 # Color de fondo del placeholder según la categoría del archivo.
-_COLOR_CATEGORIA = {
+_COLOR_CATEGORY = {
     "Imágenes": "#3f6d52",
     "Audio": "#54487a",
     "Vídeo": "#7a4a4a",
     "Documentos": "#3a5a7a",
     "Comprimidos": "#7a6234",
 }
-_COLOR_OTRO = "#454545"
-_COLOR_TEXTO = "#eaeef4"
+_COLOR_OTHER = "#454545"
+_COLOR_TEXT = "#eaeef4"
 
-EXT_IMAGEN = CATEGORIAS_EXTENSIONES["Imágenes"] | {"jpe", "ppm", "pgm"}
+IMAGE_EXT = CATEGORY_EXTENSIONS["Imágenes"] | {"jpe", "ppm", "pgm"}
 
 # Caché en memoria: (ruta, lado) -> PIL.Image. Se limpia al reescanear.
 _cache = {}
 _cache_lock = threading.Lock()
 
 
-def limpiar_cache():
+def clear_cache():
     with _cache_lock:
         _cache.clear()
 
 
-def _categoria_de(ext):
-    for nombre, exts in CATEGORIAS_EXTENSIONES.items():
+def _category_of(ext):
+    for name, exts in CATEGORY_EXTENSIONS.items():
         if ext in exts:
-            return nombre
+            return name
     return None
 
 
-def _fuente(tam):
-    for nombre in ("segoeui.ttf", "arial.ttf", "DejaVuSans.ttf"):
+def _font(size):
+    for name in ("segoeui.ttf", "arial.ttf", "DejaVuSans.ttf"):
         try:
-            return ImageFont.truetype(nombre, tam)
+            return ImageFont.truetype(name, size)
         except OSError:
             continue
     return ImageFont.load_default()
 
 
-def placeholder_extension(ruta, lado=LADO_MINIATURA):
-    ext = os.path.splitext(ruta)[1].lower().lstrip(".")
-    color = _COLOR_CATEGORIA.get(_categoria_de(ext), _COLOR_OTRO)
-    im = Image.new("RGB", (lado, lado), color)
+def placeholder_extension(path, side=THUMBNAIL_SIDE):
+    ext = os.path.splitext(path)[1].lower().lstrip(".")
+    color = _COLOR_CATEGORY.get(_category_of(ext), _COLOR_OTHER)
+    im = Image.new("RGB", (side, side), color)
     d = ImageDraw.Draw(im)
 
-    texto = f".{ext}" if ext else "sin ext."
-    fuente = _fuente(max(10, int(lado * (0.30 if len(texto) <= 4 else 0.20))))
-    izq, arr, der, aba = d.textbbox((0, 0), texto, font=fuente)
-    d.text(((lado - (der - izq)) / 2 - izq, (lado - (aba - arr)) / 2 - arr),
-           texto, fill=_COLOR_TEXTO, font=fuente)
+    text = f".{ext}" if ext else "sin ext."
+    font = _font(max(10, int(side * (0.30 if len(text) <= 4 else 0.20))))
+    left, up, right, down = d.textbbox((0, 0), text, font=font)
+    d.text(((side - (right - left)) / 2 - left, (side - (down - up)) / 2 - up),
+           text, fill=_COLOR_TEXT, font=font)
     return im
 
 
-def cargar_miniatura(ruta, lado=LADO_MINIATURA):
+def load_thumbnail(path, side=THUMBNAIL_SIDE):
     """PIL.Image cuadrada `lado`x`lado` (recorte centrado) de una imagen.
 
     Lanza si el archivo no se puede abrir como imagen.
     """
-    with Image.open(ruta) as im:
+    with Image.open(path) as im:
         try:
-            im.draft("RGB", (lado * 2, lado * 2))
+            im.draft("RGB", (side * 2, side * 2))
         except (ValueError, OSError):  # draft es opcional
             pass
         im = ImageOps.exif_transpose(im).convert("RGB")
-        return ImageOps.fit(im, (lado, lado), Image.BOX)
+        return ImageOps.fit(im, (side, side), Image.BOX)
 
 
-def miniatura_o_placeholder(ruta, lado=LADO_FILA):
+def thumbnail_or_placeholder(path, side=ROW_THUMBNAIL_SIDE):
     """Miniatura real si es imagen; si no (o si falla), placeholder."""
-    clave = (ruta, lado)
+    key = (path, side)
     with _cache_lock:
-        if clave in _cache:
-            return _cache[clave]
+        if key in _cache:
+            return _cache[key]
 
-    ext = os.path.splitext(ruta)[1].lower().lstrip(".")
+    ext = os.path.splitext(path)[1].lower().lstrip(".")
     img = None
-    if ext in EXT_IMAGEN:
+    if ext in IMAGE_EXT:
         try:
-            img = cargar_miniatura(ruta, lado)
+            img = load_thumbnail(path, side)
         except Exception as e:  # un archivo roto no debe romper la lista
-            log.info("No se pudo crear la miniatura de %s: %s", ruta, e)
+            log.info("No se pudo crear la miniatura de %s: %s", path, e)
             img = None
     if img is None:
-        img = placeholder_extension(ruta, lado)
+        img = placeholder_extension(path, side)
 
     with _cache_lock:
-        _cache[clave] = img
+        _cache[key] = img
     return img
 
 
-def vista_grande(ruta, lado=LADO_VISTA):
+def large_preview(path, side=PREVIEW_SIDE):
     """PIL.Image para el panel de vista previa: imagen a tamaño (sin
     recortar, encajada en un cuadrado) o placeholder grande."""
-    ext = os.path.splitext(ruta)[1].lower().lstrip(".")
-    if ext in EXT_IMAGEN:
+    ext = os.path.splitext(path)[1].lower().lstrip(".")
+    if ext in IMAGE_EXT:
         try:
-            with Image.open(ruta) as im:
+            with Image.open(path) as im:
                 try:
-                    im.draft("RGB", (lado * 2, lado * 2))
+                    im.draft("RGB", (side * 2, side * 2))
                 except (ValueError, OSError):  # draft es opcional
                     pass
                 im = ImageOps.exif_transpose(im).convert("RGB")
                 im = im.copy()
-            im.thumbnail((lado, lado), Image.LANCZOS)
+            im.thumbnail((side, side), Image.LANCZOS)
             return im
         except Exception as e:  # si falla, se enseña el recuadro con la extensión
-            log.info("No se pudo cargar la vista previa de %s: %s", ruta, e)
-    return placeholder_extension(ruta, lado)
+            log.info("No se pudo cargar la vista previa de %s: %s", path, e)
+    return placeholder_extension(path, side)

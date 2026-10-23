@@ -4,11 +4,11 @@ from pathlib import Path
 
 from reportlab.platypus import PageBreak
 
-from _pdf_comun import (
-    construir, h1, h2, h3, p, nota, lista, imagen, tabla,
+from _pdf_common import (
+    build, h1, h2, h3, p, note, bullet_list, image, table,
 )
 
-SALIDA = Path(__file__).resolve().parent / "manual-de-usuario.pdf"
+OUTPUT = Path(__file__).resolve().parent / "manual-de-usuario.pdf"
 
 C = []
 
@@ -19,7 +19,7 @@ C += [p(
     "aplicación que creé para poner orden entre mis archivos, sobre todo mis "
     "fotos, y que ahora puede ayudarte a ti. Tiene tres funciones, una por "
     "pestaña:")]
-C += [tabla([
+C += [table([
     ["Pestaña", "Para qué sirve"],
     ["Duplicados exactos",
      "Encuentra archivos idénticos byte a byte (la misma foto o documento "
@@ -30,8 +30,8 @@ C += [tabla([
     ["Reunir imágenes",
      "Junta en una sola carpeta todas las fotos que tengas repartidas por "
      "una carpeta y sus subcarpetas."],
-], anchos_cm=[3.6, 12.0])]
-C += [nota(
+], widths_cm=[3.6, 12.0])]
+C += [note(
     "La regla de oro que me marqué: <b>la aplicación nunca borra ni modifica tus archivos "
     "originales</b>. Solo los lee y, cuando tú lo confirmas, los <i>mueve</i> "
     "a otra carpeta. Además, cualquier operación se puede deshacer desde el "
@@ -39,7 +39,7 @@ C += [nota(
 
 # ======================================================================
 C += [h1("2. Instalación y primer arranque")]
-C += [lista([
+C += [bullet_list([
     "No hay que instalar nada. Descarga <font face='Courier'>Buscador-de-duplicados.exe</font> "
     "(un solo archivo: cópialo donde quieras y haz doble clic) o, si tu antivirus "
     "lo bloquea o tarda, <font face='Courier'>Buscador-de-duplicados-portable.zip</font>: "
@@ -56,16 +56,16 @@ C += [p(
 
 # ======================================================================
 C += [h1("3. La pantalla principal")]
-C += imagen("01_sencilla.png", pie=(
+C += image("01_sencilla.png", caption=(
     "Modo Sencilla, pestaña «Duplicados exactos», después de un escaneo."))
 C += [p(
     "Arriba a la derecha hay dos ajustes:")]
-C += [lista([
+C += [bullet_list([
     "<b>Tema</b>: <i>Automático</i> (sigue al tema de Windows), <i>Claro</i> "
     "u <i>Oscuro</i>. Se aplica al momento y se recuerda para la próxima vez.",
     "<b>Vista — Sencilla / Avanzada</b>:",
 ])]
-C += [lista([
+C += [bullet_list([
     "<b>Sencilla</b>: lo mínimo — elegir carpeta, escanear y mover. La "
     "aplicación decide sola qué copia conservar en cada grupo.",
     "<b>Avanzada</b>: aparece todo — filtros de escaneo, carpeta preferida, "
@@ -74,7 +74,7 @@ C += [lista([
 C += [p(
     "Justo debajo están las tres pestañas. Cambiar de pestaña no pierde lo "
     "que tengas en las otras.")]
-C += [nota(
+C += [note(
     "Los botones deshabilitados se ven en gris apagado (no en rojo ni "
     "verde): quiere decir que esa acción todavía no está disponible, no "
     "que haya un error.")]
@@ -83,7 +83,7 @@ C += [nota(
 C += [PageBreak(), h1("4. Pestaña «Duplicados exactos»")]
 
 C += [h2("4.1. Uso básico (modo Sencilla)")]
-C += [lista([
+C += [bullet_list([
     "<b>1.</b> Pulsa «Elegir» y selecciona la carpeta que quieres revisar "
     "(por ejemplo tu carpeta de fotos o un disco entero).",
     "<b>2.</b> Pulsa «Escanear». La barra de progreso muestra dos etapas: "
@@ -108,12 +108,12 @@ C += [p(
     "con su nombre, ruta, tamaño, fecha y resolución. <b>Pulsa la vista "
     "previa</b> para abrir la imagen a pantalla casi completa, con zoom "
     "(rueda del ratón o botones) y desplazamiento arrastrando.")]
-C += imagen("08_visor.png", ancho_cm=13.5, pie=(
+C += image("08_visor.png", width_cm=13.5, caption=(
     "El visor de imagen: rueda para el zoom, arrastrar para moverse, "
     "«Ajustar» para encajarla en la ventana."))
 
 C += [PageBreak(), h2("4.3. Opciones de escaneo (modo Avanzada)")]
-C += imagen("03_opciones.png", pie=(
+C += image("03_opciones.png", caption=(
     "El panel «Opciones de escaneo» desplegado, con «Imágenes» marcado."))
 C += [h3("Buscar solo estos tipos de archivo")]
 C += [p(
@@ -132,10 +132,10 @@ C += [p(
     "va más rápido.")]
 
 C += [h2("4.4. Elegir qué conservar (modo Avanzada)")]
-C += imagen("02_avanzada.png", pie=(
+C += image("02_avanzada.png", caption=(
     "Modo Avanzada: reaparecen «Carpeta preferida», «Regla por carpeta», "
     "«Elegir la principal», «Ver tipos de archivo» y «Exportar CSV»."))
-C += [lista([
+C += [bullet_list([
     "<b>Carpeta preferida + «Regla por carpeta»</b>: indica una carpeta "
     "(por ejemplo <font face='Courier'>D:\\Fotos\\Organizado</font>) y pulsa "
     "el botón. En cada grupo, si hay una copia dentro de esa carpeta se "
@@ -153,10 +153,10 @@ C += [lista([
 
 # ======================================================================
 C += [PageBreak(), h1("5. Pestaña «Fotos parecidas»")]
-C += imagen("04_parecidas.png", pie=(
+C += image("04_parecidas.png", caption=(
     "Cada grupo muestra las fotos parecidas con su miniatura, resolución, "
     "peso y porcentaje de parecido."))
-C += [lista([
+C += [bullet_list([
     "<b>1.</b> Elige la carpeta y pulsa «Analizar».",
     "<b>2.</b> El deslizador de <b>Sensibilidad</b> (modo Avanzada) controla "
     "cuánto se parecen dos fotos para considerarlas del mismo grupo: "
@@ -171,19 +171,19 @@ C += [lista([
     "las páginas.",
 ])]
 C += [h2("5.1. Qué encuentra y qué no")]
-C += [tabla([
+C += [table([
     ["Sí encuentra", "No encuentra"],
     ["La misma foto recomprimida o en menor calidad", "Fotos recortadas"],
     ["La misma foto redimensionada (más pequeña)", "Fotos rotadas o volteadas"],
     ["La misma foto con un filtro de color o brillo", "Un trozo de un collage"],
     ["La misma foto con una marca de agua en una esquina", ""],
-], anchos_cm=[8.0, 7.6])]
+], widths_cm=[8.0, 7.6])]
 
 # ======================================================================
 C += [PageBreak(), h1("6. Pestaña «Reunir imágenes»")]
-C += imagen("05_reunir.png", pie=(
+C += image("05_reunir.png", caption=(
     "Lista de imágenes encontradas, con casilla para excluir alguna."))
-C += [lista([
+C += [bullet_list([
     "<b>1.</b> Elige la carpeta a revisar. El selector "
     "<b>«Todas las subcarpetas» / «Solo el primer nivel»</b> decide si busca "
     "en profundidad o solo lo que está suelto en la carpeta.",
@@ -193,7 +193,7 @@ C += [lista([
     "<b>4.</b> (modo Avanzada) Elige <b>Mover</b> (las quita del origen) o "
     "<b>Copiar</b> (deja los originales), y la estrategia:",
 ])]
-C += [tabla([
+C += [table([
     ["Estrategia", "Qué hace"],
     ["Por archivos",
      "Cada imagen va a destino/<i>misma subcarpeta</i>. Por ejemplo "
@@ -201,15 +201,15 @@ C += [tabla([
     ["Carpeta entera",
      "Mueve o copia la carpeta que estás revisando completa (con todo lo "
      "que hay dentro) a «destino/NombreDeLaCarpeta/»."],
-], anchos_cm=[3.4, 12.2])]
+], widths_cm=[3.4, 12.2])]
 
 C += [h2("6.1. Archivos que no son imágenes")]
 C += [p(
     "Si en esas carpetas hay también documentos, música, etc., y usas la "
     "estrategia «Por archivos», aparece este diálogo:")]
-C += imagen("06_tipos.png", ancho_cm=12.5, pie=(
+C += image("06_tipos.png", width_cm=12.5, caption=(
     "Para cada tipo de archivo eliges qué hacer."))
-C += [lista([
+C += [bullet_list([
     "<b>Dejar</b>: no se mueve, se queda donde está.",
     "<b>Mover</b>: va al destino con su misma subcarpeta, igual que las "
     "imágenes.",
@@ -223,10 +223,10 @@ C += [PageBreak(), h1("7. Historial y deshacer")]
 C += [p(
     "En <b>modo Avanzada</b>, el botón <b>«Historial»</b> de la cabecera "
     "abre esta ventana desde cualquier pestaña:")]
-C += imagen("07_historial.png", ancho_cm=13.5, pie=(
+C += image("07_historial.png", width_cm=13.5, caption=(
     "Cada operación de mover o copiar queda registrada, con su botón "
     "«Deshacer»."))
-C += [lista([
+C += [bullet_list([
     "Si la operación fue <b>mover</b>, «Deshacer» devuelve cada archivo a "
     "su ubicación original. Si en esa ruta ya hay algo, lo avisa y no pisa "
     "nada.",
@@ -241,7 +241,7 @@ C += [p(
 
 # ======================================================================
 C += [h1("8. La carpeta de cuarentena y los registros")]
-C += [lista([
+C += [bullet_list([
     "La carpeta de cuarentena (o de destino, en «Reunir imágenes») la "
     "eliges tú cada vez. No hay una fija.",
     "Dentro se recrea la estructura de subcarpetas del origen, para que "
@@ -256,7 +256,7 @@ C += [lista([
 
 # ======================================================================
 C += [h1("9. Consejos y preguntas frecuentes")]
-C += [tabla([
+C += [table([
     ["Pregunta", "Respuesta"],
     ["¿Puede borrarme fotos sin querer?",
      "No tus originales. Solo mueve archivos, y siempre tras una confirmación. "
@@ -284,16 +284,16 @@ C += [tabla([
     ["¿Se puede usar en un disco externo o de red?",
      "Sí. Ten en cuenta que mover entre discos distintos es más lento "
      "(copia y luego borra el original)."],
-], anchos_cm=[5.4, 10.2])]
+], widths_cm=[5.4, 10.2])]
 
 
-construir(
-    SALIDA,
-    titulo="Buscador de duplicados",
-    subtitulo="Manual de usuario",
-    titulo_corto="Manual de usuario",
-    resumen_portada=(
+build(
+    OUTPUT,
+    title="Buscador de duplicados",
+    subtitle="Manual de usuario",
+    short_title="Manual de usuario",
+    cover_summary=(
         "Guía para encontrar archivos duplicados, agrupar fotos parecidas y "
         "reunir imágenes dispersas — sin riesgo de perder nada, porque la "
         "aplicación nunca borra tus originales y todo se puede deshacer."),
-    cuerpo_flowables=C)
+    body_flowables=C)

@@ -28,9 +28,9 @@ jobs:
             exit 1
           }
       - name: Compilar el .exe de un solo archivo
-        run: python construir_exe.py
+        run: python build_exe.py
       - name: Compilar la versión en carpeta (ZIP)
-        run: python construir_exe.py --carpeta --zip
+        run: python build_exe.py --carpeta --zip
       - name: Renombrar los archivos de la release
         run: |
           Copy-Item dist/duplicados.exe Buscador-de-duplicados.exe

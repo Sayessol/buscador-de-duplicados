@@ -1,0 +1,505 @@
+"""Pestaña "Reunir imágenes": junta en una carpeta las fotos repartidas por otra.
+
+Es un componente con su PROPIO estado (la lista de imágenes, las colas, el hilo...):
+la ventana principal solo la crea y le avisa del modo Sencilla / Avanzada.
+"""
+
+import os
+import queue
+import threading
+from pathlib import Path
+from tkinter import filedialog, messagebox
+
+import customtkinter as ctk
+
+from core import gather, history
+from core.app_logging import log
+from core.file_moves import MOVE, COPY, InvalidDestination, validate_destination
+from . import styles
+from . import icons
+from .image_viewer import open_viewer
+from .widgets import SectionHeader, StatTile, EmptyState, make_card
+from .thumbnails import (
+    clear_cache, thumbnail_or_placeholder,
+)
+from .non_image_kinds_dialog import NonImageKindsWindow
+
+
+class GatherImagesTab(ctk.CTkFrame):
+    def __init__(self, container):
+        """`contenedor` es la pestaña del CTkTabview donde se coloca este componente."""
+        super().__init__(container, fg_color="transparent")
+        container.grid_columnconfigure(0, weight=1)    # el componente llena toda la pestaña
+        container.grid_rowconfigure(0, weight=1)
+        self.grid(row=0, column=0, sticky="nsew")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(4, weight=1)
+
+        self._queue = queue.Queue()            # mensajes del hilo que mueve/copia
+        self._thumbs_queue = queue.Queue()     # mensajes del hilo que crea miniaturas
+        self._thread = None
+        self._cancel = threading.Event()
+        self._images = []
+        self._others = []
+        self._folder = None
+        self._included = set()   # rutas de imagen marcadas
+        self._thumbs = {}
+        self._img_cache = []      # referencias a CTkImage (si no, se recolectan)
+        self._tiles = {}
+
+        self._build()
+        self._initial_state()
+
+    def apply_mode(self, advanced):
+        """Lo llama la ventana al cambiar entre Sencilla y Avanzada."""
+        (self._advanced.grid if advanced else self._advanced.grid_remove)()
+        if not advanced:
+            self.seg_action.set("Mover")
+            self.seg_strategy.set("Por archivos")
+
+    def cancel_jobs(self):
+        """Lo llama la ventana al cerrarse: si hay una operación en marcha, se cancela."""
+        if self._thread and self._thread.is_alive():
+            self._cancel.set()
+
+    def _build(self):
+        t = self
+
+        card = make_card(t, 0)
+        SectionHeader(card, 1, "Reúne todas las imágenes en una carpeta",
+                        icons.GATHER).grid(row=0, column=0, sticky="w",
+                                           padx=16, pady=(14, 4))
+        ctk.CTkLabel(
+            card, text="Junta en un solo sitio las fotos que tengas repartidas "
+                       "por una carpeta y sus subcarpetas.",
+            font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
+            anchor="w").grid(row=1, column=0, sticky="w", padx=16, pady=(0, 8))
+
+        row = ctk.CTkFrame(card, fg_color="transparent")
+        row.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 6))
+        row.grid_columnconfigure(0, weight=1)
+        self.entry_folder = ctk.CTkEntry(
+            row, height=36, placeholder_text=r"Carpeta a revisar.  Ej.  D:\Fotos")
+        self.entry_folder.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        self.btn_choose = ctk.CTkButton(
+            row, text=f"{icons.FOLDER}  Elegir", width=110, height=36,
+            command=self._choose_folder)
+        self.btn_choose.grid(row=0, column=1, padx=4)
+        self.btn_search = ctk.CTkButton(
+            row, text=f"{icons.SEARCH}  Buscar imágenes", width=150, height=36,
+            font=styles.base_font(13, "bold"), command=self._search)
+        self.btn_search.grid(row=0, column=2, padx=(4, 0))
+
+        self.seg_scope = ctk.CTkSegmentedButton(
+            card, values=["Todas las subcarpetas", "Solo el primer nivel"])
+        self.seg_scope.set("Todas las subcarpetas")
+        self.seg_scope.grid(row=3, column=0, sticky="w",
+                                     padx=16, pady=(0, 14))
+
+        # --- opciones de destino / acción (fila) --------------------
+        option = ctk.CTkFrame(card, fg_color="transparent")
+        option.grid(row=4, column=0, sticky="ew", padx=16, pady=(0, 12))
+        option.grid_columnconfigure(0, weight=1)
+        self.entry_destination = ctk.CTkEntry(
+            option, height=34, placeholder_text=r"Carpeta común de destino")
+        self.entry_destination.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        ctk.CTkButton(option, text=f"{icons.FOLDER}  Elegir", width=100, height=34,
+                      command=self._choose_destination).grid(row=0, column=1,
+                                                                padx=4)
+
+        self._advanced = ctk.CTkFrame(card, fg_color="transparent")
+        self._advanced.grid(row=5, column=0, sticky="w", padx=16,
+                                   pady=(0, 12))
+        ctk.CTkLabel(self._advanced, text="Acción:",
+                     font=styles.base_font(12)).pack(side="left", padx=(0, 6))
+        self.seg_action = ctk.CTkSegmentedButton(
+            self._advanced, values=["Mover", "Copiar"])
+        self.seg_action.set("Mover")
+        self.seg_action.pack(side="left", padx=(0, 16))
+        ctk.CTkLabel(self._advanced, text="Estrategia:",
+                     font=styles.base_font(12)).pack(side="left", padx=(0, 6))
+        self.seg_strategy = ctk.CTkSegmentedButton(
+            self._advanced,
+            values=["Por archivos", "Carpeta entera"])
+        self.seg_strategy.set("Por archivos")
+        self.seg_strategy.pack(side="left")
+
+        # Progreso
+        self.progress_area = ctk.CTkFrame(t, fg_color="transparent")
+        self.progress_area.grid(row=1, column=0, sticky="ew",
+                                       padx=16, pady=(8, 0))
+        self.progress_area.grid_columnconfigure(0, weight=1)
+        self.progress_bar = ctk.CTkProgressBar(
+            self.progress_area, height=10)
+        self.progress_bar.grid(row=0, column=0, sticky="ew", pady=(4, 2))
+        self.progress_bar.set(0)
+        self.lbl_state = ctk.CTkLabel(
+            self.progress_area, text="", font=styles.base_font(12),
+            text_color=styles.COLOR_MUTED_TEXT, anchor="w")
+        self.lbl_state.grid(row=1, column=0, sticky="ew")
+
+        # Estadísticas
+        self.stats_row = ctk.CTkFrame(t, fg_color="transparent")
+        self.stats_row.grid(row=2, column=0, sticky="ew", padx=6,
+                                    pady=(10, 0))
+        for i in range(3):
+            self.stats_row.grid_columnconfigure(i, weight=1)
+        self.stat_img = StatTile(self.stats_row, "Imágenes encontradas")
+        self.stat_sel = StatTile(self.stats_row, "Marcadas para reunir")
+        self.stat_others = StatTile(self.stats_row, "Otros archivos")
+        for i, b in enumerate((self.stat_img, self.stat_sel,
+                               self.stat_others)):
+            b.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 6, 0))
+
+        # Galería
+        self.gallery = ctk.CTkScrollableFrame(
+            t, fg_color=styles.COLOR_TABLE_BACKGROUND)
+        self.gallery.grid(row=4, column=0, sticky="nsew", padx=6,
+                                 pady=(10, 0))
+        for c in range(6):
+            self.gallery.grid_columnconfigure(c, weight=1, uniform="tile")
+        self.empty_state = EmptyState(
+            t, icons.GATHER, "Sin buscar todavía",
+            "Elige una carpeta y pulsa «Buscar imágenes». Aparecerán aquí para "
+            "que elijas cuáles reunir.")
+        self.empty_state.grid(row=4, column=0, sticky="nsew", padx=6,
+                                      pady=(10, 0))
+
+        # Barra inferior
+        bar = ctk.CTkFrame(t, fg_color=styles.COLOR_CARD)
+        bar.grid(row=5, column=0, sticky="ew", padx=6, pady=(10, 6))
+        bar.grid_columnconfigure(0, weight=1)
+        self.lbl_totals = ctk.CTkLabel(
+            bar, text="", font=styles.base_font(12),
+            text_color=styles.COLOR_MUTED_TEXT, anchor="w")
+        self.lbl_totals.grid(row=0, column=0, padx=16, pady=12, sticky="w")
+        self.btn_gather = ctk.CTkButton(
+            bar, text=f"{icons.GATHER}  Reunir aquí", width=170, height=36,
+            font=styles.base_font(13, "bold"),
+            fg_color=styles.COLOR_OK_BUTTON, hover_color="#26734d",
+            command=self._run)
+        self.btn_gather.grid(row=0, column=1, padx=(4, 16), pady=12)
+
+    def _initial_state(self):
+        self.progress_bar.set(0)
+        self.lbl_state.configure(text="")
+        self.progress_area.grid_remove()
+        self.stats_row.grid_remove()
+        styles.action_button(self.btn_gather, False)
+        self.lbl_totals.configure(text="")
+        self._show_gallery(False)
+
+    def _show_gallery(self, show):
+        if show:
+            self.empty_state.grid_remove()
+            self.gallery.grid()
+        else:
+            self.gallery.grid_remove()
+            self.empty_state.grid()
+
+    # -- buscar imágenes -----------------------------------------
+    def _choose_folder(self):
+        folder = filedialog.askdirectory(title="Elige la carpeta a revisar")
+        if folder:
+            self.entry_folder.delete(0, "end")
+            self.entry_folder.insert(0, os.path.normpath(folder))
+
+    def _choose_destination(self):
+        folder = filedialog.askdirectory(
+            title="Elige (o crea) la carpeta de destino", mustexist=False)
+        if folder:
+            self.entry_destination.delete(0, "end")
+            self.entry_destination.insert(0, os.path.normpath(folder))
+
+    def _search(self):
+        folder = self.entry_folder.get().strip()
+        if not folder or not os.path.isdir(folder):
+            messagebox.showwarning("Carpeta no válida",
+                                   "Elige una carpeta para revisar.")
+            return
+        recursive = self.seg_scope.get() == "Todas las subcarpetas"
+        self._folder = folder
+        clear_cache()
+        try:
+            images, others = gather.list_all(folder, recursive=recursive)
+        except OSError as e:
+            messagebox.showerror("Error al leer la carpeta", str(e))
+            return
+        self._images = images
+        self._others = others
+        self._included = set(images)
+        self._thumbs = {}
+
+        if not images:
+            self._initial_state()
+            self.empty_state.configure(
+                title="No se han encontrado imágenes",
+                detail="En esa carpeta no hay archivos de imagen"
+                        + ("" if recursive else " en el primer nivel") + ".")
+            self._show_gallery(False)
+            return
+
+        self.stats_row.grid()
+        self.stat_img.set(len(images))
+        self.stat_others.set(len(others))
+        self._build_gallery()
+        self._show_gallery(True)
+        styles.action_button(self.btn_gather, True)
+        self._update_totals()
+        # miniaturas en un hilo
+        threading.Thread(target=self._load_thumbs,
+                         args=(list(images),), daemon=True).start()
+        self.after(80, self._process_thumbs)
+
+    def _load_thumbs(self, paths):
+        for r in paths:
+            try:
+                self._thumbs[r] = thumbnail_or_placeholder(r, 96)
+            except Exception as e:  # un archivo roto no debe parar la galería
+                log.info("No se pudo crear la miniatura de %s: %s", r, e)
+                self._thumbs[r] = None
+            self._thumbs_queue.put(r)
+
+    def _process_thumbs(self):
+        processed_count = 0
+        try:
+            while processed_count < 30:
+                path = self._thumbs_queue.get_nowait()
+                processed_count += 1
+                self._paint_thumb(path)
+        except queue.Empty:
+            pass
+        self.after(70, self._process_thumbs)
+
+    def _build_gallery(self):
+        for h in self.gallery.winfo_children():
+            h.destroy()
+        self._img_cache.clear()
+        self._tiles.clear()
+
+        cols = 6
+        LIMIT = 300
+        for i, path in enumerate(self._images[:LIMIT]):
+            tile = ctk.CTkFrame(self.gallery, fg_color=styles.COLOR_TILE,
+                                corner_radius=6)
+            tile.grid(row=i // cols, column=i % cols, padx=4, pady=4, sticky="new")
+            mark = ctk.CTkCheckBox(
+                tile, text="", width=20,
+                command=lambda r=path: self._toggle(r))
+            mark.select()
+            mark.grid(row=0, column=0, padx=(6, 0), pady=(4, 0), sticky="w")
+            lbl = ctk.CTkLabel(tile, text="…", width=96, height=96,
+                               text_color=styles.COLOR_MUTED_TEXT)
+            lbl.grid(row=1, column=0, padx=6, pady=(0, 2))
+            lbl.configure(cursor="hand2")
+            lbl.bind("<Button-1>", lambda _e, r=path: open_viewer(self.winfo_toplevel(), r))
+            ctk.CTkLabel(tile, text=Path(path).name, font=styles.base_font(9),
+                         wraplength=96, justify="left").grid(
+                row=2, column=0, padx=6, pady=(0, 6), sticky="w")
+            self._tiles[path] = (tile, mark, lbl)
+
+        if len(self._images) > LIMIT:
+            ctk.CTkLabel(
+                self.gallery,
+                text=f"… y {len(self._images) - LIMIT} más "
+                     f"(se reunirán todas las marcadas igualmente).",
+                font=styles.base_font(11),
+                text_color=styles.COLOR_MUTED_TEXT).grid(
+                row=LIMIT, column=0, columnspan=cols, pady=8)
+
+    def _paint_thumb(self, path):
+        input = self._tiles.get(path)
+        pil = self._thumbs.get(path)
+        if not input or pil is None:
+            return
+        _tile, _mark, lbl = input
+        img = ctk.CTkImage(light_image=pil, dark_image=pil,
+                           size=(pil.width, pil.height))
+        self._img_cache.append(img)
+        lbl.configure(image=img, text="")
+
+    def _toggle(self, path):
+        input = self._tiles.get(path)
+        if not input:
+            return
+        _tile, mark, _lbl = input
+        if mark.get():
+            self._included.add(path)
+        else:
+            self._included.discard(path)
+        self._update_totals()
+
+    def _update_totals(self):
+        n = len(self._included)
+        self.stat_sel.set(n)
+        styles.action_button(self.btn_gather, bool(n))
+        self.lbl_totals.configure(
+            text=f"{n} imagen(es) marcadas · {len(self._others)} archivos "
+                 f"que no son imágenes")
+
+    # -- ejecutar ------------------------------------------------
+    def _run(self):
+        """Botón "Reunir aquí". Pasos: validar destino -> según la
+        estrategia, confirmar y lanzar la operación en un hilo."""
+        source = self._folder
+        if not source:
+            return
+        destination = self.entry_destination.get().strip()
+        if not destination:
+            messagebox.showwarning("Falta el destino",
+                                   "Elige la carpeta común de destino.")
+            return
+        destination = os.path.normpath(destination)
+        try:
+            # rechaza que el destino esté dentro del origen
+            warning = validate_destination(destination, source)
+        except InvalidDestination as e:
+            messagebox.showerror("Destino no válido", str(e))
+            return
+        if warning and not messagebox.askyesno("Atención", warning + "\n\n¿Continuar?"):
+            return
+
+        action = COPY if self.seg_action.get() == "Copiar" else MOVE
+        strategy = self.seg_strategy.get()
+        verb = "copiar" if action == COPY else "mover"
+
+        if strategy == "Carpeta entera":
+            name = os.path.basename(os.path.normpath(source))
+            if not messagebox.askyesno(
+                "Confirmar",
+                f"Se va a {verb.upper()} la carpeta «{name}» ENTERA "
+                f"(con todo lo que hay dentro) a:\n\n{destination}\\{name}\\\n\n"
+                f"¿Continuar?"):
+                return
+            self._launch(
+                lambda p, c: gather.gather_whole_folder(
+                    source, destination, action=action, progress=p),
+                action, destination, history.KIND_GATHER_FOLDER,
+                f"carpeta «{name}» entera")
+            return
+
+        # --- Por archivos ---
+        images = [r for r in self._images
+                    if r in self._included]     # solo las casillas marcadas
+        if not images:
+            return
+        others = self._others
+        rules = gather.NonImageRules()               # por defecto: dejar todo lo no-imagen
+        if others:
+            # Diálogo MODAL: wait_window() bloquea aquí hasta que se cierre;
+            # después leemos dlg.reglas (o None si canceló).
+            dlg = NonImageKindsWindow(self.winfo_toplevel(), gather.non_image_kinds(others))
+            self.wait_window(dlg)
+            if dlg.rules is None:
+                return
+            rules = dlg.rules
+
+        n_others = sum(1 for r in others
+                      if rules.action(os.path.splitext(r)[1].lower().lstrip("."))
+                      != gather.LEAVE)
+        if not messagebox.askyesno(
+            "Confirmar",
+            f"Se van a {verb.upper()} {len(images)} imagen(es)"
+            + (f" y {n_others} archivo(s) más" if n_others else "")
+            + f" a:\n\n{destination}\n\n"
+            "Se mantienen las subcarpetas. ¿Continuar?"):
+            return
+
+        self._launch(
+            lambda p, c: gather.gather_by_files(
+                images, others, source, destination, action=action,
+                rules=rules, progress=p, cancelled=c),
+            action, destination, history.KIND_GATHER,
+            f"{len(images)} imágenes")
+
+    def _launch(self, fn, action, destination, kind, description):
+        self._cancel.clear()
+        self.progress_area.grid()
+        self.progress_bar.set(0)
+        self.lbl_state.configure(text="Empezando…")
+        styles.action_button(self.btn_gather, False)
+        styles.activate_button(self.btn_search, False)
+        styles.activate_button(self.btn_choose, False)
+
+        def job():
+            try:
+                res = fn(
+                    lambda a, t, m: self._queue.put(("prog", (a, t, m))),
+                    self._cancel.is_set)
+                self._queue.put(
+                    ("hecho", (res, action, destination, kind, description, self._folder)))
+            except Exception as e:  # se anota en el registro y se muestra al usuario
+                log.exception("Falló la operación «%s» (%s)", kind, description)
+                self._queue.put(("error", e))
+
+        self._thread = threading.Thread(target=job, daemon=True)
+        self._thread.start()
+        self.after(100, self._poll_queue)
+
+    def _poll_queue(self):
+        try:
+            while True:
+                kind, datum = self._queue.get_nowait()
+                if kind == "prog":
+                    a, t, m = datum
+                    self.lbl_state.configure(text=m)
+                    if t:
+                        self.progress_bar.set(min(a / t, 1.0))
+                elif kind == "hecho":
+                    self._finished(*datum)
+                    return
+                elif kind == "error":
+                    self._error(datum)
+                    return
+        except queue.Empty:
+            pass
+        self.after(100, self._poll_queue)
+
+    def _finished(self, res, action, destination, kind, description, source):
+        styles.activate_button(self.btn_search, True)
+        styles.activate_button(self.btn_choose, True)
+        self.progress_bar.set(1.0)
+
+        done = res.done
+        if done:
+            history.record(
+                kind, action, source, destination,
+                [(t.source, t.destination) for t in done], description)
+
+        verb = "copiado" if action == COPY else "movido"
+        self.lbl_state.configure(
+            text=f"Listo: {len(done)} archivo(s) {verb}(s)."
+            + (f"  {len(res.failed)} con error." if res.failed else ""))
+        self.lbl_totals.configure(
+            text=f"{len(done)} archivo(s) {verb}(s) a {destination}.")
+
+        # limpiar la lista (lo movido ya no está)
+        self._images = []
+        self._included = set()
+        self.stats_row.grid_remove()
+        styles.action_button(self.btn_gather, False)
+        for h in self.gallery.winfo_children():
+            h.destroy()
+        self.empty_state.configure(
+            title=f"{len(done)} archivo(s) {verb}(s)",
+            detail="Puedes deshacerlo desde «Historial» (arriba, en modo "
+                    "Avanzada). Vuelve a buscar si quieres continuar.")
+        self._show_gallery(False)
+
+        detail = f"{len(done)} archivo(s) {verb}(s) a:\n\n{destination}"
+        if res.log_path:
+            detail += f"\n\nRegistro: {res.log_path}"
+        if messagebox.askyesno("Hecho",
+                               detail + "\n\n¿Abrir la carpeta de destino?"):
+            try:
+                os.startfile(destination)  # noqa: S606
+            except OSError:
+                pass
+
+    def _error(self, e):
+        styles.action_button(self.btn_gather, True)
+        styles.activate_button(self.btn_search, True)
+        styles.activate_button(self.btn_choose, True)
+        self.progress_bar.set(0)
+        self.lbl_state.configure(text="La operación ha fallado.")
+        messagebox.showerror("Error al reunir", f"{type(e).__name__}: {e}")

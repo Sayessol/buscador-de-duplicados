@@ -25,7 +25,7 @@ A Windows desktop app that **finds duplicate files and similar photos** and help
   · <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados-portable.zip">ZIP version</a> if your antivirus blocks the <code>.exe</code> · no Python needed
 </p>
 
-It was born from a need of mine and from a 150-line script ([`docs/origen/buscar_duplicados.py`](docs/origen/buscar_duplicados.py)), and grew into a full application with a GUI, automated tests, continuous integration and a single-file `.exe`. [Here is how it started](#how-this-project-started).
+It was born from a need of mine and from a 150-line script ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)), and grew into a full application with a GUI, automated tests, continuous integration and a single-file `.exe`. [Here is how it started](#how-this-project-started).
 
 > 📚 **Learning project.** I built it to go deeper into Python starting from a basic level, with Claude as a copilot. [Further down](#why-this-project-exists) I explain what that means.
 
@@ -78,7 +78,7 @@ I have always kept backups of my old devices, such as phones or computers, on ex
 
 Checking by hand is tedious, and it even gets confusing once you no longer know which folders you have already reviewed. My starting idea was to run quick, simple commands that compare images and other kinds of files and tell me right away whether there were duplicates. I found that the fastest way to do it was to use Python.
 
-I started with a simple script of about 150 lines ([`docs/origen/buscar_duplicados.py`](docs/origen/buscar_duplicados.py)): I typed in a folder path and it told me whether there were duplicate files and how many it had analysed. After using it a few times I realised it was impractical: typing the path every time was slow. So I decided to build an interface to make it easier to use.
+I started with a simple script of about 150 lines ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)): I typed in a folder path and it told me whether there were duplicate files and how many it had analysed. After using it a few times I realised it was impractical: typing the path every time was slow. So I decided to build an interface to make it easier to use.
 
 While building the interface I saw that I could add features that fitted the search better to what I wanted. That is how what began as a script became a complete desktop program with several features and filtering options.
 
@@ -143,8 +143,8 @@ python app.py
 Build your own:
 
 ```bash
-python construir_exe.py                  # single file:    dist/duplicados.exe
-python construir_exe.py --carpeta --zip  # folder + ZIP:   dist/Buscador-de-duplicados.zip
+python build_exe.py                  # single file:    dist/duplicados.exe
+python build_exe.py --carpeta --zip  # folder + ZIP:   dist/Buscador-de-duplicados.zip
 ```
 
 ## How it works
@@ -170,11 +170,11 @@ python construir_exe.py --carpeta --zip  # folder + ZIP:   dist/Buscador-de-dupl
 | **Partial hash before full hash** | Most same-size files already differ in the first 64 KB, so they are never read in full. |
 | **dHash instead of OpenCV** | Covers recompression, rescaling and filters at very low cost. OpenCV (for crops and rotations) would multiply the `.exe` size. |
 | **Logic (`core/`) separate from UI (`ui/`)** | `core/` imports nothing from the window, so it can be tested entirely from the console and with pytest. |
-| **One tab = one component** | `ui/main_window.py` is a ~200-line shell; each tab is a component with its own state (`PestanaExactos`, `PestanaParecidas`, `PestanaReunir`) and the window only passes it the mode and the close signal. |
+| **One tab = one component** | `ui/main_window.py` is a ~200-line shell; each tab is a component with its own state (`ExactDuplicatesTab`, `SimilarPhotosTab`, `GatherImagesTab`) and the window only passes it the mode and the close signal. |
 
 ### Performance
 
-`python pruebas/benchmark.py` generates 4,000 files (830 MB, with exact copies and deliberate "near duplicates") and compares against hashing all content:
+`python tests/benchmark.py` generates 4,000 files (830 MB, with exact copies and deliberate "near duplicates") and compares against hashing all content:
 
 | Method | Time | Bytes read |
 |---|---|---|
@@ -194,7 +194,7 @@ Both find **exactly the same 386 groups**. It reads 66 % less data. Timings are 
 ```
 core/      Pure logic, no UI (standard library + Pillow for photos)
 ui/        CustomTkinter interface; one component per tab (pestana_*.py)
-pruebas/   15 suites + unit tests + benchmark
+tests/   15 suites + unit tests + benchmark
 docs/      User manual, code guide and build process (PDF, Spanish)
 ```
 

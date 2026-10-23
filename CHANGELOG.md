@@ -30,7 +30,7 @@ Primera versión pública.
 - **Registro de errores** en un archivo con rotación (`%APPDATA%\BuscadorDuplicados\registro\buscador.log`): los hilos de trabajo y la interfaz anotan sus errores con el traceback, y la app avisa una vez de dónde está el registro.
 - Las pruebas usan un `%APPDATA%` temporal, y una comprobación común avisa si alguna toca los datos reales de la app.
 - **Arquitectura**: la lógica (`core/`) está separada de la interfaz (`ui/`); cada pestaña es un componente con su propio estado y la ventana principal es una carcasa de ~200 líneas. El escaneo está repartido en una función por pasada.
-- Benchmark (`pruebas/benchmark.py`): las 3 pasadas leen un 66 % menos de datos que hashear todo y encuentran exactamente los mismos grupos.
+- Benchmark (`tests/benchmark.py`): las 3 pasadas leen un 66 % menos de datos que hashear todo y encuentran exactamente los mismos grupos.
 - Si la aplicación se ejecuta sin consola y una librería escribe un aviso, no se cae.
 
 ### Documentación

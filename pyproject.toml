@@ -4,8 +4,8 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# docs/origen es el script original, se conserva tal cual como pieza histórica
-extend-exclude = ["build", "dist", "docs/origen"]
+# docs/origin es el script original, se conserva tal cual como pieza histórica
+extend-exclude = ["build", "dist", "docs/origin"]
 
 [tool.ruff.lint]
 # E/W: estilo pycodestyle · F: errores reales (imports sin usar, nombres sin definir)
@@ -14,14 +14,14 @@ select = ["E", "F", "W", "B"]
 ignore = ["B905"]   # zip(strict=...) no aporta aquí
 
 [tool.pytest.ini_options]
-testpaths = ["pruebas"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]
 markers = ["gui: prueba con ventana (necesita escritorio de Windows)"]
 
 [tool.coverage.run]
 source = ["core", "ui"]
-# Las pruebas de ventana corren en procesos aparte (pruebas/test_suites.py): se siguen
+# Las pruebas de ventana corren en procesos aparte (tests/test_suites.py): se siguen
 # para poder medir también la interfaz. Mínimos que exige el CI: núcleo 90 %, interfaz 70 %.
 parallel = true
 patch = ["subprocess"]

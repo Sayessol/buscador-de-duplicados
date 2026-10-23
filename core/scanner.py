@@ -17,7 +17,7 @@ El escaneo va en pasadas, de lo más barato a lo más caro:
                hash del archivo completo. Los que aquí coinciden son
                duplicados reales byte a byte.
 
-El resultado es una lista de `GrupoDuplicado`, cada uno con 2 o más
+El resultado es una lista de `DuplicateGroup`, cada uno con 2 o más
 archivos de contenido idéntico.
 """
 
@@ -26,54 +26,54 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from .hashing import hash_parcial, hash_completo, TAMANO_HASH_PARCIAL
-from .filtros import FiltroEscaneo
+from .hashing import partial_hash, full_hash, PARTIAL_HASH_SIZE
+from .filters import ScanFilter
 
 
-class EscaneoCancelado(Exception):
+class ScanCancelled(Exception):
     """Se lanza cuando el que llama pide cancelar el escaneo a mitad."""
 
 
 @dataclass
-class ArchivoDup:
+class DuplicateFile:
     """Un archivo concreto dentro de un grupo de duplicados."""
 
-    ruta: str
-    tamano: int
+    path: str
+    size: int
 
 
 @dataclass
-class GrupoDuplicado:
+class DuplicateGroup:
     """Conjunto de 2+ archivos con contenido idéntico."""
 
     hash: str          # el hash que comparten (identifica el grupo)
-    tamano: int        # bytes de cada copia (todas pesan lo mismo)
-    archivos: list[ArchivoDup]   # las copias del grupo
+    size: int        # bytes de cada copia (todas pesan lo mismo)
+    files: list[DuplicateFile]   # las copias del grupo
 
     @property
-    def cantidad(self) -> int:
-        return len(self.archivos)
+    def count(self) -> int:
+        return len(self.files)
 
     @property
-    def espacio_recuperable(self) -> int:
+    def reclaimable_space(self) -> int:
         """Bytes que se liberarían si se conservara solo una copia."""
-        return self.tamano * (len(self.archivos) - 1)
+        return self.size * (len(self.files) - 1)
 
 
 @dataclass
-class ResultadoEscaneo:
+class ScanResult:
     """Todo lo que produjo un escaneo."""
 
-    grupos: list[GrupoDuplicado]
-    total_archivos: int
-    errores: list[tuple[str, str]] = field(default_factory=list)  # (ruta, mensaje)
-    total_excluidos: int = 0  # archivos saltados por el filtro
+    groups: list[DuplicateGroup]
+    total_files: int
+    errors: list[tuple[str, str]] = field(default_factory=list)  # (ruta, mensaje)
+    total_excluded: int = 0  # archivos saltados por el filtro
 
     @property
-    def total_grupos(self) -> int:
-        return len(self.grupos)
+    def total_groups(self) -> int:
+        return len(self.groups)
 
-    def resumen_por_extension(self) -> list[tuple[str, int, int]]:
+    def summary_by_extension(self) -> list[tuple[str, int, int]]:
         """Desglose de los archivos duplicados por extensión.
 
         Devuelve una lista de tuplas (extension, cantidad, bytes),
@@ -82,33 +82,33 @@ class ResultadoEscaneo:
         """
         # acc[extension] = [cantidad, bytes_totales]
         acc: defaultdict[str, list[int]] = defaultdict(lambda: [0, 0])
-        for g in self.grupos:
-            for a in g.archivos:
-                ext = os.path.splitext(a.ruta)[1].lower().lstrip(".")
-                clave = ext if ext else "(sin extensión)"
-                acc[clave][0] += 1
-                acc[clave][1] += a.tamano
-        filas = [(ext, c, b) for ext, (c, b) in acc.items()]
-        filas.sort(key=lambda f: (-f[2], f[0]))   # más bytes primero; a igualdad, alfabético
-        return filas
+        for g in self.groups:
+            for a in g.files:
+                ext = os.path.splitext(a.path)[1].lower().lstrip(".")
+                key = ext if ext else "(sin extensión)"
+                acc[key][0] += 1
+                acc[key][1] += a.size
+        rows = [(ext, c, b) for ext, (c, b) in acc.items()]
+        rows.sort(key=lambda f: (-f[2], f[0]))   # más bytes primero; a igualdad, alfabético
+        return rows
 
     @property
-    def total_archivos_duplicados(self) -> int:
+    def total_files_duplicates(self) -> int:
         """Cantidad de archivos que están en algún grupo de duplicados."""
-        return sum(g.cantidad for g in self.grupos)
+        return sum(g.count for g in self.groups)
 
     @property
-    def copias_sobrantes(self) -> int:
+    def extra_copies(self) -> int:
         """Archivos que se podrían mover (todas las copias menos una por grupo)."""
-        return sum(g.cantidad - 1 for g in self.grupos)
+        return sum(g.count - 1 for g in self.groups)
 
     @property
-    def espacio_recuperable_total(self) -> int:
-        return sum(g.espacio_recuperable for g in self.grupos)
+    def total_reclaimable_space(self) -> int:
+        return sum(g.reclaimable_space for g in self.groups)
 
 
 @dataclass
-class Progreso:
+class Progress:
     """Notificación de avance para que la interfaz muestre una barra.
 
     fase:
@@ -118,223 +118,223 @@ class Progreso:
     total == 0 significa "todavía no sé cuántos hay en total" (Pasada 1).
     """
 
-    fase: str
-    actual: int
+    phase: str
+    current: int
     total: int
-    mensaje: str
+    message: str
 
 
 def _noop(*_args: object, **_kwargs: object) -> None:
     return None
 
 
-def _nunca_cancelar() -> bool:
+def _never_cancel() -> bool:
     return False
 
 
-def _pasada_tamanos(
-    carpeta_raiz: str,
-    filtro: FiltroEscaneo,
-    progreso: Callable[[Progreso], None],
-    cancelado: Callable[[], bool],
-    errores: list[tuple[str, str]],
+def _size_pass(
+    root_folder: str,
+    filter: ScanFilter,
+    progress: Callable[[Progress], None],
+    cancelled: Callable[[], bool],
+    errors: list[tuple[str, str]],
 ) -> tuple[dict[int, list[str]], int, int]:
     """Pasada 1: recorre el árbol y agrupa los archivos por tamaño en bytes.
 
     Devuelve (rutas_por_tamano, total_archivos, total_excluidos). Los archivos
     que el filtro excluye ni se miden ni cuentan como revisados.
     """
-    por_tamano: defaultdict[int, list[str]] = defaultdict(list)
-    total_archivos = 0
-    total_excluidos = 0
+    by_size: defaultdict[int, list[str]] = defaultdict(list)
+    total_files = 0
+    total_excluded = 0
 
-    for dir_actual, subdirs, nombres in os.walk(carpeta_raiz):
-        if cancelado():
-            raise EscaneoCancelado()
+    for current_dir, subdirs, names in os.walk(root_folder):
+        if cancelled():
+            raise ScanCancelled()
 
         # Podar carpetas excluidas: os.walk no entra en las que quitamos aquí.
-        subdirs[:] = [d for d in subdirs if not filtro.excluye_carpeta(d)]
+        subdirs[:] = [d for d in subdirs if not filter.excludes_folder(d)]
 
-        for nombre in nombres:
-            if filtro.excluye_nombre(nombre):
-                total_excluidos += 1
+        for name in names:
+            if filter.excludes_name(name):
+                total_excluded += 1
                 continue
 
-            ruta = os.path.join(dir_actual, nombre)
+            path = os.path.join(current_dir, name)
             try:
-                if not os.path.isfile(ruta):
+                if not os.path.isfile(path):
                     # enlaces simbólicos rotos, dispositivos, etc.
                     continue
-                tamano = os.path.getsize(ruta)
+                size = os.path.getsize(path)
             except OSError as e:
-                errores.append((ruta, str(e)))
+                errors.append((path, str(e)))
                 continue
 
-            if filtro.excluye_tamano(tamano):
-                total_excluidos += 1
+            if filter.excludes_size(size):
+                total_excluded += 1
                 continue
 
-            total_archivos += 1
-            por_tamano[tamano].append(ruta)
+            total_files += 1
+            by_size[size].append(path)
 
-            if total_archivos % 200 == 0:
-                progreso(Progreso(
-                    "tamanos", total_archivos, 0,
-                    f"Paso 1/2: revisando tamaños... ({total_archivos} archivos)",
+            if total_files % 200 == 0:
+                progress(Progress(
+                    "tamanos", total_files, 0,
+                    f"Paso 1/2: revisando tamaños... ({total_files} archivos)",
                 ))
 
-    return por_tamano, total_archivos, total_excluidos
+    return by_size, total_files, total_excluded
 
 
-def _pasada_hash_parcial(
-    candidatos_por_tamano: dict[int, list[str]],
-    progreso: Callable[[Progreso], None],
-    cancelado: Callable[[], bool],
-    errores: list[tuple[str, str]],
+def _partial_hash_pass(
+    candidates_by_size: dict[int, list[str]],
+    progress: Callable[[Progress], None],
+    cancelled: Callable[[], bool],
+    errors: list[tuple[str, str]],
 ) -> dict[tuple[int, str], list[str]]:
     """Pasada 2: hash de los primeros 64 KB de los archivos que comparten tamaño.
 
     Devuelve solo los «finalistas»: las claves (tamaño, hash_parcial) que
     comparten 2 o más archivos.
     """
-    total_candidatos = sum(len(r) for r in candidatos_por_tamano.values())
-    por_parcial: defaultdict[tuple[int, str], list[str]] = defaultdict(list)
-    procesados = 0
+    total_candidates = sum(len(r) for r in candidates_by_size.values())
+    by_partial: defaultdict[tuple[int, str], list[str]] = defaultdict(list)
+    processed = 0
 
-    for tamano, rutas in candidatos_por_tamano.items():
-        for ruta in rutas:
-            if cancelado():
-                raise EscaneoCancelado()
-            procesados += 1
+    for size, paths in candidates_by_size.items():
+        for path in paths:
+            if cancelled():
+                raise ScanCancelled()
+            processed += 1
             try:
-                hp = hash_parcial(ruta)
+                hp = partial_hash(path)
             except OSError as e:
-                errores.append((ruta, str(e)))
+                errors.append((path, str(e)))
                 continue
             # La clave incluye el tamaño: dos archivos con el mismo hash
             # parcial pero distinto tamaño nunca son el mismo archivo.
-            por_parcial[(tamano, hp)].append(ruta)
+            by_partial[(size, hp)].append(path)
 
-            if procesados % 50 == 0:
-                progreso(Progreso(
-                    "hash_parcial", procesados, total_candidatos,
+            if processed % 50 == 0:
+                progress(Progress(
+                    "hash_parcial", processed, total_candidates,
                     f"Paso 2/2: calculando hashes... "
-                    f"({procesados}/{total_candidatos})",
+                    f"({processed}/{total_candidates})",
                 ))
 
-    return {clave: rutas for clave, rutas in por_parcial.items() if len(rutas) > 1}
+    return {key: paths for key, paths in by_partial.items() if len(paths) > 1}
 
 
-def _pasada_hash_completo(
-    finalistas: dict[tuple[int, str], list[str]],
-    progreso: Callable[[Progreso], None],
-    cancelado: Callable[[], bool],
-    errores: list[tuple[str, str]],
-) -> list[GrupoDuplicado]:
+def _full_hash_pass(
+    finalists: dict[tuple[int, str], list[str]],
+    progress: Callable[[Progress], None],
+    cancelled: Callable[[], bool],
+    errors: list[tuple[str, str]],
+) -> list[DuplicateGroup]:
     """Pasada 3: hash del archivo entero de los finalistas.
 
     Los que coinciden aquí son duplicados reales, byte a byte. Si un archivo
     pesa menos de 64 KB, su hash parcial ya cubrió todo el contenido y esta
     pasada se salta para él.
     """
-    total_finalistas = sum(len(r) for r in finalistas.values())
-    grupos: list[GrupoDuplicado] = []
-    procesados_completo = 0
+    total_finalists = sum(len(r) for r in finalists.values())
+    groups: list[DuplicateGroup] = []
+    full_processed = 0
 
-    for (tamano, hp), rutas in finalistas.items():
-        if tamano <= TAMANO_HASH_PARCIAL:
+    for (size, hp), paths in finalists.items():
+        if size <= PARTIAL_HASH_SIZE:
             # El hash parcial ya cubrió el archivo entero: son idénticos.
-            grupos.append(GrupoDuplicado(
+            groups.append(DuplicateGroup(
                 hash=hp,
-                tamano=tamano,
-                archivos=[ArchivoDup(r, tamano) for r in rutas],
+                size=size,
+                files=[DuplicateFile(r, size) for r in paths],
             ))
             continue
 
-        por_completo: defaultdict[str, list[str]] = defaultdict(list)
-        for ruta in rutas:
-            if cancelado():
-                raise EscaneoCancelado()
-            procesados_completo += 1
+        by_full: defaultdict[str, list[str]] = defaultdict(list)
+        for path in paths:
+            if cancelled():
+                raise ScanCancelled()
+            full_processed += 1
             try:
-                hc = hash_completo(ruta)
+                hc = full_hash(path)
             except OSError as e:
-                errores.append((ruta, str(e)))
+                errors.append((path, str(e)))
                 continue
-            por_completo[hc].append(ruta)
+            by_full[hc].append(path)
 
-            if procesados_completo % 50 == 0:
-                progreso(Progreso(
-                    "hash_completo", procesados_completo, total_finalistas,
+            if full_processed % 50 == 0:
+                progress(Progress(
+                    "hash_completo", full_processed, total_finalists,
                     f"Paso 2/2: verificando archivos completos... "
-                    f"({procesados_completo}/{total_finalistas})",
+                    f"({full_processed}/{total_finalists})",
                 ))
 
-        for hc, rutas_iguales in por_completo.items():
-            if len(rutas_iguales) > 1:
-                grupos.append(GrupoDuplicado(
+        for hc, equal_paths in by_full.items():
+            if len(equal_paths) > 1:
+                groups.append(DuplicateGroup(
                     hash=hc,
-                    tamano=tamano,
-                    archivos=[ArchivoDup(r, tamano) for r in rutas_iguales],
+                    size=size,
+                    files=[DuplicateFile(r, size) for r in equal_paths],
                 ))
 
-    return grupos
+    return groups
 
 
-def escanear(
-    carpeta_raiz: str,
-    progreso: Callable[[Progreso], None] | None = None,
-    cancelado: Callable[[], bool] | None = None,
-    filtro: FiltroEscaneo | None = None,
-) -> ResultadoEscaneo:
-    """Escanea `carpeta_raiz` recursivamente y devuelve un ResultadoEscaneo.
+def scan(
+    root_folder: str,
+    progress: Callable[[Progress], None] | None = None,
+    cancelled: Callable[[], bool] | None = None,
+    filter: ScanFilter | None = None,
+) -> ScanResult:
+    """Escanea `carpeta_raiz` recursivamente y devuelve un ScanResult.
 
     progreso : callable(Progreso) opcional, se llama para informar avance.
     cancelado: callable() -> bool opcional. Si en algún momento devuelve
-               True, el escaneo aborta lanzando EscaneoCancelado.
-    filtro   : FiltroEscaneo opcional. Los archivos y carpetas que excluye
+               True, el escaneo aborta lanzando ScanCancelled.
+    filtro   : ScanFilter opcional. Los archivos y carpetas que excluye
                ni se leen ni se cuentan como revisados.
 
     El trabajo está repartido en tres funciones, una por pasada
     (_pasada_tamanos, _pasada_hash_parcial y _pasada_hash_completo); esta
     solo las encadena y ordena el resultado.
     """
-    progreso = progreso or _noop
-    cancelado = cancelado or _nunca_cancelar
-    if filtro is None:
-        filtro = FiltroEscaneo.sin_filtro()
+    progress = progress or _noop
+    cancelled = cancelled or _never_cancel
+    if filter is None:
+        filter = ScanFilter.no_filter()
 
-    if not os.path.isdir(carpeta_raiz):
-        raise NotADirectoryError(f"No es una carpeta: {carpeta_raiz}")
+    if not os.path.isdir(root_folder):
+        raise NotADirectoryError(f"No es una carpeta: {root_folder}")
 
-    errores: list[tuple[str, str]] = []
+    errors: list[tuple[str, str]] = []
 
     # Pasada 1: agrupar por tamaño. Solo siguen los tamaños compartidos por 2+ archivos.
-    por_tamano, total_archivos, total_excluidos = _pasada_tamanos(
-        carpeta_raiz, filtro, progreso, cancelado, errores)
-    candidatos_por_tamano = {t: rutas for t, rutas in por_tamano.items() if len(rutas) > 1}
+    by_size, total_files, total_excluded = _size_pass(
+        root_folder, filter, progress, cancelled, errors)
+    candidates_by_size = {t: paths for t, paths in by_size.items() if len(paths) > 1}
 
     # Pasada 2: hash de los primeros 64 KB. Solo siguen los que además coinciden.
-    finalistas = _pasada_hash_parcial(candidatos_por_tamano, progreso, cancelado, errores)
+    finalists = _partial_hash_pass(candidates_by_size, progress, cancelled, errors)
 
     # Pasada 3: hash completo de los finalistas.
-    grupos = _pasada_hash_completo(finalistas, progreso, cancelado, errores)
+    groups = _full_hash_pass(finalists, progress, cancelled, errors)
 
     # Orden estable y útil: primero los grupos que liberan más espacio,
     # y dentro de cada grupo, los archivos por ruta.
-    for g in grupos:
-        g.archivos.sort(key=lambda a: a.ruta)
-    grupos.sort(key=lambda g: (-g.espacio_recuperable, g.archivos[0].ruta))
+    for g in groups:
+        g.files.sort(key=lambda a: a.path)
+    groups.sort(key=lambda g: (-g.reclaimable_space, g.files[0].path))
 
-    total_finalistas = sum(len(r) for r in finalistas.values())
-    progreso(Progreso(
-        "hash_completo", max(total_finalistas, 1), max(total_finalistas, 1),
+    total_finalists = sum(len(r) for r in finalists.values())
+    progress(Progress(
+        "hash_completo", max(total_finalists, 1), max(total_finalists, 1),
         "Escaneo terminado.",
     ))
 
-    return ResultadoEscaneo(
-        grupos=grupos,
-        total_archivos=total_archivos,
-        errores=errores,
-        total_excluidos=total_excluidos,
+    return ScanResult(
+        groups=groups,
+        total_files=total_files,
+        errors=errors,
+        total_excluded=total_excluded,
     )
