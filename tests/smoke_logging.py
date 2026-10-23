@@ -15,14 +15,14 @@ from pathlib import Path
 from tkinter import messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 TMP = Path(tempfile.mkdtemp(prefix="dup_reg_"))
 os.environ["APPDATA"] = str(TMP / "appdata")          # does not touch the real log
 
-from core import app_logging                              # noqa: E402
-from core.filters import ScanFilter                  # noqa: E402
-from ui import styles                                   # noqa: E402
-from ui.main_window import MainWindow             # noqa: E402
+from duplicate_finder.infrastructure import app_logging  # noqa: E402
+from duplicate_finder.domain.filters import ScanFilter  # noqa: E402
+from duplicate_finder.presentation import styles  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
 
 failures = []
 warnings = []

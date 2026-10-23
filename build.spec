@@ -23,7 +23,7 @@ data = collect_data_files("customtkinter")
 
 a = Analysis(
     ["app.py"],
-    pathex=["."],
+    pathex=["src"],
     binaries=[],
     datas=data,
     hiddenimports=["customtkinter"],

@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from core import config
-from core.hashing import format_size
-from core.report import columns, export_csv
+from duplicate_finder.infrastructure import settings
+from duplicate_finder.domain.formatting import format_size
+from duplicate_finder.application.report import columns, export_csv
 
 
 @pytest.fixture
@@ -18,31 +18,31 @@ def appdata(tmp_path, monkeypatch):
 
 
 def test_config_default_values(appdata):
-    assert config.get_mode() == "simple"
-    assert config.get_theme() == "auto"
+    assert settings.get_mode() == "simple"
+    assert settings.get_theme() == "auto"
 
 
 def test_config_saves_and_remembers(appdata):
-    config.set_mode("advanced")
-    config.set_theme("dark")
-    assert config.get_mode() == "advanced"
-    assert config.get_theme() == "dark"
+    settings.set_mode("advanced")
+    settings.set_theme("dark")
+    assert settings.get_mode() == "advanced"
+    assert settings.get_theme() == "dark"
     assert (appdata / "BuscadorDuplicados" / "config.json").exists()
 
 
 def test_config_ignores_invalid_values(appdata):
-    config.set_mode("advanced")
-    config.set_mode("loquesea")           # ignored
-    config.set_theme("fuchsia")             # ignored
-    assert config.get_mode() == "advanced"
-    assert config.get_theme() == "auto"
+    settings.set_mode("advanced")
+    settings.set_mode("loquesea")           # ignored
+    settings.set_theme("fuchsia")             # ignored
+    assert settings.get_mode() == "advanced"
+    assert settings.get_theme() == "auto"
 
 
 def test_config_corrupt_does_not_break(appdata):
     path = appdata / "BuscadorDuplicados" / "config.json"
     path.parent.mkdir()
     path.write_text("{ this is not json", encoding="utf-8")
-    assert config.get_mode() == "simple"   # back to the default value
+    assert settings.get_mode() == "simple"   # back to the default value
 
 
 def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
@@ -50,8 +50,8 @@ def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
     file = tmp_path / "i_am_a_file"
     file.write_text("x")
     monkeypatch.setenv("APPDATA", str(file))
-    config.set_mode("advanced")              # fails silently
-    assert config.get_mode() == "simple"
+    settings.set_mode("advanced")              # fails silently
+    assert settings.get_mode() == "simple"
 
 
 def test_export_csv(tmp_path):
@@ -101,7 +101,7 @@ def test_version_matches_the_changelog():
     import re
     from pathlib import Path
 
-    from core import __version__
+    from duplicate_finder import __version__
 
     assert re.fullmatch(r"\d+\.\d+\.\d+", __version__), __version__
     changelog = (Path(__file__).resolve().parents[1] / "CHANGELOG.md").read_text(encoding="utf-8")

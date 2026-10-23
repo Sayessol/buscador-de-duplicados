@@ -1,4 +1,4 @@
-"""Error log in a file (core/app_logging.py) and warning about unexpected errors."""
+"""Error log in a file (infrastructure/app_logging.py) and warning about unexpected errors."""
 
 import sys
 import threading
@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from core import app_logging
+from duplicate_finder.infrastructure import app_logging
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ def test_hooks_log_unhandled_errors(appdata, monkeypatch):
 def test_unexpected_ui_error_is_logged_and_warned_once(appdata, monkeypatch):
     from tkinter import messagebox
 
-    from ui.main_window import MainWindow
+    from duplicate_finder.presentation.main_window import MainWindow
 
     warnings = []
     monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: warnings.append(a))

@@ -19,11 +19,11 @@ jobs:
         run: pip install -r requirements-dev.txt
       - name: Lint (ruff)
         run: ruff check .
-      - name: Types (mypy, core)
+      - name: Types (mypy, logic layers)
         run: python -m mypy
-      - name: Tests with coverage (core and UI)
+      - name: Tests with coverage (logic and interface)
         run: python -m pytest --cov --cov-report=term-missing
-      - name: Minimum core coverage (90 %)
-        run: python -m coverage report --include="core/*" --fail-under=90
-      - name: Minimum UI coverage (70 %)
-        run: python -m coverage report --include="ui/*" --fail-under=70
+      - name: Minimum logic coverage (90 %)
+        run: python -m coverage report --include="src/duplicate_finder/domain/*,src/duplicate_finder/application/*,src/duplicate_finder/infrastructure/*,src/duplicate_finder/i18n/*" --fail-under=90
+      - name: Minimum interface coverage (70 %)
+        run: python -m coverage report --include="src/duplicate_finder/presentation/*" --fail-under=70

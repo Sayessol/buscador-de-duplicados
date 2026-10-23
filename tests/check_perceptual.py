@@ -22,11 +22,11 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from PIL import Image, ImageDraw, ImageEnhance   # noqa: E402
 
-from core.perceptual import analyze_folder  # noqa: E402
-from core.hashing import format_size                       # noqa: E402
+from duplicate_finder.application.find_similar_photos import analyze_folder  # noqa: E402
+from duplicate_finder.domain.formatting import format_size  # noqa: E402
 
 failures = []
 

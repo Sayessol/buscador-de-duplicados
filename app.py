@@ -1,13 +1,13 @@
 """Entry point of the duplicates app.
 
-    python app.py
+    python app.py            (or  python -m duplicate_finder  with src/ on the path)
 """
 
 import os
 import sys
 
-# Allows running both `python app.py` and other launchers.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The package lives in src/: this launcher makes `python app.py` work without installing it.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 
 def _ensure_outputs():
@@ -26,13 +26,7 @@ def _ensure_outputs():
 
 _ensure_outputs()
 
-from core import app_logging  # noqa: E402
-
-app_logging.start()              # starts logging to %APPDATA%\BuscadorDuplicados\registro
-app_logging.install_hooks()     # and also log the errors nobody has caught
-
-from ui.main_window import launch  # noqa: E402
-
+from duplicate_finder.__main__ import main  # noqa: E402
 
 if __name__ == "__main__":
-    launch()
+    main()

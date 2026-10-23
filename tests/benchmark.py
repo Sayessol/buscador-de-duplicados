@@ -32,9 +32,10 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from core import scanner                                    # noqa: E402
-from core.hashing import PARTIAL_HASH_SIZE, format_size  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from duplicate_finder.application import scan_duplicates as scanner                                    # noqa: E402
+from duplicate_finder.domain.formatting import format_size
+from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE  # noqa: E402
 
 SEED = 2026
 REPETITIONS = 3

@@ -1,1 +1,1 @@
-"""Console tests of the core and of the window."""
+"""Console tests of the logic and of the window."""

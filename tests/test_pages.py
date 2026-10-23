@@ -6,8 +6,12 @@ past that it gets cut off and the scrollbar disappears.
 
 import pytest
 
-from ui.similar_photos_tab import (
-    HEADER_HEIGHT, ROW_HEIGHT, PAGE_MAX_HEIGHT, COLUMNS, MAX_GROUPS_PER_PAGE,
+from duplicate_finder.presentation.similar_photos_tab import (
+    HEADER_HEIGHT,
+    ROW_HEIGHT,
+    PAGE_MAX_HEIGHT,
+    COLUMNS,
+    MAX_GROUPS_PER_PAGE,
     split_into_pages,
 )
 

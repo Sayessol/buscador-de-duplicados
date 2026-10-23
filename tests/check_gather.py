@@ -1,4 +1,4 @@
-"""Tests of the "Gather images" tab (core/gather.py):
+"""Tests of the "Gather images" tab (application/gather.py):
 
   * list images: first level only vs recursive,
   * the per-file-kind dialog: leave / move / group,
@@ -15,12 +15,18 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from core.file_moves import InvalidDestination, MOVE, COPY                  # noqa: E402
-from core.gather import (                                             # noqa: E402
-    list_all, non_image_kinds, NonImageRules, plan_by_files,
-    gather_by_files, gather_whole_folder, validate_destination,
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from duplicate_finder.application.file_transfers import InvalidDestination
+from duplicate_finder.domain.transfers import MOVE, COPY  # noqa: E402
+from duplicate_finder.application.file_transfers import validate_destination
+from duplicate_finder.application.gather import (
+    list_all,
+    non_image_kinds,
+    plan_by_files,
+    gather_by_files,
+    gather_whole_folder,
 )
+from duplicate_finder.domain.transfers import NonImageRules
 
 failures = []
 
@@ -141,7 +147,8 @@ def main():
         destination = Path(tmp) / "Gathered"
         # we flatten on purpose with odd rules: we use the normal relpath,
         # but force a collision by moving both to the same place.
-        from core.file_moves import Transfer, execute
+        from duplicate_finder.application.file_transfers import execute
+        from duplicate_finder.domain.transfers import Transfer
         plan = [Transfer(str(root / "a" / "photo.jpg"), str(destination / "photo.jpg")),
                 Transfer(str(root / "b" / "photo.jpg"), str(destination / "photo.jpg"))]
         execute(plan, action=MOVE)

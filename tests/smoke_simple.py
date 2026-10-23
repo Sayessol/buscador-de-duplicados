@@ -12,12 +12,12 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
-from ui import styles                            # noqa: E402
-from ui.main_window import MainWindow      # noqa: E402
+from duplicate_finder.presentation import styles  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
 
 R = {}
 
@@ -64,7 +64,7 @@ def main():
         # the copy kept in the "boda" group is neither the Backup one nor the (1) one
         gi = next(i for i, g in enumerate(sel.result.groups)
                   if any("wedding" in a.path for a in g.files))
-        from core.selection import KEEP
+        from duplicate_finder.domain.selection import KEEP
         kept = [a for a in sel.result.groups[gi].files
                       if sel.decision(gi, a.path) == KEEP][0]
         R["main_ok"] = (Path(kept.path).name == "wedding.jpg"
