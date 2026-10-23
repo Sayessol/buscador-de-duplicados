@@ -6,6 +6,7 @@ This used to happen without anyone noticing; that is why this check exists.
 """
 
 import os
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,10 @@ import pytest
 _REAL = (Path(os.environ.get("APPDATA") or Path.home() / ".buscador_duplicados")
          / "BuscadorDuplicados")
 _FILES = ("history.json", "historial.json", "config.json")
+
+# The whole session works on a temporary data folder: the use cases record their own history, so
+# no test may ever find (or leave something in) the real one.
+os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_session_appdata_")
 
 
 def _fingerprint():

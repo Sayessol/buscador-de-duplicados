@@ -15,14 +15,9 @@ import customtkinter as ctk
 
 from duplicate_finder.domain.formatting import format_size
 from duplicate_finder.domain.selection import KEEP as _KEEP
-from duplicate_finder.application.quarantine import (
-    validate_quarantine_folder,
-    InvalidQuarantine,
-)
 from duplicate_finder.application.services import Services
 from duplicate_finder.domain.similarity import ComparisonCancelled
-from duplicate_finder.domain.operations import KIND_QUARANTINE
-from duplicate_finder.domain.transfers import MOVE as MOVE_ACTION
+from .dialogs import choose_quarantine_folder, offer_to_open_folder
 from . import styles
 from . import icons
 from .image_viewer import open_viewer
@@ -593,18 +588,8 @@ class SimilarPhotosTab(ctk.CTkFrame):
         if self._selection.count_to_move() == 0:
             return
         root = self._folder
-        destination = filedialog.askdirectory(
-            title=tr("common.pick_quarantine"), mustexist=False)
+        destination = choose_quarantine_folder(root)
         if not destination:
-            return
-        destination = os.path.normpath(destination)
-        try:
-            warning = validate_quarantine_folder(destination, root)
-        except InvalidQuarantine as e:
-            messagebox.showerror(tr("common.invalid_quarantine_title"), str(e))
-            return
-        if warning and not messagebox.askyesno(
-                tr("common.warning"), warning + tr("common.continue_question")):
             return
 
         n = self._selection.count_to_move()
@@ -615,18 +600,14 @@ class SimilarPhotosTab(ctk.CTkFrame):
             return
 
         try:
-            res = self._services.move_to_quarantine(self._selection, root, destination)
+            res = self._services.move_to_quarantine(
+                self._selection, root, destination,
+                description_key="history.description_similar")
         except Exception as e:  # it is logged and shown to the user
             log.exception("Move of similar photos to quarantine failed")
             messagebox.showerror(tr("common.move_error_title"), tr("similar.error_detail",
                                                                    name=type(e).__name__, e=e))
             return
-
-        if res.moved:
-            self._services.history.record(
-                KIND_QUARANTINE, MOVE_ACTION, root, destination,
-                [(m.source, m.destination) for m in res.moved],
-                tr("similar.history_description", count=len(res.moved)))
 
         self._result = None
         self._selection = None
@@ -642,9 +623,4 @@ class SimilarPhotosTab(ctk.CTkFrame):
         detail = tr("similar.moved_summary", count=len(res.moved))
         if res.log_path:
             detail += tr("common.log_note", log_path=res.log_path)
-        if messagebox.askyesno(tr("common.done_title"),
-                               detail + tr("similar.open_quarantine_question")):
-            try:
-                os.startfile(destination)  # noqa: S606
-            except OSError:
-                pass
+        offer_to_open_folder(detail + tr("similar.open_quarantine_question"), destination)

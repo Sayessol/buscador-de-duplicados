@@ -26,12 +26,7 @@ from duplicate_finder.domain.filters import (
     JUNK_FOLDERS,
     CATEGORY_EXTENSIONS,
 )
-from duplicate_finder.application.quarantine import (
-    validate_quarantine_folder,
-    InvalidQuarantine,
-)
-from duplicate_finder.domain.operations import KIND_QUARANTINE
-from duplicate_finder.domain.transfers import MOVE as MOVE_ACTION
+from .dialogs import choose_quarantine_folder, offer_to_open_folder
 from . import styles
 from . import icons
 from .widgets import SectionHeader, StatTile, EmptyState, make_card
@@ -725,19 +720,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             return
 
         root = self._scanned_folder
-        quarantine_folder = filedialog.askdirectory(
-            title=tr("common.pick_quarantine"), mustexist=False)
+        quarantine_folder = choose_quarantine_folder(root)
         if not quarantine_folder:
-            return
-        quarantine_folder = os.path.normpath(quarantine_folder)
-
-        try:
-            warning = validate_quarantine_folder(quarantine_folder, root)
-        except InvalidQuarantine as e:
-            messagebox.showerror(tr("common.invalid_quarantine_title"), str(e))
-            return
-        if warning and not messagebox.askyesno(
-                tr("common.warning"), warning + tr("common.continue_question")):
             return
 
         n = self._selection.count_to_move()
@@ -807,12 +791,6 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.progress_bar.set(1.0)
         self.lbl_state.configure(text=tr("exact.move_done"))
 
-        if res.moved:
-            self._services.history.record(
-                KIND_QUARANTINE, MOVE_ACTION, self._scanned_folder,
-                quarantine_folder, [(m.source, m.destination) for m in res.moved],
-                tr("exact.history_description", count=len(res.moved)))
-
         moved = len(res.moved)
         failed = len(res.failed)
         detail = tr("exact.moved_summary", moved=moved, size=format_size(res.bytes_moved))
@@ -835,12 +813,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             detail=detail.split("\n\n")[0] + tr("exact.scan_again"))
         self.empty_state.tkraise()
 
-        if messagebox.askyesno(
-            tr("common.done_title"), detail + tr("exact.open_quarantine_question")):
-            try:
-                os.startfile(quarantine_folder)  # noqa: S606 (Windows)
-            except OSError:
-                pass
+        offer_to_open_folder(detail + tr("exact.open_quarantine_question"), quarantine_folder)
 
     def _open_viewer(self, path=None):
         open_viewer(self.winfo_toplevel(), path or self._preview_path)

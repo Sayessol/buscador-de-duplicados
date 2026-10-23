@@ -19,8 +19,10 @@ from duplicate_finder.application.file_transfers import (
     collision_free_path,
     validate_destination,
 )
+from duplicate_finder.application.history import OperationHistory
 from duplicate_finder.application.ports import FileSystem
 from duplicate_finder.domain.filters import CATEGORY_EXTENSIONS, NO_EXTENSION
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_GATHER_FOLDER
 from duplicate_finder.domain.transfers import (
     COPY,
     GROUP,
@@ -50,9 +52,12 @@ def non_image_kinds(others: list[str]) -> dict[str, list[str]]:
 
 
 class GatherImages:
-    def __init__(self, fs: FileSystem, transfers: FileTransfers) -> None:
+    def __init__(
+        self, fs: FileSystem, transfers: FileTransfers, history: OperationHistory,
+    ) -> None:
         self._fs = fs
         self._transfers = transfers
+        self._history = history
 
     def list_all(self, root_folder: str, recursive: bool = True) -> tuple[list[str], list[str]]:
         """Returns (images, non_images): two lists of absolute paths."""
@@ -114,19 +119,22 @@ class GatherImages:
         rules: NonImageRules | None = None,
         progress: ProgressCallback | None = None,
         cancelled: CancelledCallback | None = None,
+        description: str = "",
     ) -> TransferResult:
+        """Gathers the images (and what the rules say) and records the operation in the history."""
         validate_destination(destination, root_folder)
         self._fs.make_dirs(destination)
         plan = self.plan_by_files(images, others, root_folder, destination, rules)
         res = self._transfers.execute(plan, action=action, progress=progress, cancelled=cancelled)
         res.log_path = self._transfers.write_log(plan, destination, "gather", root_folder, action)
+        self._record(KIND_GATHER, res, action, root_folder, destination, description)
         return res
 
     def gather_whole_folder(
         self, root_folder: str, destination: str, action: str = MOVE,
-        progress: ProgressCallback | None = None,
+        progress: ProgressCallback | None = None, description: str = "",
     ) -> TransferResult:
-        """Moves/copies the whole folder to analyze into the destination."""
+        """Moves/copies the whole folder to analyze into the destination and records it."""
         validate_destination(destination, root_folder)
         self._fs.make_dirs(destination)
         progress = progress or (lambda *_: None)
@@ -150,4 +158,15 @@ class GatherImages:
         res = TransferResult(transfers=[t], action=action)
         res.log_path = self._transfers.write_log([t], destination, "gather_folder", root_folder,
                                                  action)
+        self._record(KIND_GATHER_FOLDER, res, action, root_folder, destination, description)
         return res
+
+    def _record(
+        self, kind: str, res: TransferResult, action: str, root_folder: str, destination: str,
+        description: str,
+    ) -> None:
+        """What was really done goes to the history, so it can be undone."""
+        if res.done:
+            self._history.record(
+                kind, action, root_folder, destination,
+                [(t.source, t.destination) for t in res.done], description)

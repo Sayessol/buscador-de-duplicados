@@ -12,12 +12,17 @@ duplicates and checks that:
     python tests/check_quarantine.py
 """
 
+import os
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+# It does not touch the user's real data: the history these scripts record is temporary.
+os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
+
 from duplicate_finder.bootstrap import build_services  # noqa: E402
 
 SERVICES = build_services()

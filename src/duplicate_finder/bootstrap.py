@@ -25,13 +25,14 @@ from duplicate_finder.infrastructure.settings import JsonSettingsStore
 def build_services() -> Services:
     """The use cases wired with the real disk, hashes, images and files of the user."""
     fs = LocalFileSystem()
+    history = OperationHistory(JsonHistoryStore(), fs)
     return Services(
         scan_duplicates=ScanDuplicates(fs, Blake2Hasher()),
         find_similar_photos=FindSimilarPhotos(fs, PillowFingerprintReader()),
         start_selection=StartSelection(fs),
-        move_to_quarantine=MoveToQuarantine(fs),
-        gather=GatherImages(fs, FileTransfers(fs)),
-        history=OperationHistory(JsonHistoryStore(), fs),
+        move_to_quarantine=MoveToQuarantine(fs, history),
+        gather=GatherImages(fs, FileTransfers(fs), history),
+        history=history,
         export_report=ExportReport(fs),
         settings=AppSettings(JsonSettingsStore()),
         log_file_path=app_logging.file_path,
