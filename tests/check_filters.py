@@ -102,7 +102,7 @@ def main():
         check("txt" not in exts, "excluir .txt quita todos los .txt del resultado")
 
         print("\n--- Lista blanca: buscar solo imágenes ---")
-        f3 = ScanFilter(included_extensions=CATEGORY_EXTENSIONS["Imágenes"])
+        f3 = ScanFilter(included_extensions=CATEGORY_EXTENSIONS["images"])
         r3 = scan(str(base), filter=f3)
         g3 = paths_by_group(r3)
         print("  grupos:", g3)
@@ -112,8 +112,8 @@ def main():
               "'solo imágenes' reporta como excluido todo lo que no es imagen")
 
         print("\n--- Lista blanca: imágenes + audio ---")
-        combined = (CATEGORY_EXTENSIONS["Imágenes"]
-                     | CATEGORY_EXTENSIONS["Audio"])
+        combined = (CATEGORY_EXTENSIONS["images"]
+                     | CATEGORY_EXTENSIONS["audio"])
         f4 = ScanFilter(included_extensions=combined)
         r4 = scan(str(base), filter=f4)
         g4 = paths_by_group(r4)

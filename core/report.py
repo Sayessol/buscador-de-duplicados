@@ -1,8 +1,8 @@
 """Export the result of a scan to CSV.
 
-The column format is compatible with the report of the original
-console script (`buscar_duplicados.py`), so that whoever already used
-that CSV does not have to change anything.
+The columns are those of the report of the original console script
+(`buscar_duplicados.py`); their names are in the language of the interface (in Spanish
+they are exactly the original ones, so whoever used that CSV does not have to change anything).
 """
 
 import csv
@@ -10,14 +10,12 @@ import os
 
 from .hashing import format_size
 from .scanner import ScanResult
+from .i18n import tr
 
-COLUMNS = [
-    "Grupo_Duplicado",
-    "Ruta_Completa",
-    "Tamano",
-    "Tamano_Bytes",
-    "Hash",
-]
+def columns() -> list[str]:
+    """The column names, in the language of the interface."""
+    return [tr(key) for key in (
+        "csv.duplicate_group", "csv.full_path", "csv.size", "csv.size_bytes", "csv.hash")]
 
 
 def export_csv(result: ScanResult, csv_path: str | os.PathLike[str]) -> int:
@@ -27,12 +25,12 @@ def export_csv(result: ScanResult, csv_path: str | os.PathLike[str]) -> int:
     """
     with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
-        writer.writerow(COLUMNS)
+        writer.writerow(columns())
 
         for number, group in enumerate(result.groups, start=1):
             for file in group.files:
                 writer.writerow([
-                    f"Grupo {number}",
+                    tr("report.group_label", number=number),
                     file.path,
                     format_size(file.size),
                     file.size,

@@ -21,6 +21,7 @@ from datetime import datetime
 
 from .selection import DuplicateSelection
 from .callbacks import CancelledCallback, ProgressCallback
+from .i18n import tr
 
 
 @dataclass
@@ -72,14 +73,12 @@ def validate_quarantine_folder(quarantine_folder: str, root_folder: str) -> str 
 
     if cq == cr:
         raise InvalidQuarantine(
-            "La carpeta de cuarentena no puede ser la misma que la carpeta escaneada.")
+            tr("quarantine.same_as_scanned"))
     if cq.startswith(cr + os.sep):
         raise InvalidQuarantine(
-            "La carpeta de cuarentena está dentro de la carpeta escaneada. "
-            "Elige una carpeta fuera de ella.")
+            tr("quarantine.inside_scanned"))
     if cr.startswith(cq + os.sep):
-        return ("Atención: la carpeta escaneada está dentro de la carpeta de "
-                "cuarentena. Se puede continuar, pero revisa que sea lo que quieres.")
+        return tr("quarantine.scanned_inside_quarantine")
     return None
 
 
@@ -136,8 +135,7 @@ def move_to_quarantine(
     """
     if not selection.all_ready():
         raise ValueError(
-            "Hay grupos sin resolver: cada grupo debe tener exactamente una "
-            "copia marcada como conservar antes de mover.")
+            tr("quarantine.unresolved_groups"))
 
     validate_quarantine_folder(quarantine_folder, root_folder)
 
@@ -151,10 +149,11 @@ def move_to_quarantine(
     for i, move in enumerate(plan, start=1):
         if cancelled():
             break
-        progress(i, total, f"Moviendo {i}/{total}: {os.path.basename(move.source)}")
+        progress(i, total, tr("quarantine.progress", i=i, total=total,
+                              basename=os.path.basename(move.source)))
         try:
             if not os.path.exists(move.source):
-                raise FileNotFoundError("el archivo ya no está en su sitio")
+                raise FileNotFoundError(tr("common.file_gone"))
             os.makedirs(os.path.dirname(move.destination), exist_ok=True)
             move.destination = _avoid_collision(move.destination)
             shutil.move(move.source, move.destination)
@@ -165,7 +164,7 @@ def move_to_quarantine(
 
     result = QuarantineResult(moves=plan)
     result.log_path = _write_log(plan, quarantine_folder, root_folder)
-    progress(total, total, "Listo.")
+    progress(total, total, tr("common.done"))
     return result
 
 
@@ -178,13 +177,15 @@ def _write_log(
         os.makedirs(quarantine_folder, exist_ok=True)
         with open(log_path, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
-            w.writerow(["Fecha", "Carpeta_Escaneada", "Grupo", "Origen",
-                        "Destino", "Tamano_Bytes", "Estado", "Error"])
+            w.writerow([tr(key) for key in (
+                "csv.date", "csv.scanned_folder", "csv.group", "csv.source",
+                "csv.destination", "csv.size_bytes", "csv.status", "csv.error")])
+            status_moved, status_error = tr("csv.status_moved"), tr("csv.status_error")
             now = datetime.now().isoformat(timespec="seconds")
             for m in moves:
                 w.writerow([
                     now, root_folder, m.group, m.source, m.destination,
-                    m.size, "movido" if m.ok else "ERROR", m.error,
+                    m.size, status_moved if m.ok else status_error, m.error,
                 ])
         return log_path
     except OSError:

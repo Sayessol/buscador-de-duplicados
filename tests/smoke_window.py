@@ -11,12 +11,14 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from tkinter import messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
+from core import config  # noqa: E402
 from tests.compare_with_original import build_test_tree  # noqa: E402
 from ui import styles  # noqa: E402
 from ui.main_window import MainWindow  # noqa: E402
@@ -91,20 +93,34 @@ def main():
 
         # Quick categories: ticking "Imágenes" fills in the field and the filter
         app.exact._empty_filters()
-        app.exact.chk_categories["Imágenes"].select()
-        app.exact._toggle_category("Imágenes")
+        app.exact.chk_categories["images"].select()
+        app.exact._toggle_category("images")
         incl = app.exact._current_filter().included_extensions
         R["cat_imagenes_jpg"] = "jpg" in incl and "png" in incl
         R["cat_imagenes_no_mp3"] = "mp3" not in incl
-        app.exact.chk_categories["Audio"].select()
-        app.exact._toggle_category("Audio")
+        app.exact.chk_categories["audio"].select()
+        app.exact._toggle_category("audio")
         R["cat_combina_audio"] = "mp3" in app.exact._current_filter().included_extensions
-        app.exact.chk_categories["Imágenes"].deselect()
-        app.exact._toggle_category("Imágenes")
+        app.exact.chk_categories["images"].deselect()
+        app.exact._toggle_category("images")
         incl2 = app.exact._current_filter().included_extensions
         R["cat_desmarca_imagenes"] = "jpg" not in incl2 and "mp3" in incl2
         app.exact._empty_filters()
         R["cat_vacio"] = app.exact._current_filter().included_extensions == set()
+
+        # Header selectors: each choice is saved (the language also warns that it applies later).
+        shown = []
+        messagebox.showinfo = lambda *a, **k: shown.append(a)
+        app._change_language("English")          # already the current one: nothing happens
+        R["language_same_is_silent"] = config.get_language() == "auto" and not shown
+        app._change_language("Español")
+        R["language_saved"] = config.get_language() == "es" and len(shown) == 1
+        app.theme_selector.set_key("dark")
+        app._change_theme(app.theme_selector.get())
+        R["theme_saved"] = config.get_theme() == "dark"
+        app.mode_selector.set_key("simple")
+        app._change_mode(app.mode_selector.get())
+        R["mode_saved"] = config.get_mode() == "simple"
 
         top = ExtensionBreakdownWindow(app, sel.result, app.exact._add_extension_to_filter)
         R["extensiones"] = len(sel.result.summary_by_extension())
@@ -141,6 +157,10 @@ def main():
         and R.get("cat_combina_audio") is True
         and R.get("cat_desmarca_imagenes") is True
         and R.get("cat_vacio") is True
+        and R.get("language_same_is_silent") is True
+        and R.get("language_saved") is True
+        and R.get("theme_saved") is True
+        and R.get("mode_saved") is True
     )
     print("\n" + ("HUMO OK" if ok else "HUMO FALLA"))
     sys.exit(0 if ok else 1)

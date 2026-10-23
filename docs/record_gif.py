@@ -134,7 +134,7 @@ def move():
 def open_history():
     app._mode = "advanced"
     app._apply_mode()
-    app.mode_selector.set("Avanzada")
+    app.mode_selector.set_key("advanced")
     app._hv = HistoryWindow(app)
     app._hv.geometry("720x520+300+120")
     app.after(1800, undo)

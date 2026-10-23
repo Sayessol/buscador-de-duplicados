@@ -16,28 +16,31 @@ Every long task (scan, analyze, move) uses the same pattern:
 thread + queue + after(); it is explained in
 exact_duplicates_tab.py:_scan_job.
 
-Interface in European Spanish, light/dark theme, icons made of Unicode glyphs.
+Interface in English or Spanish (texts in core/locales), light/dark theme, icons made of
+Unicode glyphs.
 """
 from pathlib import Path
 from tkinter import TclError, messagebox
 
 import customtkinter as ctk
 
-from core import __version__, config, app_logging
+from core import __version__, config, app_logging, i18n
 from core.app_logging import log
 from . import styles
 from . import icons
 from .history_window import HistoryWindow
 from .exact_duplicates_tab import ExactDuplicatesTab
 from .gather_images_tab import GatherImagesTab
+from .widgets import KeyedOptionMenu, KeyedSegmentedButton
 from .similar_photos_tab import SimilarPhotosTab
+from core.i18n import tr
 
 
 class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title(f"Buscador de duplicados {__version__}")
+        self.title(tr("main.window_title", version=__version__))
         self.geometry("1240x900")
         self.minsize(920, 640)
         self._set_window_icon()
@@ -52,9 +55,14 @@ class MainWindow(ctk.CTk):
 
         self.tabs = ctk.CTkTabview(self, fg_color="transparent")
         self.tabs.grid(row=1, column=0, sticky="nsew", padx=10, pady=(2, 0))
-        self.tab_exact = self.tabs.add(f"{icons.SEARCH}  Duplicados exactos")
-        self.tab_similar = self.tabs.add(f"{icons.CAT_IMAGES}  Fotos parecidas")
-        self.tab_gather = self.tabs.add(f"{icons.GATHER}  Reunir imágenes")
+        self._tab_titles = {
+            "exact": f"{icons.SEARCH}  {tr("main.tab_exact")}",
+            "similar": f"{icons.CAT_IMAGES}  {tr("main.tab_similar")}",
+            "gather": f"{icons.GATHER}  {tr("main.tab_gather")}",
+        }
+        self.tab_exact = self.tabs.add(self._tab_titles["exact"])
+        self.tab_similar = self.tabs.add(self._tab_titles["similar"])
+        self.tab_gather = self.tabs.add(self._tab_titles["gather"])
 
         self.exact = ExactDuplicatesTab(self.tab_exact, self._mode == "advanced")
         self.similar = SimilarPhotosTab(self.tab_similar)
@@ -70,18 +78,16 @@ class MainWindow(ctk.CTk):
         It is logged and the user is warned once, so as not to fill the screen
         with windows if the same failure repeats.
         """
-        log.error("Error inesperado en la interfaz", exc_info=(exc, val, tb))
+        log.error("Unexpected error in the interface", exc_info=(exc, val, tb))
         if self._error_warned:
             return
         self._error_warned = True
         path = app_logging.file_path()
-        where = (f"Se ha anotado en el registro:\n{path}" if path
-                 else "No se ha podido guardar el registro.")
+        where = (tr("main.log_saved", path=path) if path
+                 else tr("main.log_failed"))
         messagebox.showerror(
-            "Error inesperado",
-            f"Ha ocurrido un error inesperado ({exc.__name__}: {val}).\n\n{where}\n\n"
-            "Puedes seguir usando la aplicación; si el fallo se repite, cierra y "
-            "vuelve a abrirla. Tus archivos no se han tocado.")
+            tr("main.error_title"),
+            tr("main.error_msg", name=exc.__name__, val=val, where=where))
 
     def _set_window_icon(self):
         """Icon of the title bar / taskbar.
@@ -99,7 +105,7 @@ class MainWindow(ctk.CTk):
             if ico_path.exists():
                 self.iconbitmap(str(ico_path))
         except TclError:  # the icon is optional
-            log.info("No se pudo poner el icono de la ventana", exc_info=True)
+            log.info("Could not set the window icon", exc_info=True)
 
     def _build_header(self):
         header = ctk.CTkFrame(self, fg_color=styles.COLOR_HEADER, corner_radius=0)
@@ -110,19 +116,18 @@ class MainWindow(ctk.CTk):
             row=0, column=0, rowspan=2, padx=(18, 12), pady=12)
         title = ctk.CTkFrame(header, fg_color="transparent")
         title.grid(row=0, column=1, sticky="sw", pady=(12, 0))
-        ctk.CTkLabel(title, text="Buscador de duplicados",
+        ctk.CTkLabel(title, text=tr("common.app_name"),
                      font=styles.title_font(17)).pack(side="left")
         ctk.CTkLabel(title, text=f"v{__version__}", font=styles.base_font(11),
                      text_color=styles.COLOR_MUTED_TEXT).pack(
             side="left", padx=(8, 0), pady=(4, 0))
         ctk.CTkLabel(
-            header, text="Encuentra archivos repetidos y muévelos a cuarentena. "
-                      "Nunca se borran tus originales.",
+            header, text=tr("main.tagline"),
             font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT).grid(
             row=1, column=1, sticky="nw", pady=(0, 12))
 
         self.btn_history = ctk.CTkButton(
-            header, text=f"{icons.HISTORY}  Historial", width=115,
+            header, text=f"{icons.HISTORY}  {tr("main.history")}", width=115,
             fg_color="transparent", border_width=1,
             border_color=styles.COLOR_BORDER, text_color=styles.COLOR_TEXT,
             hover_color=styles.COLOR_TILE, command=self._open_history)
@@ -132,36 +137,57 @@ class MainWindow(ctk.CTk):
         right = ctk.CTkFrame(header, fg_color="transparent")
         right.grid(row=0, column=3, rowspan=2, padx=(0, 16), pady=10)
 
-        ctk.CTkLabel(right, text="Tema:", font=styles.base_font(11),
+        ctk.CTkLabel(right, text=tr("main.theme_label"), font=styles.base_font(11),
                      text_color=styles.COLOR_MUTED_TEXT).grid(
             row=0, column=0, padx=(0, 6), pady=(0, 4), sticky="e")
-        self.theme_selector = ctk.CTkOptionMenu(
-            right, values=["Automático", "Claro", "Oscuro"], width=118,
-            command=self._change_theme)
-        self.theme_selector.set({"auto": "Automático", "light": "Claro",
-                                "dark": "Oscuro"}[config.get_theme()])
+        self.theme_selector = KeyedOptionMenu(
+            right, {"auto": tr("main.theme_auto"), "light": tr("main.theme_light"),
+                    "dark": tr("main.theme_dark")},
+            width=118, command=self._change_theme)
+        self.theme_selector.set_key(config.get_theme())
         self.theme_selector.grid(row=0, column=1, pady=(0, 4), sticky="w")
 
-        ctk.CTkLabel(right, text="Vista:", font=styles.base_font(11),
+        ctk.CTkLabel(right, text=tr("main.view_label"), font=styles.base_font(11),
                      text_color=styles.COLOR_MUTED_TEXT).grid(
             row=1, column=0, padx=(0, 6), sticky="e")
-        self.mode_selector = ctk.CTkSegmentedButton(
-            right, values=["Sencilla", "Avanzada"], command=self._change_mode)
-        self.mode_selector.set("Sencilla" if self._mode == "simple"
-                               else "Avanzada")
-        self.mode_selector.grid(row=1, column=1, sticky="w")
+        self.mode_selector = KeyedSegmentedButton(
+            right, {"simple": tr("main.mode_simple"), "advanced": tr("main.mode_advanced")},
+            command=self._change_mode)
+        self.mode_selector.set_key(self._mode)
+        self.mode_selector.grid(row=1, column=1, columnspan=3, sticky="w")
+
+        ctk.CTkLabel(right, text=tr("main.language_label"), font=styles.base_font(11),
+                     text_color=styles.COLOR_MUTED_TEXT).grid(
+            row=0, column=2, padx=(16, 6), pady=(0, 4), sticky="e")
+        self.language_selector = ctk.CTkOptionMenu(
+            right, values=list(i18n.LANGUAGE_NAMES.values()), width=110,
+            command=self._change_language)
+        self.language_selector.set(i18n.LANGUAGE_NAMES[i18n.get_language()])
+        self.language_selector.grid(row=0, column=3, pady=(0, 4), sticky="w")
+
+    def show_tab(self, name):
+        """Shows one of the tabs: "exact", "similar" or "gather"."""
+        self.tabs.set(self._tab_titles[name])
 
     def _open_history(self):
         HistoryWindow(self)
 
     def _change_theme(self, label):
-        theme = {"Automático": "auto", "Claro": "light", "Oscuro": "dark"}[label]
+        theme = self.theme_selector.key_of(label)
         config.set_theme(theme)
         styles.change_theme(theme)     # CustomTkinter repaints; ttk does it in _set_appearance_mode
 
+    def _change_language(self, name):
+        """Saves the language; the texts are drawn once, so it applies the next time."""
+        code = next(code for code, label in i18n.LANGUAGE_NAMES.items() if label == name)
+        if code == i18n.get_language():
+            return
+        config.set_language(code)
+        messagebox.showinfo(tr("main.language_changed_title"), tr("main.language_changed_msg"))
+
     def _change_mode(self, value):
         """Called by the switch in the header."""
-        self._mode = "simple" if value == "Sencilla" else "advanced"
+        self._mode = self.mode_selector.get_key()
         config.set_mode(self._mode)          # remembered for next time
         self._apply_mode()
         if self._mode == "simple":
@@ -194,6 +220,8 @@ class MainWindow(ctk.CTk):
 
 
 def launch():
+    # The language is chosen before any text is created: the saved one, or the system's.
+    i18n.set_language(i18n.resolve_language(config.get_language()))
     # Applies the saved theme (auto/light/dark) BEFORE creating the window.
     styles.apply_theme(config.get_theme())
     app = MainWindow()

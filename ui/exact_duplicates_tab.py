@@ -35,6 +35,7 @@ from .thumbnails import (
 )
 from .image_viewer import open_viewer, can_be_displayed
 from .extension_breakdown_dialog import ExtensionBreakdownWindow
+from core.i18n import tr
 
 
 class ExactDuplicatesTab(ctk.CTkFrame):
@@ -97,7 +98,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
     def _build_scan_card(self):
         card = make_card(self, 1)
-        SectionHeader(card, 1, "Elige la carpeta que quieres revisar",
+        SectionHeader(card, 1, tr("exact.choose_folder_header"),
                         icons.FOLDER).grid(
             row=0, column=0, sticky="w", padx=16, pady=(14, 8))
 
@@ -106,14 +107,14 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         row.grid_columnconfigure(0, weight=1)
 
         self.entry_folder = ctk.CTkEntry(
-            row, height=36, placeholder_text=r"Ej.  D:\Fotos")
+            row, height=36, placeholder_text=tr("common.folder_placeholder"))
         self.entry_folder.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self.btn_choose = ctk.CTkButton(
-            row, text=f"{icons.FOLDER}  Elegir", width=110, height=36,
+            row, text=f"{icons.FOLDER}  {tr("common.choose")}", width=110, height=36,
             command=self._choose_folder)
         self.btn_choose.grid(row=0, column=1, padx=4)
         self.btn_scan = ctk.CTkButton(
-            row, text=f"{icons.SEARCH}  Escanear", width=130, height=36,
+            row, text=f"{icons.SEARCH}  {tr("common.scan")}", width=130, height=36,
             font=styles.base_font(13, "bold"), command=self._start_scan)
         self.btn_scan.grid(row=0, column=2, padx=(4, 0))
 
@@ -125,8 +126,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         self._options_open = ctk.BooleanVar(value=False)
         self.btn_toggle_options = ctk.CTkButton(
-            cont, text=f"{icons.TRI_RIGHT}  {icons.GEAR}  Opciones de escaneo "
-                       f"(filtrar por tipo de archivo)",
+            cont, text=f"{icons.TRI_RIGHT}  {icons.GEAR}  {tr("exact.options_toggle")}",
             anchor="w", fg_color="transparent", hover=False,
             text_color=styles.COLOR_MUTED_TEXT, command=self._toggle_options)
         self.btn_toggle_options.grid(row=0, column=0, sticky="ew")
@@ -138,7 +138,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         p = self.options_panel
 
         # --- Search only these kinds (whitelist) ------------------
-        ctk.CTkLabel(p, text="Buscar solo estos tipos de archivo:",
+        ctk.CTkLabel(p, text=tr("exact.only_kinds"),
                      font=styles.base_font(12, "bold")).grid(
             row=0, column=0, columnspan=3, padx=16, pady=(12, 4), sticky="w")
 
@@ -147,23 +147,22 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.chk_categories = {}
         for name in CATEGORY_EXTENSIONS:
             chk = ctk.CTkCheckBox(
-                chips, text=f"{icons.CATEGORY_ICON[name]}  {name}",
+                chips, text=f"{icons.CATEGORY_ICON[name]}  {tr(f"category.{name}")}",
                 font=styles.base_font(12),
                 command=lambda n=name: self._toggle_category(n))
             chk.pack(side="left", padx=(2, 12), pady=4)
             self.chk_categories[name] = chk
 
-        ctk.CTkLabel(p, text="Extensiones:", font=styles.base_font(12)).grid(
+        ctk.CTkLabel(p, text=tr("exact.extensions"), font=styles.base_font(12)).grid(
             row=2, column=0, padx=(16, 8), pady=4, sticky="w")
         self.entry_include = ctk.CTkEntry(
-            p, height=32, placeholder_text="vacío = se buscan todos los tipos")
+            p, height=32, placeholder_text=tr("exact.all_kinds_placeholder"))
         self.entry_include.grid(row=2, column=1, columnspan=2, padx=(4, 16),
                                 pady=4, sticky="ew")
         self.entry_include.bind("<KeyRelease>", self._sync_categories)
 
         ctk.CTkLabel(
-            p, text="Marca una categoría o escribe extensiones a mano. "
-                    "Si lo dejas vacío se buscan duplicados de cualquier tipo.",
+            p, text=tr("exact.categories_hint"),
             font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
         ).grid(row=3, column=0, columnspan=3, padx=16, pady=(0, 10), sticky="w")
 
@@ -171,7 +170,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             row=4, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 8))
 
         # --- Ignore (blacklist) ------------------------------------
-        ctk.CTkLabel(p, text="Ignorar además:",
+        ctk.CTkLabel(p, text=tr("exact.ignore_also"),
                      font=styles.base_font(12, "bold")).grid(
             row=5, column=0, columnspan=3, padx=16, pady=(0, 4), sticky="w")
 
@@ -183,28 +182,28 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                    sticky="ew")
             return e
 
-        self.entry_ext = field(6, "Extensiones:")
-        self.entry_folders = field(7, "Carpetas:")
-        self.entry_names = field(8, "Nombres:")
+        self.entry_ext = field(6, tr("exact.extensions"))
+        self.entry_folders = field(7, tr("exact.folders"))
+        self.entry_names = field(8, tr("exact.names"))
 
         self.chk_empty = ctk.CTkCheckBox(
-            p, text="Ignorar archivos de 0 bytes", font=styles.base_font(12))
+            p, text=tr("exact.ignore_empty"), font=styles.base_font(12))
         self.chk_empty.grid(row=9, column=0, columnspan=2, padx=16,
                              pady=(6, 4), sticky="w")
 
         buttons = ctk.CTkFrame(p, fg_color="transparent")
         buttons.grid(row=9, column=2, padx=12, pady=(6, 4), sticky="e")
-        ctk.CTkButton(buttons, text="Valores por defecto", width=140,
+        ctk.CTkButton(buttons, text=tr("exact.defaults"), width=140,
                       fg_color="transparent", border_width=1,
                       text_color=styles.COLOR_TEXT,
                       command=self._default_filters).pack(side="left", padx=4)
-        ctk.CTkButton(buttons, text="Quitar todo", width=90,
+        ctk.CTkButton(buttons, text=tr("exact.clear_all"), width=90,
                       fg_color="transparent", border_width=1,
                       text_color=styles.COLOR_TEXT,
                       command=self._empty_filters).pack(side="left", padx=4)
 
         ctk.CTkLabel(
-            p, text="Separa los valores con espacios o comas.",
+            p, text=tr("exact.separate_hint"),
             font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
         ).grid(row=10, column=0, columnspan=3, padx=16, pady=(0, 12), sticky="w")
 
@@ -227,7 +226,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         card = make_card(self, 4)
         self.decision_card = card
         self.decision_card_header = SectionHeader(
-            card, 2, "Decide qué copia conservar en cada grupo", icons.STAR)
+            card, 2, tr("exact.keep_header"), icons.STAR)
         self.decision_card_header.grid(row=0, column=0, sticky="w",
                                        padx=16, pady=(14, 8))
 
@@ -236,24 +235,23 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         row.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 6))
         row.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(row, text="Carpeta preferida:",
+        ctk.CTkLabel(row, text=tr("exact.preferred_folder"),
                      font=styles.base_font(12)).grid(
             row=0, column=0, padx=(0, 8), pady=6, sticky="w")
         self.entry_preferred_folder = ctk.CTkEntry(
             row, height=34,
-            placeholder_text=r"Las copias dentro de esta carpeta se conservan.  "
-                             r"Ej.  D:\Fotos\Organizado")
+            placeholder_text=tr("exact.preferred_placeholder"))
         self.entry_preferred_folder.grid(row=0, column=1, padx=4, pady=6, sticky="ew")
         self.btn_choose_preferred = ctk.CTkButton(
-            row, text=f"{icons.FOLDER}  Elegir", width=100, height=34,
+            row, text=f"{icons.FOLDER}  {tr("common.choose")}", width=100, height=34,
             command=self._choose_preferred_folder)
         self.btn_choose_preferred.grid(row=0, column=2, padx=4, pady=6)
         self.btn_rule = ctk.CTkButton(
-            row, text=f"{icons.AUTO}  Regla por carpeta", width=170,
+            row, text=f"{icons.AUTO}  {tr("exact.rule_by_folder")}", width=170,
             height=34, command=self._apply_rule)
         self.btn_rule.grid(row=0, column=3, padx=4, pady=6)
         self.btn_primary = ctk.CTkButton(
-            row, text=f"{icons.OK}  Elegir la principal", width=170,
+            row, text=f"{icons.OK}  {tr("exact.choose_main")}", width=170,
             height=34, fg_color="transparent", border_width=1,
             command=self._choose_primary)
         self.btn_primary.grid(row=0, column=4, padx=(4, 0), pady=6)
@@ -270,10 +268,10 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         for i in range(4):
             self.stats_row.grid_columnconfigure(i, weight=1)
 
-        self.stat_groups = StatTile(self.stats_row, "Grupos de duplicados")
-        self.stat_duplicates = StatTile(self.stats_row, "Archivos duplicados")
-        self.stat_move = StatTile(self.stats_row, "Archivos a mover")
-        self.stat_space = StatTile(self.stats_row, "Espacio recuperable")
+        self.stat_groups = StatTile(self.stats_row, tr("exact.tile_groups"))
+        self.stat_duplicates = StatTile(self.stats_row, tr("exact.tile_files"))
+        self.stat_move = StatTile(self.stats_row, tr("exact.tile_to_move"))
+        self.stat_space = StatTile(self.stats_row, tr("common.tile_recoverable"))
         for i, b in enumerate((self.stat_groups, self.stat_duplicates,
                                self.stat_move, self.stat_space)):
             b.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 6, 0))
@@ -297,9 +295,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         self.empty_state = EmptyState(
             self.table_area, icons.SEARCH,
-            "Todavía no hay resultados",
-            "Elige una carpeta arriba y pulsa «Escanear». "
-            "Los grupos de archivos duplicados aparecerán aquí.")
+            tr("exact.empty_title"),
+            tr("exact.empty_detail"))
         self.empty_state.grid(row=0, column=0, sticky="nsew")
 
         # Preview panel on the right.
@@ -313,7 +310,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._preview_path = None
         self.preview_img = ctk.CTkLabel(
             self.panel_preview,
-            text="Selecciona un archivo\npara ver la vista previa",
+            text=tr("exact.preview_hint"),
             font=styles.base_font(12), text_color=styles.COLOR_MUTED_TEXT)
         self.preview_img.grid(row=0, column=0, padx=12, pady=12)
         self.preview_img.bind("<Button-1>", lambda _e: self._open_viewer())
@@ -338,23 +335,23 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         bar.grid_columnconfigure(0, weight=1)
 
         self.lbl_totals = ctk.CTkLabel(
-            bar, text="Sin escanear todavía.", font=styles.base_font(12),
+            bar, text=tr("exact.not_scanned"), font=styles.base_font(12),
             text_color=styles.COLOR_MUTED_TEXT, anchor="w")
         self.lbl_totals.grid(row=0, column=0, padx=16, pady=12, sticky="w")
 
         self.btn_kinds = ctk.CTkButton(
-            bar, text=f"{icons.CHART}  Ver tipos de archivo", width=180,
+            bar, text=f"{icons.CHART}  {tr("exact.view_kinds")}", width=180,
             height=36, fg_color="transparent", border_width=1,
             text_color=styles.COLOR_TEXT,
             command=self._show_kinds)
         self.btn_kinds.grid(row=0, column=1, padx=4, pady=12)
         self.btn_export = ctk.CTkButton(
-            bar, text=f"{icons.SAVE}  Exportar CSV", width=150, height=36,
+            bar, text=f"{icons.SAVE}  {tr("exact.export_csv")}", width=150, height=36,
             fg_color="transparent", border_width=1, text_color=styles.COLOR_TEXT,
             command=self._export_csv)
         self.btn_export.grid(row=0, column=2, padx=4, pady=12)
         self.btn_quarantine = ctk.CTkButton(
-            bar, text=f"{icons.SHIELD}  Mover a cuarentena", width=200,
+            bar, text=f"{icons.SHIELD}  {tr("common.move_quarantine")}", width=200,
             height=36, font=styles.base_font(13, "bold"),
             fg_color=styles.COLOR_OK_BUTTON, hover_color="#26734d",
             command=self._move_to_quarantine)
@@ -365,8 +362,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._options_open.set(open)
         tri = icons.TRI_DOWN if open else icons.TRI_RIGHT
         self.btn_toggle_options.configure(
-            text=f"{tri}  {icons.GEAR}  Opciones de escaneo "
-                 f"(filtrar por tipo de archivo)")
+            text=f"{tri}  {icons.GEAR}  {tr("exact.options_toggle")}")
         if open:
             self.options_panel.grid()
         else:
@@ -471,7 +467,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.entry_folder.configure(state="disabled" if scanning else "normal")
         if scanning:
             self.btn_scan.configure(
-                text=f"{icons.CROSS}  Cancelar", command=self._cancel_scan,
+                text=f"{icons.CROSS}  {tr("common.cancel")}", command=self._cancel_scan,
                 state="normal",
                 fg_color=styles.COLOR_DANGER_BUTTON,
                 hover_color=("#9c2f24", "#8f2b22"),
@@ -479,16 +475,16 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         else:
             styles.activate_button(self.btn_scan, True)
             self.btn_scan.configure(
-                text=f"{icons.SEARCH}  Escanear", command=self._start_scan)
+                text=f"{icons.SEARCH}  {tr("common.scan")}", command=self._start_scan)
 
     def _choose_folder(self):
-        folder = filedialog.askdirectory(title="Elige la carpeta a escanear")
+        folder = filedialog.askdirectory(title=tr("exact.pick_scan_folder"))
         if folder:
             self.entry_folder.delete(0, "end")
             self.entry_folder.insert(0, os.path.normpath(folder))
 
     def _choose_preferred_folder(self):
-        folder = filedialog.askdirectory(title="Elige la carpeta preferida")
+        folder = filedialog.askdirectory(title=tr("exact.pick_preferred_folder"))
         if folder:
             self.entry_preferred_folder.delete(0, "end")
             self.entry_preferred_folder.insert(0, os.path.normpath(folder))
@@ -496,13 +492,13 @@ class ExactDuplicatesTab(ctk.CTkFrame):
     def _start_scan(self):
         folder = self.entry_folder.get().strip()
         if not folder:
-            messagebox.showwarning("Falta la carpeta",
-                                   "Elige primero una carpeta para escanear.")
+            messagebox.showwarning(tr("exact.missing_folder_title"),
+                                   tr("exact.missing_folder_msg"))
             return
         if not os.path.isdir(folder):
             messagebox.showerror(
-                "Carpeta no válida",
-                f"La ruta no existe o no es una carpeta:\n\n{folder}")
+                tr("common.invalid_folder_title"),
+                tr("exact.invalid_folder_msg", folder=folder))
             return
 
         filter = self._current_filter()
@@ -517,12 +513,12 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.progress_bar.set(0)
         self.progress_bar.configure(mode="indeterminate")
         self.progress_bar.start()
-        self.lbl_state.configure(text="Preparando el escaneo…")
-        self.lbl_totals.configure(text="Escaneando…")
+        self.lbl_state.configure(text=tr("exact.preparing"))
+        self.lbl_totals.configure(text=tr("exact.scanning"))
         self.lbl_validation.configure(text="")
         self.stats_row.grid_remove()
         self.empty_state.configure(
-            title="Escaneando…", detail="Buscando archivos duplicados.")
+            title=tr("exact.scanning"), detail=tr("exact.searching_detail"))
         self.empty_state.tkraise()
         self._enable_actions(False)
         self._enable_decision(False)
@@ -544,7 +540,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
     def _cancel_scan(self):
         # The thread checks this event between one file and the next.
         self._cancel_event.set()
-        self.lbl_state.configure(text="Cancelando…")
+        self.lbl_state.configure(text=tr("common.cancelling"))
         self.btn_scan.configure(state="disabled")
 
     def _scan_job(self, folder, filter):
@@ -561,7 +557,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         except ScanCancelled:
             self._queue.put(("cancelled", None))
         except Exception as e:  # any failure is logged and shown
-            log.exception("Falló el escaneo de %s", folder)
+            log.exception("Scan of %s failed", folder)
             self._queue.put(("error", e))
 
     def _poll_queue(self):
@@ -603,22 +599,21 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.btn_scan.configure(state="normal")
 
         self._excl_text = (
-            f"  ·  {result.total_excluded} ignorados por filtro"
+            tr("exact.excluded_suffix", total_excluded=result.total_excluded)
             if result.total_excluded else "")
 
         if result.total_groups == 0:
             self.stats_row.grid_remove()
-            self.lbl_state.configure(text="No se han encontrado duplicados.")
+            self.lbl_state.configure(text=tr("exact.none_found"))
             self.lbl_totals.configure(
-                text=f"{result.total_files} archivos revisados"
-                     f"{self._excl_text} · 0 duplicados.")
+                text=tr("exact.totals_none", total_files=result.total_files,
+                        excl_text=self._excl_text))
             self._enable_actions(False)
             self._enable_decision(False)
             self.lbl_validation.configure(text="")
             self.empty_state.configure(
-                title="No se han encontrado duplicados",
-                detail=f"Se han revisado {result.total_files} archivos y "
-                        f"todos son únicos.")
+                title=tr("exact.none_found_title"),
+                detail=tr("exact.none_found_detail", total_files=result.total_files))
             self.empty_state.tkraise()
             return
 
@@ -631,8 +626,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.stat_groups.set(result.total_groups)
         self.stat_duplicates.set(result.total_files_duplicates)
         self.lbl_state.configure(
-            text="Escaneo terminado."
-            + (f"  {len(result.errors)} archivo(s) no se pudieron leer."
+            text=tr("scan.finished")
+            + (tr("exact.unreadable", count=len(result.errors))
                if result.errors else ""))
         self._enable_actions(True)
         self._enable_decision(True)
@@ -642,25 +637,25 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
-        self.lbl_state.configure(text="Escaneo cancelado.")
-        self.lbl_totals.configure(text="Escaneo cancelado.")
+        self.lbl_state.configure(text=tr("exact.cancelled"))
+        self.lbl_totals.configure(text=tr("exact.cancelled"))
         self._set_scanning(False)
         self.btn_scan.configure(state="normal")
         self.empty_state.configure(
-            title="Escaneo cancelado",
-            detail="Pulsa «Escanear» para intentarlo de nuevo.")
+            title=tr("exact.cancelled_title"),
+            detail=tr("exact.cancelled_detail"))
         self.empty_state.tkraise()
 
     def _scan_failed(self, e):
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
-        self.lbl_state.configure(text="El escaneo ha fallado.")
-        self.lbl_totals.configure(text="El escaneo ha fallado.")
+        self.lbl_state.configure(text=tr("exact.failed"))
+        self.lbl_totals.configure(text=tr("exact.failed"))
         self._set_scanning(False)
         self.btn_scan.configure(state="normal")
-        messagebox.showerror("Error durante el escaneo",
-                             f"Ha ocurrido un problema:\n\n{type(e).__name__}: {e}")
+        messagebox.showerror(tr("exact.error_title"),
+                             tr("exact.error_msg", name=type(e).__name__, e=e))
 
     def _apply_rule(self):
         if self._selection is None:
@@ -668,15 +663,13 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         preferred_folder = self.entry_preferred_folder.get().strip()
         if not preferred_folder:
             messagebox.showinfo(
-                "Falta la carpeta preferida",
-                "Escribe o elige antes una carpeta preferida.")
+                tr("exact.need_preferred_title"),
+                tr("exact.need_preferred_msg"))
             return
         if not os.path.isdir(preferred_folder):
             if not messagebox.askyesno(
-                "La carpeta no existe",
-                f"La carpeta preferida no existe ahora mismo:\n\n{preferred_folder}\n\n"
-                "¿Quieres aplicar la regla igualmente? (los grupos sin coincidencia "
-                "quedarán sin decidir)"):
+                tr("exact.no_such_folder_title"),
+                tr("exact.no_such_folder_msg", preferred_folder=preferred_folder)):
                 return
 
         resolved, no_match = self._selection.apply_folder_rule(
@@ -684,14 +677,11 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.table.refresh_all()
         self._on_selection_change()
 
-        msg = f"Regla aplicada: {resolved} grupo(s) resueltos automáticamente."
+        msg = tr("exact.rule_applied", resolved=resolved)
         if no_match:
-            msg += (f"\n{no_match} grupo(s) no tienen ninguna copia dentro "
-                    "de la carpeta preferida: han quedado resaltados para que elijas "
-                    "manualmente (un clic sobre la copia que quieres conservar, o "
-                    "doble clic para conservar solo esa).")
+            msg += tr("exact.rule_no_match", no_match=no_match)
             self.table.go_to_pending()
-        messagebox.showinfo("Regla automática", msg)
+        messagebox.showinfo(tr("exact.rule_title"), msg)
 
     def _on_selection_change(self):
         if self._selection is None:
@@ -705,25 +695,19 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.stat_space.set(format_size(free),
                               color=styles.COLOR_OK if free else None)
         self.lbl_totals.configure(
-            text=f"{r.total_groups} grupos · {r.total_files_duplicates} "
-                 f"archivos duplicados{self._excl_text}")
+            text=tr("exact.totals", total_groups=r.total_groups,
+                    total_files_duplicates=r.total_files_duplicates, excl_text=self._excl_text))
 
         if not pending:
             if not self._advanced:
-                text = (f"{icons.OK}  La app conservará la copia principal de "
-                         f"cada grupo. Doble clic en una fila para conservar "
-                         f"otra. Cuando quieras, pulsa «Mover a cuarentena».")
+                text = f"{icons.OK}  {tr("exact.hint_main_kept")}"
             else:
-                text = (f"{icons.OK}  Todos los grupos tienen una sola copia "
-                         f"marcada para conservar. Ya puedes mover a cuarentena.")
+                text = f"{icons.OK}  {tr("exact.hint_all_resolved")}"
             self.lbl_validation.configure(text=text, text_color=styles.COLOR_OK)
             styles.action_button(self.btn_quarantine, True)
         else:
             self.lbl_validation.configure(
-                text=f"{icons.WARNING}  {len(pending)} grupo(s) sin resolver "
-                     f"(resaltados en la tabla). Marca una sola copia para "
-                     f"conservar en cada uno. El botón «Mover a cuarentena» "
-                     f"está bloqueado.",
+                text=f"{icons.WARNING}  {tr("exact.hint_unresolved", count=len(pending))}",
                 text_color=styles.COLOR_WARNING)
             styles.action_button(self.btn_quarantine, False)
 
@@ -733,7 +717,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         root = self._scanned_folder
         quarantine_folder = filedialog.askdirectory(
-            title="Elige (o crea) la carpeta de cuarentena", mustexist=False)
+            title=tr("common.pick_quarantine"), mustexist=False)
         if not quarantine_folder:
             return
         quarantine_folder = os.path.normpath(quarantine_folder)
@@ -741,23 +725,21 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         try:
             warning = validate_quarantine_folder(quarantine_folder, root)
         except InvalidQuarantine as e:
-            messagebox.showerror("Carpeta de cuarentena no válida", str(e))
+            messagebox.showerror(tr("common.invalid_quarantine_title"), str(e))
             return
-        if warning and not messagebox.askyesno("Atención", warning + "\n\n¿Continuar?"):
+        if warning and not messagebox.askyesno(
+                tr("common.warning"), warning + tr("common.continue_question")):
             return
 
         n = self._selection.count_to_move()
         frees = format_size(self._selection.space_to_free())
         if not messagebox.askyesno(
-            "Confirmar movimiento a cuarentena",
-            f"Se van a MOVER {n} archivo(s) ({frees}) a:\n\n{quarantine_folder}\n\n"
-            "Los originales que has marcado para conservar NO se tocan. No se "
-            "borra nada: todo queda en la cuarentena para que lo revises y lo "
-            "borres tú manualmente cuando quieras.\n\n¿Mover ahora?"):
+            tr("common.confirm_title"),
+            tr("exact.confirm_msg", n=n, frees=frees, quarantine_folder=quarantine_folder)):
             return
 
         self._set_quarantine_busy(True)
-        self.lbl_state.configure(text="Moviendo a cuarentena…")
+        self.lbl_state.configure(text=tr("exact.moving"))
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
 
@@ -784,7 +766,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                 progress=lambda a, t, m: self._quarantine_queue.put(("progress", (a, t, m))))
             self._quarantine_queue.put(("done", (res, quarantine_folder)))
         except Exception as e:  # it is logged and shown to the user
-            log.exception("Falló el movimiento a cuarentena (origen %s, destino %s)",
+            log.exception("Move to quarantine failed (source %s, destination %s)",
                           root, quarantine_folder)
             self._quarantine_queue.put(("error", e))
 
@@ -802,9 +784,10 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                     return
                 elif kind == "error":
                     self._set_quarantine_busy(False)
-                    self.lbl_state.configure(text="El movimiento ha fallado.")
+                    self.lbl_state.configure(text=tr("exact.move_failed"))
                     messagebox.showerror(
-                        "Error al mover", f"{type(datum).__name__}: {datum}")
+                        tr("common.move_error_title"), tr("common.error_detail",
+                                                          name=type(datum).__name__, datum=datum))
                     return
         except queue.Empty:
             pass
@@ -813,23 +796,21 @@ class ExactDuplicatesTab(ctk.CTkFrame):
     def _quarantine_finished(self, res, quarantine_folder):
         self._set_quarantine_busy(False)
         self.progress_bar.set(1.0)
-        self.lbl_state.configure(text="Movimiento a cuarentena terminado.")
+        self.lbl_state.configure(text=tr("exact.move_done"))
 
         if res.moved:
             history.record(
                 history.KIND_QUARANTINE, MOVE_ACTION, self._scanned_folder,
                 quarantine_folder, [(m.source, m.destination) for m in res.moved],
-                f"{len(res.moved)} duplicados exactos")
+                tr("exact.history_description", count=len(res.moved)))
 
         moved = len(res.moved)
         failed = len(res.failed)
-        detail = (f"Se han movido {moved} archivo(s) "
-                   f"({format_size(res.bytes_moved)}).")
+        detail = tr("exact.moved_summary", moved=moved, size=format_size(res.bytes_moved))
         if failed:
-            detail += (f"\n{failed} no se han podido mover "
-                        f"(consulta el CSV de registro).")
+            detail += tr("exact.failed_note", failed=failed)
         if res.log_path:
-            detail += f"\n\nRegistro: {res.log_path}"
+            detail += tr("common.log_note", log_path=res.log_path)
 
         self.table.clear()
         self._selection = None
@@ -839,15 +820,14 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.lbl_validation.configure(text="")
         self.stats_row.grid_remove()
         self.lbl_totals.configure(
-            text=f"{moved} archivo(s) movidos a cuarentena. "
-                 f"Vuelve a escanear si quieres continuar.")
+            text=tr("exact.moved_totals", moved=moved))
         self.empty_state.configure(
-            title="Archivos movidos a cuarentena",
-            detail=detail.split("\n\n")[0] + " Vuelve a escanear para continuar.")
+            title=tr("exact.moved_title"),
+            detail=detail.split("\n\n")[0] + tr("exact.scan_again"))
         self.empty_state.tkraise()
 
         if messagebox.askyesno(
-            "Hecho", detail + "\n\n¿Quieres abrir la carpeta de cuarentena?"):
+            tr("common.done_title"), detail + tr("exact.open_quarantine_question")):
             try:
                 os.startfile(quarantine_folder)  # noqa: S606 (Windows)
             except OSError:
@@ -873,7 +853,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         if not path:
             self._clear_preview_image()
             self.preview_img.configure(
-                text="Selecciona un archivo\npara ver la vista previa")
+                text=tr("exact.preview_hint"))
             self.preview_name.configure(text="")
             self.preview_meta.configure(text="")
             self.preview_zoom_in.configure(text="")
@@ -882,7 +862,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         try:
             pil = large_preview(path)
         except Exception:  # no preview; it is logged so it can be investigated
-            log.warning("No se pudo mostrar la vista previa de %s", path, exc_info=True)
+            log.warning("Could not show the preview of %s", path, exc_info=True)
             pil = None
         if pil is not None:
             img = ctk.CTkImage(light_image=pil, dark_image=pil,
@@ -891,7 +871,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             self.preview_img.configure(image=img, text="")
         else:
             self._clear_preview_image()
-            self.preview_img.configure(text="(sin vista previa)")
+            self.preview_img.configure(text=tr("exact.no_preview"))
 
         self.preview_name.configure(text=os.path.basename(path))
         parts = [os.path.dirname(path)]
@@ -908,14 +888,14 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             st = os.stat(path)
             data.append(format_size(st.st_size))
             data.append(datetime.datetime.fromtimestamp(
-                st.st_mtime).strftime("%d/%m/%Y %H:%M"))
+                st.st_mtime).strftime(tr("common.date_format")))
         except OSError:
             pass
         if data:
             parts.append("   ·   ".join(data))
         self.preview_meta.configure(text="\n".join(parts))
         self.preview_zoom_in.configure(
-            text=f"{icons.SEARCH}  Clic para ver la imagen en grande"
+            text=f"{icons.SEARCH}  {tr("exact.click_to_enlarge")}"
             if can_be_displayed(path) else "")
 
     def _show_kinds(self):
@@ -927,16 +907,16 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         if not self._result or self._result.total_groups == 0:
             return
         path = filedialog.asksaveasfilename(
-            title="Guardar informe CSV", defaultextension=".csv",
+            title=tr("exact.save_report_title"), defaultextension=".csv",
             initialfile="duplicates_report.csv",
-            filetypes=[("CSV", "*.csv"), ("Todos los archivos", "*.*")])
+            filetypes=[("CSV", "*.csv"), (tr("common.all_files"), "*.*")])
         if not path:
             return
         try:
             n = export_csv(self._result, path)
         except OSError as e:
-            messagebox.showerror("No se pudo guardar",
-                                 f"No se pudo escribir el archivo:\n\n{e}")
+            messagebox.showerror(tr("exact.save_failed_title"),
+                                 tr("exact.save_failed_msg", e=e))
             return
-        messagebox.showinfo("Informe guardado",
-                            f"Se han guardado {n} grupos de duplicados en:\n\n{path}")
+        messagebox.showinfo(tr("exact.report_saved_title"),
+                            tr("exact.report_saved_msg", n=n, path=path))

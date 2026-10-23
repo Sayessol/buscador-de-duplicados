@@ -18,11 +18,16 @@ from core.file_moves import MOVE, COPY, InvalidDestination, validate_destination
 from . import styles
 from . import icons
 from .image_viewer import open_viewer
-from .widgets import SectionHeader, StatTile, EmptyState, make_card
+from .widgets import SectionHeader, StatTile, EmptyState, KeyedSegmentedButton, make_card
 from .thumbnails import (
     clear_cache, thumbnail_or_placeholder,
 )
 from .non_image_kinds_dialog import NonImageKindsWindow
+from core.i18n import tr
+
+# Keys of the options of the selectors (the labels the user sees come from the catalog).
+SCOPE_ALL, SCOPE_FIRST = "all", "first"
+STRATEGY_FILES, STRATEGY_FOLDER = "files", "folder"
 
 
 class GatherImagesTab(ctk.CTkFrame):
@@ -54,8 +59,8 @@ class GatherImagesTab(ctk.CTkFrame):
         """Called by the window when switching between Simple and Advanced."""
         (self._advanced.grid if advanced else self._advanced.grid_remove)()
         if not advanced:
-            self.seg_action.set("Mover")
-            self.seg_strategy.set("Por archivos")
+            self.seg_action.set_key(MOVE)
+            self.seg_strategy.set_key(STRATEGY_FILES)
 
     def cancel_jobs(self):
         """Called by the window when it closes: if an operation is running, it is cancelled."""
@@ -66,12 +71,11 @@ class GatherImagesTab(ctk.CTkFrame):
         t = self
 
         card = make_card(t, 0)
-        SectionHeader(card, 1, "Reúne todas las imágenes en una carpeta",
+        SectionHeader(card, 1, tr("gather.header"),
                         icons.GATHER).grid(row=0, column=0, sticky="w",
                                            padx=16, pady=(14, 4))
         ctk.CTkLabel(
-            card, text="Junta en un solo sitio las fotos que tengas repartidas "
-                       "por una carpeta y sus subcarpetas.",
+            card, text=tr("gather.intro"),
             font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
             anchor="w").grid(row=1, column=0, sticky="w", padx=16, pady=(0, 8))
 
@@ -79,20 +83,20 @@ class GatherImagesTab(ctk.CTkFrame):
         row.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 6))
         row.grid_columnconfigure(0, weight=1)
         self.entry_folder = ctk.CTkEntry(
-            row, height=36, placeholder_text=r"Carpeta a revisar.  Ej.  D:\Fotos")
+            row, height=36, placeholder_text=tr("gather.folder_placeholder"))
         self.entry_folder.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self.btn_choose = ctk.CTkButton(
-            row, text=f"{icons.FOLDER}  Elegir", width=110, height=36,
+            row, text=f"{icons.FOLDER}  {tr("common.choose")}", width=110, height=36,
             command=self._choose_folder)
         self.btn_choose.grid(row=0, column=1, padx=4)
         self.btn_search = ctk.CTkButton(
-            row, text=f"{icons.SEARCH}  Buscar imágenes", width=150, height=36,
+            row, text=f"{icons.SEARCH}  {tr("gather.find_images")}", width=150, height=36,
             font=styles.base_font(13, "bold"), command=self._search)
         self.btn_search.grid(row=0, column=2, padx=(4, 0))
 
-        self.seg_scope = ctk.CTkSegmentedButton(
-            card, values=["Todas las subcarpetas", "Solo el primer nivel"])
-        self.seg_scope.set("Todas las subcarpetas")
+        self.seg_scope = KeyedSegmentedButton(card, {
+            SCOPE_ALL: tr("gather.scope_all"), SCOPE_FIRST: tr("gather.scope_first")})
+        self.seg_scope.set_key(SCOPE_ALL)
         self.seg_scope.grid(row=3, column=0, sticky="w",
                                      padx=16, pady=(0, 14))
 
@@ -101,27 +105,27 @@ class GatherImagesTab(ctk.CTkFrame):
         option.grid(row=4, column=0, sticky="ew", padx=16, pady=(0, 12))
         option.grid_columnconfigure(0, weight=1)
         self.entry_destination = ctk.CTkEntry(
-            option, height=34, placeholder_text=r"Carpeta común de destino")
+            option, height=34, placeholder_text=tr("gather.destination_placeholder"))
         self.entry_destination.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        ctk.CTkButton(option, text=f"{icons.FOLDER}  Elegir", width=100, height=34,
+        ctk.CTkButton(option, text=f"{icons.FOLDER}  {tr("common.choose")}", width=100, height=34,
                       command=self._choose_destination).grid(row=0, column=1,
                                                                 padx=4)
 
         self._advanced = ctk.CTkFrame(card, fg_color="transparent")
         self._advanced.grid(row=5, column=0, sticky="w", padx=16,
                                    pady=(0, 12))
-        ctk.CTkLabel(self._advanced, text="Acción:",
+        ctk.CTkLabel(self._advanced, text=tr("gather.action_label"),
                      font=styles.base_font(12)).pack(side="left", padx=(0, 6))
-        self.seg_action = ctk.CTkSegmentedButton(
-            self._advanced, values=["Mover", "Copiar"])
-        self.seg_action.set("Mover")
+        self.seg_action = KeyedSegmentedButton(self._advanced, {
+            MOVE: tr("gather.action_move"), COPY: tr("gather.action_copy")})
+        self.seg_action.set_key(MOVE)
         self.seg_action.pack(side="left", padx=(0, 16))
-        ctk.CTkLabel(self._advanced, text="Estrategia:",
+        ctk.CTkLabel(self._advanced, text=tr("gather.strategy_label"),
                      font=styles.base_font(12)).pack(side="left", padx=(0, 6))
-        self.seg_strategy = ctk.CTkSegmentedButton(
-            self._advanced,
-            values=["Por archivos", "Carpeta entera"])
-        self.seg_strategy.set("Por archivos")
+        self.seg_strategy = KeyedSegmentedButton(self._advanced, {
+            STRATEGY_FILES: tr("gather.strategy_files"),
+            STRATEGY_FOLDER: tr("gather.strategy_folder")})
+        self.seg_strategy.set_key(STRATEGY_FILES)
         self.seg_strategy.pack(side="left")
 
         # Progress
@@ -144,9 +148,9 @@ class GatherImagesTab(ctk.CTkFrame):
                                     pady=(10, 0))
         for i in range(3):
             self.stats_row.grid_columnconfigure(i, weight=1)
-        self.stat_img = StatTile(self.stats_row, "Imágenes encontradas")
-        self.stat_sel = StatTile(self.stats_row, "Marcadas para reunir")
-        self.stat_others = StatTile(self.stats_row, "Otros archivos")
+        self.stat_img = StatTile(self.stats_row, tr("gather.tile_found"))
+        self.stat_sel = StatTile(self.stats_row, tr("gather.tile_marked"))
+        self.stat_others = StatTile(self.stats_row, tr("gather.tile_others"))
         for i, b in enumerate((self.stat_img, self.stat_sel,
                                self.stat_others)):
             b.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 6, 0))
@@ -159,9 +163,8 @@ class GatherImagesTab(ctk.CTkFrame):
         for c in range(6):
             self.gallery.grid_columnconfigure(c, weight=1, uniform="tile")
         self.empty_state = EmptyState(
-            t, icons.GATHER, "Sin buscar todavía",
-            "Elige una carpeta y pulsa «Buscar imágenes». Aparecerán aquí para "
-            "que elijas cuáles reunir.")
+            t, icons.GATHER, tr("gather.not_searched_title"),
+            tr("gather.empty_detail"))
         self.empty_state.grid(row=4, column=0, sticky="nsew", padx=6,
                                       pady=(10, 0))
 
@@ -174,7 +177,7 @@ class GatherImagesTab(ctk.CTkFrame):
             text_color=styles.COLOR_MUTED_TEXT, anchor="w")
         self.lbl_totals.grid(row=0, column=0, padx=16, pady=12, sticky="w")
         self.btn_gather = ctk.CTkButton(
-            bar, text=f"{icons.GATHER}  Reunir aquí", width=170, height=36,
+            bar, text=f"{icons.GATHER}  {tr("gather.gather_here")}", width=170, height=36,
             font=styles.base_font(13, "bold"),
             fg_color=styles.COLOR_OK_BUTTON, hover_color="#26734d",
             command=self._run)
@@ -199,14 +202,14 @@ class GatherImagesTab(ctk.CTkFrame):
 
     # -- search images -----------------------------------------
     def _choose_folder(self):
-        folder = filedialog.askdirectory(title="Elige la carpeta a revisar")
+        folder = filedialog.askdirectory(title=tr("gather.pick_folder"))
         if folder:
             self.entry_folder.delete(0, "end")
             self.entry_folder.insert(0, os.path.normpath(folder))
 
     def _choose_destination(self):
         folder = filedialog.askdirectory(
-            title="Elige (o crea) la carpeta de destino", mustexist=False)
+            title=tr("gather.pick_destination"), mustexist=False)
         if folder:
             self.entry_destination.delete(0, "end")
             self.entry_destination.insert(0, os.path.normpath(folder))
@@ -214,16 +217,16 @@ class GatherImagesTab(ctk.CTkFrame):
     def _search(self):
         folder = self.entry_folder.get().strip()
         if not folder or not os.path.isdir(folder):
-            messagebox.showwarning("Carpeta no válida",
-                                   "Elige una carpeta para revisar.")
+            messagebox.showwarning(tr("common.invalid_folder_title"),
+                                   tr("gather.invalid_folder_msg"))
             return
-        recursive = self.seg_scope.get() == "Todas las subcarpetas"
+        recursive = self.seg_scope.get_key() == SCOPE_ALL
         self._folder = folder
         clear_cache()
         try:
             images, others = gather.list_all(folder, recursive=recursive)
         except OSError as e:
-            messagebox.showerror("Error al leer la carpeta", str(e))
+            messagebox.showerror(tr("gather.read_error_title"), str(e))
             return
         self._images = images
         self._others = others
@@ -233,9 +236,9 @@ class GatherImagesTab(ctk.CTkFrame):
         if not images:
             self._initial_state()
             self.empty_state.configure(
-                title="No se han encontrado imágenes",
-                detail="En esa carpeta no hay archivos de imagen"
-                        + ("" if recursive else " en el primer nivel") + ".")
+                title=tr("gather.no_images_title"),
+                detail=tr("gather.no_images_detail")
+                        + ("" if recursive else tr("gather.first_level_suffix")) + ".")
             self._show_gallery(False)
             return
 
@@ -256,7 +259,7 @@ class GatherImagesTab(ctk.CTkFrame):
             try:
                 self._thumbs[r] = thumbnail_or_placeholder(r, 96)
             except Exception as e:  # a broken file must not stop the gallery
-                log.info("No se pudo crear la miniatura de %s: %s", r, e)
+                log.info("Could not create the thumbnail of %s: %s", r, e)
                 self._thumbs[r] = None
             self._thumbs_queue.put(r)
 
@@ -301,8 +304,7 @@ class GatherImagesTab(ctk.CTkFrame):
         if len(self._images) > LIMIT:
             ctk.CTkLabel(
                 self.gallery,
-                text=f"… y {len(self._images) - LIMIT} más "
-                     f"(se reunirán todas las marcadas igualmente).",
+                text=tr("gather.and_more", hidden=len(self._images) - LIMIT),
                 font=styles.base_font(11),
                 text_color=styles.COLOR_MUTED_TEXT).grid(
                 row=LIMIT, column=0, columnspan=cols, pady=8)
@@ -334,8 +336,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self.stat_sel.set(n)
         styles.action_button(self.btn_gather, bool(n))
         self.lbl_totals.configure(
-            text=f"{n} imagen(es) marcadas · {len(self._others)} archivos "
-                 f"que no son imágenes")
+            text=tr("gather.totals", n=n, others=len(self._others)))
 
     # -- run ----------------------------------------------------
     def _run(self):
@@ -346,36 +347,36 @@ class GatherImagesTab(ctk.CTkFrame):
             return
         destination = self.entry_destination.get().strip()
         if not destination:
-            messagebox.showwarning("Falta el destino",
-                                   "Elige la carpeta común de destino.")
+            messagebox.showwarning(tr("gather.missing_destination_title"),
+                                   tr("gather.missing_destination_msg"))
             return
         destination = os.path.normpath(destination)
         try:
             # reject a destination that is inside the source
             warning = validate_destination(destination, source)
         except InvalidDestination as e:
-            messagebox.showerror("Destino no válido", str(e))
+            messagebox.showerror(tr("gather.invalid_destination_title"), str(e))
             return
-        if warning and not messagebox.askyesno("Atención", warning + "\n\n¿Continuar?"):
+        if warning and not messagebox.askyesno(
+                tr("common.warning"), warning + tr("common.continue_question")):
             return
 
-        action = COPY if self.seg_action.get() == "Copiar" else MOVE
-        strategy = self.seg_strategy.get()
-        verb = "copiar" if action == COPY else "mover"
+        action = self.seg_action.get_key()
+        strategy = self.seg_strategy.get_key()
+        verb = tr("gather.infinitive_copy" if action == COPY else "gather.infinitive_move")
 
-        if strategy == "Carpeta entera":
+        if strategy == STRATEGY_FOLDER:
             name = os.path.basename(os.path.normpath(source))
             if not messagebox.askyesno(
-                "Confirmar",
-                f"Se va a {verb.upper()} la carpeta «{name}» ENTERA "
-                f"(con todo lo que hay dentro) a:\n\n{destination}\\{name}\\\n\n"
-                f"¿Continuar?"):
+                tr("common.confirm"),
+                tr("gather.confirm_whole_folder", upper=verb.upper(), name=name,
+                   destination=destination)):
                 return
             self._launch(
                 lambda p, c: gather.gather_whole_folder(
                     source, destination, action=action, progress=p),
                 action, destination, history.KIND_GATHER_FOLDER,
-                f"carpeta «{name}» entera")
+                tr("gather.description_folder", name=name))
             return
 
         # --- By files ---
@@ -398,11 +399,10 @@ class GatherImagesTab(ctk.CTkFrame):
                       if rules.action(os.path.splitext(r)[1].lower().lstrip("."))
                       != gather.LEAVE)
         if not messagebox.askyesno(
-            "Confirmar",
-            f"Se van a {verb.upper()} {len(images)} imagen(es)"
-            + (f" y {n_others} archivo(s) más" if n_others else "")
-            + f" a:\n\n{destination}\n\n"
-            "Se mantienen las subcarpetas. ¿Continuar?"):
+            tr("common.confirm"),
+            tr("gather.confirm_files", upper=verb.upper(), count=len(images))
+            + (tr("gather.confirm_and_others", n_others=n_others) if n_others else "")
+            + tr("gather.confirm_tail", destination=destination)):
             return
 
         self._launch(
@@ -410,13 +410,13 @@ class GatherImagesTab(ctk.CTkFrame):
                 images, others, source, destination, action=action,
                 rules=rules, progress=p, cancelled=c),
             action, destination, history.KIND_GATHER,
-            f"{len(images)} imágenes")
+            tr("gather.description_files", count=len(images)))
 
     def _launch(self, fn, action, destination, kind, description):
         self._cancel.clear()
         self.progress_area.grid()
         self.progress_bar.set(0)
-        self.lbl_state.configure(text="Empezando…")
+        self.lbl_state.configure(text=tr("gather.starting"))
         styles.action_button(self.btn_gather, False)
         styles.activate_button(self.btn_search, False)
         styles.activate_button(self.btn_choose, False)
@@ -429,7 +429,7 @@ class GatherImagesTab(ctk.CTkFrame):
                 self._queue.put(
                     ("done", (res, action, destination, kind, description, self._folder)))
             except Exception as e:  # it is logged and shown to the user
-                log.exception("Falló la operación «%s» (%s)", kind, description)
+                log.exception("Operation %s failed (%s)", kind, description)
                 self._queue.put(("error", e))
 
         self._thread = threading.Thread(target=job, daemon=True)
@@ -466,12 +466,12 @@ class GatherImagesTab(ctk.CTkFrame):
                 kind, action, source, destination,
                 [(t.source, t.destination) for t in done], description)
 
-        verb = "copiado" if action == COPY else "movido"
+        verb = tr("gather.past_copy" if action == COPY else "gather.past_move")
         self.lbl_state.configure(
-            text=f"Listo: {len(done)} archivo(s) {verb}(s)."
-            + (f"  {len(res.failed)} con error." if res.failed else ""))
+            text=tr("gather.done_summary", count=len(done), verb=verb)
+            + (tr("gather.failed_suffix", count=len(res.failed)) if res.failed else ""))
         self.lbl_totals.configure(
-            text=f"{len(done)} archivo(s) {verb}(s) a {destination}.")
+            text=tr("gather.totals_done", count=len(done), verb=verb, destination=destination))
 
         # clear the list (what was moved is no longer there)
         self._images = []
@@ -481,16 +481,15 @@ class GatherImagesTab(ctk.CTkFrame):
         for h in self.gallery.winfo_children():
             h.destroy()
         self.empty_state.configure(
-            title=f"{len(done)} archivo(s) {verb}(s)",
-            detail="Puedes deshacerlo desde «Historial» (arriba, en modo "
-                    "Avanzada). Vuelve a buscar si quieres continuar.")
+            title=tr("gather.result_title", count=len(done), verb=verb),
+            detail=tr("gather.undo_hint"))
         self._show_gallery(False)
 
-        detail = f"{len(done)} archivo(s) {verb}(s) a:\n\n{destination}"
+        detail = tr("gather.result_detail", count=len(done), verb=verb, destination=destination)
         if res.log_path:
-            detail += f"\n\nRegistro: {res.log_path}"
-        if messagebox.askyesno("Hecho",
-                               detail + "\n\n¿Abrir la carpeta de destino?"):
+            detail += tr("common.log_note", log_path=res.log_path)
+        if messagebox.askyesno(tr("common.done_title"),
+                               detail + tr("gather.open_destination_question")):
             try:
                 os.startfile(destination)  # noqa: S606
             except OSError:
@@ -501,5 +500,6 @@ class GatherImagesTab(ctk.CTkFrame):
         styles.activate_button(self.btn_search, True)
         styles.activate_button(self.btn_choose, True)
         self.progress_bar.set(0)
-        self.lbl_state.configure(text="La operación ha fallado.")
-        messagebox.showerror("Error al reunir", f"{type(e).__name__}: {e}")
+        self.lbl_state.configure(text=tr("gather.failed"))
+        messagebox.showerror(tr("gather.error_title"), tr("gather.error_detail",
+                                                          name=type(e).__name__, e=e))

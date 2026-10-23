@@ -15,16 +15,17 @@ import os
 import shutil
 from dataclasses import dataclass, field
 
-from .filters import CATEGORY_EXTENSIONS
+from .filters import CATEGORY_EXTENSIONS, NO_EXTENSION
 from .callbacks import CancelledCallback, ProgressCallback
 from .file_moves import (
     MOVE, COPY, Transfer, TransferResult, execute, write_log,
     validate_destination, collision_free_path, size,
 )
+from .i18n import tr
 
 # Extensions considered "image" (broader than what Pillow
 # can preview: it includes raw, heic, etc.).
-IMAGE_EXT = {e.lower() for e in CATEGORY_EXTENSIONS["Imágenes"]}
+IMAGE_EXT = {e.lower() for e in CATEGORY_EXTENSIONS["images"]}
 
 LEAVE = "leave"
 # (for non-images: LEAVE | MOVE | GROUP)
@@ -56,7 +57,7 @@ def non_image_kinds(others: list[str]) -> dict[str, list[str]]:
     """dict: extension -> list of paths, for the per-kind dialog."""
     d: dict[str, list[str]] = {}
     for path in others:
-        d.setdefault(_ext(path) or "(sin extensión)", []).append(path)
+        d.setdefault(_ext(path) or NO_EXTENSION, []).append(path)
     return dict(sorted(d.items()))
 
 
@@ -96,7 +97,7 @@ def plan_by_files(
 
     # Non-images: according to what the user chose for each kind.
     for path in others:
-        ext = _ext(path) or "(sin extensión)"
+        ext = _ext(path) or NO_EXTENSION
         acc = rules.action(ext)
         if acc == LEAVE:
             continue                                # left alone
@@ -140,8 +141,8 @@ def gather_whole_folder(
 
     name = os.path.basename(os.path.normpath(root_folder)) or "folder"
     final = collision_free_path(os.path.join(destination, name))
-    verb = "Copiando" if action == COPY else "Moviendo"
-    progress(0, 1, f"{verb} la carpeta «{name}»…")
+    verb = tr("common.copying") if action == COPY else tr("common.moving")
+    progress(0, 1, tr("gather.folder_progress", verb=verb, name=name))
 
     t = Transfer(root_folder, final, 0)
     try:
@@ -153,7 +154,7 @@ def gather_whole_folder(
     except (OSError, shutil.Error) as e:
         t.ok, t.error = False, str(e)
 
-    progress(1, 1, "Listo.")
+    progress(1, 1, tr("common.done"))
     res = TransferResult(transfers=[t], action=action)
     res.log_path = write_log([t], destination, "gather_folder", root_folder,
                                 action)

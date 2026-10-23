@@ -8,16 +8,21 @@ For each kind (extension) found, the user chooses:
 
 import customtkinter as ctk
 
+from core.filters import NO_EXTENSION
 from core.gather import NonImageRules, LEAVE, GROUP
 from core.file_moves import MOVE
 from . import styles
+from .widgets import KeyedSegmentedButton
+from core.i18n import tr
 
+# Default names of the folders where each kind is grouped (names inside the user's folders
+# are fixed English; the user can edit them in the dialog).
 _FOLDER_NAME = {
-    "pdf": "Documentos", "doc": "Documentos", "docx": "Documentos",
-    "xls": "Documentos", "xlsx": "Documentos", "txt": "Documentos",
-    "mp3": "Música", "wav": "Música", "flac": "Música",
-    "mp4": "Vídeos", "mkv": "Vídeos", "avi": "Vídeos",
-    "zip": "Comprimidos", "rar": "Comprimidos", "7z": "Comprimidos",
+    "pdf": "Documents", "doc": "Documents", "docx": "Documents",
+    "xls": "Documents", "xlsx": "Documents", "txt": "Documents",
+    "mp3": "Music", "wav": "Music", "flac": "Music",
+    "mp4": "Videos", "mkv": "Videos", "avi": "Videos",
+    "zip": "Archives", "rar": "Archives", "7z": "Archives",
 }
 
 
@@ -25,7 +30,7 @@ class NonImageKindsWindow(ctk.CTkToplevel):
     def __init__(self, master, kinds):
         """kinds: dict  ext -> list of paths."""
         super().__init__(master)
-        self.title("Archivos que no son imágenes")
+        self.title(tr("kinds.title"))
         self.geometry("620x460")
         self.configure(fg_color=styles.COLOR_BACKGROUND)
         self.transient(master)
@@ -38,8 +43,7 @@ class NonImageKindsWindow(ctk.CTkToplevel):
         self.grid_rowconfigure(1, weight=1)
 
         ctk.CTkLabel(
-            self, text="En esas carpetas también hay archivos que no son "
-                       "imágenes. Elige qué hacer con cada tipo:",
+            self, text=tr("kinds.intro"),
             font=styles.base_font(12), wraplength=580, justify="left",
             anchor="w").grid(row=0, column=0, padx=16, pady=(14, 8), sticky="w")
 
@@ -52,10 +56,10 @@ class NonImageKindsWindow(ctk.CTkToplevel):
 
         caption = ctk.CTkFrame(self, fg_color="transparent")
         caption.grid(row=2, column=0, sticky="ew", padx=12, pady=(4, 12))
-        ctk.CTkButton(caption, text="Cancelar", width=100, fg_color="transparent",
+        ctk.CTkButton(caption, text=tr("common.cancel"), width=100, fg_color="transparent",
                       border_width=1, text_color=styles.COLOR_TEXT,
                       command=self._cancel).pack(side="right", padx=4)
-        ctk.CTkButton(caption, text="Aplicar", width=110,
+        ctk.CTkButton(caption, text=tr("kinds.apply"), width=110,
                       command=self._apply).pack(side="right", padx=4)
 
         self.after(150, self.lift)
@@ -66,20 +70,20 @@ class NonImageKindsWindow(ctk.CTkToplevel):
         frame.grid(row=i, column=0, sticky="ew", pady=(0, 6))
         frame.grid_columnconfigure(1, weight=1)
 
-        label = f".{ext}" if ext != "(sin extensión)" else ext
+        label = f".{ext}" if ext != NO_EXTENSION else tr("common.no_extension")
         ctk.CTkLabel(frame, text=f"{label}   ({how_many})",
                      font=styles.base_font(12, "bold"), width=110,
                      anchor="w").grid(row=0, column=0, padx=(12, 8), pady=10,
                                       sticky="w")
 
-        seg = ctk.CTkSegmentedButton(
-            frame, values=["Dejar", "Mover", "Agrupar"],
+        seg = KeyedSegmentedButton(
+            frame, {LEAVE: tr("kinds.leave"), MOVE: tr("kinds.move"), GROUP: tr("kinds.group")},
             command=lambda _v, e=ext: self._toggle_entry(e))
-        seg.set("Dejar")
+        seg.set_key(LEAVE)
         seg.grid(row=0, column=1, padx=4, pady=10, sticky="w")
 
-        entry = ctk.CTkEntry(frame, width=150, placeholder_text="nombre carpeta")
-        entry.insert(0, _FOLDER_NAME.get(ext, ext.capitalize() or "Otros"))
+        entry = ctk.CTkEntry(frame, width=150, placeholder_text=tr("kinds.folder_name_placeholder"))
+        entry.insert(0, _FOLDER_NAME.get(ext, ext.capitalize() or "Other"))
         entry.configure(state="disabled")
         entry.grid(row=0, column=2, padx=(4, 12), pady=10)
 
@@ -87,15 +91,15 @@ class NonImageKindsWindow(ctk.CTkToplevel):
 
     def _toggle_entry(self, ext):
         seg, entry = self._rows[ext]
-        entry.configure(state="normal" if seg.get() == "Agrupar" else "disabled")
+        entry.configure(state="normal" if seg.get_key() == GROUP else "disabled")
 
     def _apply(self):
         actions, folders = {}, {}
         for ext, (seg, entry) in self._rows.items():
-            chosen = seg.get()
-            if chosen == "Mover":
+            chosen = seg.get_key()
+            if chosen == MOVE:
                 actions[ext] = MOVE
-            elif chosen == "Agrupar":
+            elif chosen == GROUP:
                 actions[ext] = GROUP
                 folders[ext] = entry.get().strip() or ext
             else:

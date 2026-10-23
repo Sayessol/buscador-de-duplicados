@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from tests.check_perceptual import build            # noqa: E402
-from ui import styles, icons, similar_photos_tab             # noqa: E402
+from ui import styles, similar_photos_tab             # noqa: E402
 from ui.main_window import MainWindow                 # noqa: E402
 from core.quarantine import move_to_quarantine              # noqa: E402
 from core.selection import KEEP                        # noqa: E402
@@ -36,7 +36,7 @@ def main():
     app._mode = "advanced"
     app._apply_mode()
     app.geometry("1200x860")
-    app.tabs.set(f"{icons.CAT_IMAGES}  Fotos parecidas")
+    app.show_tab("similar")
     app.similar.entry_folder.insert(0, str(base))
     app.similar.sensitivity_slider.set(12)
 

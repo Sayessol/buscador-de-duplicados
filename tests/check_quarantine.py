@@ -115,7 +115,7 @@ def main():
         check(res.log_path and Path(res.log_path).exists(), "se escribió el CSV de log")
         if res.log_path:
             content = Path(res.log_path).read_text(encoding="utf-8-sig")
-            check("movido" in content and "Origen" in content,
+            check("moved" in content and "Source" in content,
                   "el CSV de log tiene encabezado y filas 'movido'")
 
         # nothing was deleted: 2 remain in the source and 3 were moved (+ the earlier decoy)

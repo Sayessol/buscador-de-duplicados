@@ -27,7 +27,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from .hashing import partial_hash, full_hash, PARTIAL_HASH_SIZE
-from .filters import ScanFilter
+from .filters import NO_EXTENSION, ScanFilter
+from .i18n import tr
 
 
 class ScanCancelled(Exception):
@@ -85,7 +86,7 @@ class ScanResult:
         for g in self.groups:
             for a in g.files:
                 ext = os.path.splitext(a.path)[1].lower().lstrip(".")
-                key = ext if ext else "(sin extensión)"
+                key = ext if ext else NO_EXTENSION
                 acc[key][0] += 1
                 acc[key][1] += a.size
         rows = [(ext, c, b) for ext, (c, b) in acc.items()]
@@ -180,7 +181,7 @@ def _size_pass(
             if total_files % 200 == 0:
                 progress(Progress(
                     "sizes", total_files, 0,
-                    f"Paso 1/2: revisando tamaños... ({total_files} archivos)",
+                    tr("scan.step_sizes", total_files=total_files),
                 ))
 
     return by_size, total_files, total_excluded
@@ -218,8 +219,7 @@ def _partial_hash_pass(
             if processed % 50 == 0:
                 progress(Progress(
                     "partial_hash", processed, total_candidates,
-                    f"Paso 2/2: calculando hashes... "
-                    f"({processed}/{total_candidates})",
+                    tr("scan.step_hashes", processed=processed, total_candidates=total_candidates),
                 ))
 
     return {key: paths for key, paths in by_partial.items() if len(paths) > 1}
@@ -266,8 +266,8 @@ def _full_hash_pass(
             if full_processed % 50 == 0:
                 progress(Progress(
                     "full_hash", full_processed, total_finalists,
-                    f"Paso 2/2: verificando archivos completos... "
-                    f"({full_processed}/{total_finalists})",
+                    tr("scan.step_verifying", full_processed=full_processed,
+                       total_finalists=total_finalists),
                 ))
 
         for hc, equal_paths in by_full.items():
@@ -305,7 +305,7 @@ def scan(
         filter = ScanFilter.no_filter()
 
     if not os.path.isdir(root_folder):
-        raise NotADirectoryError(f"No es una carpeta: {root_folder}")
+        raise NotADirectoryError(tr("common.not_a_folder", root_folder=root_folder))
 
     errors: list[tuple[str, str]] = []
 
@@ -329,7 +329,7 @@ def scan(
     total_finalists = sum(len(r) for r in finalists.values())
     progress(Progress(
         "full_hash", max(total_finalists, 1), max(total_finalists, 1),
-        "Escaneo terminado.",
+        tr("scan.finished"),
     ))
 
     return ScanResult(

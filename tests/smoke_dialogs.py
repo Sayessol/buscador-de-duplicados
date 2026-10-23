@@ -166,11 +166,11 @@ def main():
     app.update()
     seg_pdf, pdf_input = dlg._rows["pdf"]
     seg_txt, _ = dlg._rows["txt"]
-    seg_pdf.set("Agrupar")
+    seg_pdf.set_key(GROUP)
     dlg._toggle_entry("pdf")
     pdf_input.delete(0, "end")
     pdf_input.insert(0, "Mis documentos")
-    seg_txt.set("Mover")
+    seg_txt.set_key(MOVE)
     dlg._toggle_entry("txt")
     dlg._apply()
     rules = dlg.rules
@@ -207,7 +207,7 @@ def main():
     filedialog.asksaveasfilename = lambda *a, **k: str(report)
     exact._export_csv()
     rows = list(csv.reader(report.open(encoding="utf-8-sig", newline="")))
-    check(len(rows) == 1 + 4 and rows[0][0] == "Grupo_Duplicado",
+    check(len(rows) == 1 + 4 and rows[0][0] == "Duplicate_Group",
           "el CSV tiene cabecera y los 4 archivos duplicados")
     filedialog.asksaveasfilename = lambda *a, **k: ""
     exact._export_csv()                          # cancel: it does nothing and does not fail

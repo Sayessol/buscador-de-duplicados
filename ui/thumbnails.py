@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from core.filters import CATEGORY_EXTENSIONS
 from core.app_logging import log
+from core.i18n import tr
 
 THUMBNAIL_SIDE = 150
 ROW_THUMBNAIL_SIDE = 40          # small thumbnail for each row of the table
@@ -23,16 +24,16 @@ PREVIEW_SIDE = 250        # large preview panel
 
 # Background colour of the placeholder according to the category of the file.
 _COLOR_CATEGORY = {
-    "Imágenes": "#3f6d52",
-    "Audio": "#54487a",
-    "Vídeo": "#7a4a4a",
-    "Documentos": "#3a5a7a",
-    "Comprimidos": "#7a6234",
+    "images": "#3f6d52",
+    "audio": "#54487a",
+    "video": "#7a4a4a",
+    "documents": "#3a5a7a",
+    "archives": "#7a6234",
 }
 _COLOR_OTHER = "#454545"
 _COLOR_TEXT = "#eaeef4"
 
-IMAGE_EXT = CATEGORY_EXTENSIONS["Imágenes"] | {"jpe", "ppm", "pgm"}
+IMAGE_EXT = CATEGORY_EXTENSIONS["images"] | {"jpe", "ppm", "pgm"}
 
 # In-memory cache: (path, side) -> PIL.Image. Cleared on rescan.
 _cache = {}
@@ -66,7 +67,7 @@ def placeholder_extension(path, side=THUMBNAIL_SIDE):
     im = Image.new("RGB", (side, side), color)
     d = ImageDraw.Draw(im)
 
-    text = f".{ext}" if ext else "sin ext."
+    text = f".{ext}" if ext else tr("thumbs.no_extension")
     font = _font(max(10, int(side * (0.30 if len(text) <= 4 else 0.20))))
     left, up, right, down = d.textbbox((0, 0), text, font=font)
     d.text(((side - (right - left)) / 2 - left, (side - (down - up)) / 2 - up),
@@ -101,7 +102,7 @@ def thumbnail_or_placeholder(path, side=ROW_THUMBNAIL_SIDE):
         try:
             img = load_thumbnail(path, side)
         except Exception as e:  # a broken file must not break the list
-            log.info("No se pudo crear la miniatura de %s: %s", path, e)
+            log.info("Could not create the thumbnail of %s: %s", path, e)
             img = None
     if img is None:
         img = placeholder_extension(path, side)
@@ -127,5 +128,5 @@ def large_preview(path, side=PREVIEW_SIDE):
             im.thumbnail((side, side), Image.LANCZOS)
             return im
         except Exception as e:  # if it fails, the box with the extension is shown
-            log.info("No se pudo cargar la vista previa de %s: %s", path, e)
+            log.info("Could not load the preview of %s: %s", path, e)
     return placeholder_extension(path, side)

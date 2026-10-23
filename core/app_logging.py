@@ -77,7 +77,7 @@ def start() -> Path | None:
         "%(asctime)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S"))
     log.addHandler(handler)
     _handler, _path_file = handler, path
-    log.info("Arranca Buscador de duplicados %s (Python %s)",
+    log.info("Starting Duplicate Finder %s (Python %s)",
              __version__, sys.version.split()[0])
     return path
 
@@ -98,13 +98,13 @@ def install_hooks() -> None:
 
     def primary(kind: type[BaseException], value: BaseException,
                   trace: TracebackType | None) -> None:
-        log.critical("Error no controlado", exc_info=(kind, value, trace))
+        log.critical("Unhandled error", exc_info=(kind, value, trace))
         previous_primary(kind, value, trace)
 
     def threads(args: threading.ExceptHookArgs) -> None:
         info = ((args.exc_type, args.exc_value, args.exc_traceback)
                 if args.exc_value is not None else None)
-        log.critical("Error no controlado en el hilo %s", getattr(args.thread, "name", "?"),
+        log.critical("Unhandled error in thread %s", getattr(args.thread, "name", "?"),
                      exc_info=info)
         previous_thread_hook(args)
 

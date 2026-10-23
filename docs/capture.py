@@ -2,6 +2,7 @@
 
     python docs/capture.py             # dark theme   -> 01_sencilla.png ...
     python docs/capture.py light       # light theme  -> 01_sencilla_claro.png ...
+    python docs/capture.py dark en     # the second argument is the language: es (default) or en
 
 It saves PNGs in docs/img/ (or in the folder of the CAPTURAS_SALIDA variable). Each
 capture limits the crop to the window of the app itself (never to the whole desktop).
@@ -27,6 +28,7 @@ IMG.mkdir(exist_ok=True)
 THEME = {"claro": "light", "oscuro": "dark"}.get(sys.argv[1], sys.argv[1]) \
     if len(sys.argv) > 1 else "dark"
 SUFFIX = "" if THEME == "dark" else "_claro"      # the image names keep their Spanish suffix
+LANGUAGE = sys.argv[2] if len(sys.argv) > 2 else "es"    # the documentation is Spanish for now
 
 # Sample folder with a neutral path, so that the Windows user name
 # does not appear in the screenshots (as it would with the temporary folder).
@@ -39,12 +41,14 @@ os.environ["APPDATA"] = str(tmp / "appdata")
 sys.path.insert(0, str(APP))
 
 from PIL import Image, ImageDraw, ImageGrab            # noqa: E402
-from ui import styles, icons                            # noqa: E402
+from ui import styles                            # noqa: E402
 from ui.main_window import MainWindow             # noqa: E402
 from ui.image_viewer import ImageViewer                 # noqa: E402
 from ui.history_window import HistoryWindow          # noqa: E402
 from ui.non_image_kinds_dialog import NonImageKindsWindow        # noqa: E402
-from core import history                              # noqa: E402
+from core import history, i18n                        # noqa: E402
+
+i18n.set_language(LANGUAGE)
 
 FIXED_DATE = datetime(2026, 1, 15, 12, 0, 0)
 
@@ -146,7 +150,7 @@ def run():
 def p_simple_scan():
     app._mode = "simple"
     app._apply_mode()
-    app.mode_selector.set("Sencilla")
+    app.mode_selector.set_key("simple")
     app.exact.entry_folder.insert(0, str(base_dup))
     app.exact._start_scan()
 
@@ -164,7 +168,7 @@ def p_simple_shot():
 def p_advanced():
     app._mode = "advanced"
     app._apply_mode()
-    app.mode_selector.set("Avanzada")
+    app.mode_selector.set_key("advanced")
     app.exact._on_selection_change()
 
 
@@ -175,8 +179,8 @@ def p_advanced_shot():
 def p_options():
     app.exact._toggle_options()
     app.exact._default_filters()
-    app.exact.chk_categories["Imágenes"].select()
-    app.exact._toggle_category("Imágenes")
+    app.exact.chk_categories["images"].select()
+    app.exact._toggle_category("images")
 
 
 def p_options_shot():
@@ -186,7 +190,7 @@ def p_options_shot():
 
 # --- Similar ------------------------------------------------
 def p_similar():
-    app.tabs.set(f"{icons.CAT_IMAGES}  Fotos parecidas")
+    app.show_tab("similar")
     app.similar.entry_folder.insert(0, str(base_dup))
     app.similar.sensitivity_slider.set(13)
     app.similar._start()
@@ -198,7 +202,7 @@ def p_similar_shot():
 
 # --- Gather --------------------------------------------------
 def p_gather():
-    app.tabs.set(f"{icons.GATHER}  Reunir imágenes")
+    app.show_tab("gather")
     app.gather.entry_folder.insert(0, str(gather_base))
     app.gather.entry_destination.insert(0, str(tmp / "Todas mis fotos"))
     app.gather._search()

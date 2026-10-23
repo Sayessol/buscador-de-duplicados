@@ -42,6 +42,7 @@ from .filters import ScanFilter
 from .app_logging import log
 from .scanner import DuplicateFile
 from .callbacks import CancelledCallback, ProgressCallback
+from .i18n import tr
 
 # Colour signature: a tuple of (r, g, b) colours, one per cell of the 4×4 grid.
 Color = tuple[tuple[int, int, int], ...]
@@ -334,11 +335,11 @@ def group_similar(
         if cancelled():
             raise ComparisonCancelled()
         if i % 25 == 0 or i == total:
-            progress(i, total, f"Analizando imágenes… ({i}/{total})")
+            progress(i, total, tr("perceptual.analyzing", i=i, total=total))
         try:
             fingerprints.append(compute_fingerprint(path))
         except Exception as e:  # a broken or odd file must not stop the whole analysis
-            log.info("No se pudo analizar la imagen %s: %s", path, e)
+            log.info("Could not analyze image %s: %s", path, e)
             errors.append((path, str(e)))
 
     # 2) Put all the dHashes in a BK-tree to find neighbours quickly.
@@ -383,7 +384,7 @@ def group_similar(
     # The groups that free the most space, first.
     groups.sort(key=lambda g: -g.reclaimable_space)
 
-    progress(total, total, "Comparación terminada.")
+    progress(total, total, tr("perceptual.finished"))
     return SimilarResult(
         groups=groups,
         total_images=len(fingerprints),
@@ -401,7 +402,7 @@ def analyze_folder(
 ) -> SimilarResult:
     """Shortcut: list the images of a folder and group them by similarity."""
     if not os.path.isdir(root_folder):
-        raise NotADirectoryError(f"No es una carpeta: {root_folder}")
+        raise NotADirectoryError(tr("common.not_a_folder", root_folder=root_folder))
     paths = list_images(root_folder, filter=filter)
     return group_similar(
         paths, hamming_threshold=hamming_threshold, color_threshold=color_threshold,

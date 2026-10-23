@@ -33,24 +33,29 @@ JUNK_FOLDERS = [
 
 # Quick categories for "search only these kinds of file". Each one
 # ticks its extensions in the inclusion field; the user can combine
-# several (e.g. Images + Video) or add their own by hand.
+# several (e.g. Images + Video) or add their own by hand. The keys are
+# stable identifiers; the names the user sees are the "category.<key>" texts.
+# Key of the extension breakdowns for files that have no extension (a name inside the
+# folders the app creates, so it is fixed in English like the others).
+NO_EXTENSION = "(no extension)"
+
 CATEGORY_EXTENSIONS = {
-    "Imágenes": {
+    "images": {
         "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "tif",
         "heic", "heif", "svg", "raw", "cr2", "nef", "arw", "dng", "ico",
     },
-    "Audio": {
+    "audio": {
         "mp3", "wav", "flac", "aac", "ogg", "wma", "m4a", "opus", "aiff",
     },
-    "Vídeo": {
+    "video": {
         "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v",
         "mpg", "mpeg", "3gp",
     },
-    "Documentos": {
+    "documents": {
         "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt",
         "odt", "ods", "odp", "rtf", "csv",
     },
-    "Comprimidos": {
+    "archives": {
         "zip", "rar", "7z", "tar", "gz", "bz2", "xz",
     },
 }
