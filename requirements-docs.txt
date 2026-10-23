@@ -1,3 +1,3 @@
-# Solo para regenerar los PDF y las capturas de docs/. La app NO lo necesita.
+# Only to regenerate the PDFs and the screenshots in docs/. The app does NOT need it.
 reportlab
 pymupdf

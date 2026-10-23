@@ -1,28 +1,28 @@
-# Solo configuración de herramientas (linter y pruebas).
-# La app NO se instala con pip: se ejecuta con `python app.py` o con el .exe.
+# Tool configuration only (linter and tests).
+# The app is NOT installed with pip: it is run with `python app.py` or with the .exe.
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# docs/origin es el script original, se conserva tal cual como pieza histórica
+# docs/origin holds the original script, kept as it is as a historical piece
 extend-exclude = ["build", "dist", "docs/origin"]
 
 [tool.ruff.lint]
-# E/W: estilo pycodestyle · F: errores reales (imports sin usar, nombres sin definir)
-# B: fallos típicos (bugbear)
+# E/W: pycodestyle style · F: real errors (unused imports, undefined names)
+# B: typical bugs (bugbear)
 select = ["E", "F", "W", "B"]
-ignore = ["B905"]   # zip(strict=...) no aporta aquí
+ignore = ["B905"]   # zip(strict=...) adds nothing here
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]
-markers = ["gui: prueba con ventana (necesita escritorio de Windows)"]
+markers = ["gui: test with a window (needs a Windows desktop)"]
 
 [tool.coverage.run]
 source = ["core", "ui"]
-# Las pruebas de ventana corren en procesos aparte (tests/test_suites.py): se siguen
-# para poder medir también la interfaz. Mínimos que exige el CI: núcleo 90 %, interfaz 70 %.
+# The window tests run in separate processes (tests/test_suites.py): they are followed
+# so the interface can be measured too. Minimums the CI requires: core 90 %, UI 70 %.
 parallel = true
 patch = ["subprocess"]
 
@@ -30,9 +30,9 @@ patch = ["subprocess"]
 show_missing = true
 
 [tool.mypy]
-# Tipado estático: el núcleo (core/) está completamente anotado y mypy lo comprueba.
-# La interfaz (ui/) no se comprueba: CustomTkinter/Tkinter son muy dinámicos y el
-# beneficio sería mucho menor que el ruido.
+# Static typing: the core (core/) is fully annotated and mypy checks it.
+# The interface (ui/) is not checked: CustomTkinter/Tkinter are very dynamic and the
+# benefit would be much smaller than the noise.
 python_version = "3.12"
 files = ["core"]
 disallow_untyped_defs = true

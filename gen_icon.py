@@ -1,4 +1,4 @@
-"""Generates icono.ico from the drawing in ui/icons.py.
+"""Generates icon.ico from the drawing in ui/icons.py.
 
 It does not depend on Pillow: it uses tkinter (standard library) to render
 each size as a PNG and builds the .ico container by hand with `struct`
@@ -6,7 +6,7 @@ each size as a PNG and builds the .ico container by hand with `struct`
 
     python gen_icon.py
 
-It generates icono.ico, which build.spec uses for the final .exe.
+It generates icon.ico, which build.spec uses for the final .exe.
 This only needs to be run again if the drawing of the icon
 in ui/icons.py changes.
 """
@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ui.icons import window_icon  # noqa: E402
 
 SIZES = [16, 24, 32, 48, 64, 128, 256]
-OUTPUT = Path(__file__).resolve().parent / "icono.ico"
+OUTPUT = Path(__file__).resolve().parent / "icon.ico"
 
 
 def png_bytes(photo):

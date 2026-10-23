@@ -335,12 +335,12 @@ C += [PageBreak(), h1("4. Empaquetado")]
 C += [p(
     "<font face='Courier'>build.spec</font> configura PyInstaller: un solo "
     "archivo, sin consola, con los datos de CustomTkinter incluidos y "
-    "<font face='Courier'>icono.ico</font> como icono. "
+    "<font face='Courier'>icon.ico</font> como icono. "
     "<font face='Courier'>build_exe.py</font> lo ejecuta y comprueba el "
     "resultado.")]
 C += [p(
     "El icono es una lupa <b>dibujada por código</b> "
-    "(<font face='Courier'>ui/icons.py:icono_ventana</font>) sobre un "
+    "(<font face='Courier'>ui/icons.py:window_icon</font>) sobre un "
     "<font face='Courier'>tk.PhotoImage</font>, y "
     "<font face='Courier'>gen_icon.py</font> arma el "
     "<font face='Courier'>.ico</font> multi-tamaño a mano con "
@@ -357,7 +357,7 @@ C += [p(
     "<font face='Courier'>messagebox</font> se sustituyen por funciones que "
     "devuelven un valor fijo) y pulsan los métodos de los botones.")]
 C += [pre(
-    "pytest   # 162 pruebas;  pytest --cov = cobertura (núcleo 93 %, interfaz 79 %)\n"
+    "pytest   # 169 pruebas;  pytest --cov = cobertura (núcleo 93 %, interfaz 79 %)\n"
     "python tests/check_perceptual.py \"D:\\Fotos\" 10   # con datos reales")]
 
 C += [h1("6. Añadir una función nueva: receta")]
