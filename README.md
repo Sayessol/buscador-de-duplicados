@@ -118,7 +118,7 @@ Lo construí **trabajando con [Claude](https://claude.com/claude-code) (Anthropi
 - **Yo (Sayessol)** decidí qué construir y en qué orden, probé la app a mano, planteé las dudas y los problemas que fui encontrando (por ejemplo, si movía carpetas en vez de fotos) y fui aprobando cada paso.
 - **Claude** escribió el código, las pruebas y la documentación, propuso alternativas y explicó sus decisiones, siempre dentro de las reglas del proyecto (como la de no borrar nunca los originales). La [guía del código](docs/guia-del-codigo.pdf) está escrita precisamente para aprender de ese código.
 - **Por eso no presento este código como escrito solo por mí.** Lo que sí es mío es el objetivo, lo que se decidió construir y el aprendizaje que busco con ello.
-- **Las pruebas son la red de seguridad**: ningún cambio se da por bueno sin las 162 pruebas en verde, y el CI las vuelve a ejecutar en cada *push*.
+- **Las pruebas son la red de seguridad**: ningún cambio se da por bueno sin las 169 pruebas en verde, y el CI las vuelve a ejecutar en cada *push*.
 - Los commits llevan la línea `Co-Authored-By: Claude` para que la autoría compartida sea visible en el historial.
 
 ## Descarga y ejecución
@@ -143,7 +143,7 @@ Para generar tu propia versión:
 
 ```bash
 python build_exe.py                  # un solo archivo: dist/duplicados.exe
-python build_exe.py --carpeta --zip  # carpeta + ZIP:    dist/Buscador-de-duplicados.zip
+python build_exe.py --folder --zip   # carpeta + ZIP:    dist/Buscador-de-duplicados.zip
 ```
 
 ## Cómo funciona por dentro
@@ -184,7 +184,7 @@ Encuentran **exactamente los mismos 386 grupos**. Lee un 66 % menos de datos. Lo
 
 ## Calidad del código
 
-- **162 pruebas con pytest** (15 suites de lógica y de ventana + 147 unitarias), con **93 % de cobertura del núcleo y 79 % de la interfaz**.
+- **169 pruebas con pytest** (15 suites de lógica y de ventana + 154 unitarias), con **93 % de cobertura del núcleo y 79 % de la interfaz**.
 - **ruff** como linter y **mypy** para comprobar los tipos del núcleo (`core/`, completamente anotado), y todo se ejecuta en **GitHub Actions** en cada push.
 - **Registro de errores** en un archivo (`%APPDATA%\BuscadorDuplicados\logs\app.log`), con rotación, y un aviso claro al usuario si algo inesperado falla. Las pruebas nunca tocan los datos reales de la app.
 - Las pruebas **no simulan el sistema de archivos**: crean archivos reales en carpetas temporales y comprueban el resultado en disco (incluida la comprobación de que se mueven *archivos* y no carpetas).
@@ -222,7 +222,7 @@ Tres PDF con portada e índice, en [`docs/`](docs/):
 
 ## Sugerencias
 
-No hay una hoja de ruta cerrada: iré mejorando la aplicación sobre la marcha, según vea con la práctica qué funciones le faltan. **Si tienes ideas para funcionalidades futuras, me encantará conocerlas**: abre una *issue* con la plantilla «Sugerencia».
+No hay una hoja de ruta cerrada: iré mejorando la aplicación sobre la marcha, según vea con la práctica qué funciones le faltan. **Si tienes ideas para funcionalidades futuras, me encantará conocerlas**: abre una *issue* con la plantilla «Suggestion».
 
 ## Licencia
 

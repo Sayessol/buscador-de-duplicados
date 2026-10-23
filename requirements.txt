@@ -1,13 +1,13 @@
-# --- Núcleo (core/) ---------------------------------------------------
-# El dedup exacto (hashing, scanner, filtros, selección, cuarentena) usa
-# solo la librería estándar.
+# --- Core (core/) -----------------------------------------------------
+# Exact deduplication (hashing, scanner, filters, selection, quarantine)
+# uses only the standard library.
 #
-# El módulo de "fotos parecidas" (core/perceptual.py) y las miniaturas de
-# la interfaz necesitan Pillow:
+# The "similar photos" module (core/perceptual.py) and the thumbnails of the
+# interface need Pillow:
 pillow==12.3.0
 
-# --- Interfaz gráfica (ui/) -----------------------------------------
+# --- Graphical interface (ui/) ---------------------------------------
 customtkinter==5.2.2
 
-# --- Empaquetado a .exe (solo para desarrollo) --------------------
+# --- Packaging as an .exe (development only) -----------------------
 pyinstaller==6.11.1

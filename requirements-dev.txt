@@ -1,4 +1,4 @@
-# Para desarrollar: linter y pruebas (la app no lo necesita)
+# For development: linter and tests (the app does not need them)
 -r requirements.txt
 pytest
 pytest-cov

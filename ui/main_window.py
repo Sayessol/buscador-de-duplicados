@@ -90,11 +90,11 @@ class MainWindow(ctk.CTk):
         window, unless iconbitmap() has already been called — that is
         why iconbitmap() is used with an .ico (not iconphoto with a
         PhotoImage), so that its internal check detects it and does not
-        overwrite it. icono.ico is generated with `python gen_icon.py`; if it does not
+        overwrite it. icon.ico is generated with `python gen_icon.py`; if it does not
         exist (for example, in a clean checkout where it has not been generated yet)
         the window keeps working with the default icon.
         """
-        ico_path = Path(__file__).resolve().parent.parent / "icono.ico"
+        ico_path = Path(__file__).resolve().parent.parent / "icon.ico"
         try:
             if ico_path.exists():
                 self.iconbitmap(str(ico_path))

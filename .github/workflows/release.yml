@@ -1,6 +1,6 @@
-name: Publicar .exe
+name: Publish .exe
 
-# Se ejecuta al crear una etiqueta tipo v1.0.0
+# Runs when a tag like v1.0.0 is created
 on:
   push:
     tags: ["v*"]
@@ -16,45 +16,48 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Comprobar que la etiqueta coincide con la versión del código
+      - name: Check that the tag matches the version in the code
         shell: pwsh
         run: |
-          $enCodigo = python -c "from core import __version__; print(__version__)"
-          $etiqueta = "${{ github.ref_name }}".TrimStart("v")
-          if ($enCodigo -ne $etiqueta) {
-            Write-Error "La etiqueta ($etiqueta) no coincide con core.__version__ ($enCodigo)"
+          $inCode = python -c "from core import __version__; print(__version__)"
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          if ($inCode -ne $tag) {
+            Write-Error "The tag ($tag) does not match core.__version__ ($inCode)"
             exit 1
           }
-      - name: Compilar el .exe de un solo archivo
+      - name: Build the single-file .exe
         run: python build_exe.py
-      - name: Compilar la versión en carpeta (ZIP)
-        run: python build_exe.py --carpeta --zip
-      - name: Renombrar los archivos de la release
+      - name: Build the folder version (ZIP)
+        run: python build_exe.py --folder --zip
+      - name: Rename the release files
         run: |
           Copy-Item dist/duplicados.exe Buscador-de-duplicados.exe
           Copy-Item dist/Buscador-de-duplicados.zip Buscador-de-duplicados-portable.zip
         shell: pwsh
-      - name: Notas de la versión (sección de CHANGELOG.md)
+      - name: Release notes (section of CHANGELOG.md)
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
-          $texto = Get-Content CHANGELOG.md -Raw -Encoding utf8
-          $patron = "(?ms)^## \[" + [regex]::Escape($version) + "\][^\n]*\n(.*?)(?=^## \[|\z)"
-          $m = [regex]::Match($texto, $patron)
-          if ($m.Success) { $notas = $m.Groups[1].Value.Trim() } else { $notas = "Versión $version" }
-          $notas += "`n`n---`n**Qué descargar** (no necesitas instalar Python):`n" +
-                    "- **Buscador-de-duplicados.exe**: un solo archivo, el más cómodo.`n" +
-                    "- **Buscador-de-duplicados-portable.zip**: descomprímelo en una carpeta con ruta corta " +
-                    "(por ejemplo ``C:\Apps``) y abre ``Buscador-de-duplicados.exe``. " +
-                    "Úsalo si tu antivirus bloquea o retrasa el .exe único.`n`n" +
+          $text = Get-Content CHANGELOG.md -Raw -Encoding utf8
+          $pattern = "(?ms)^## \[" + [regex]::Escape($version) + "\][^\n]*\n(.*?)(?=^## \[|\z)"
+          $m = [regex]::Match($text, $pattern)
+          if ($m.Success) { $notes = $m.Groups[1].Value.Trim() } else { $notes = "Version $version" }
+          $notes += "`n`n---`n**What to download** (you do not need to install Python):`n" +
+                    "- **Buscador-de-duplicados.exe**: a single file, the most convenient.`n" +
+                    "- **Buscador-de-duplicados-portable.zip**: unzip it into a folder with a short path " +
+                    "(for example ``C:\Apps``) and open ``Buscador-de-duplicados.exe``. " +
+                    "Use it if your antivirus blocks or delays the single .exe.`n`n" +
+                    "Windows SmartScreen or your antivirus may warn you because the program is not signed.`n`n" +
+                    "**Qué descargar** (no necesitas instalar Python): el ``.exe`` es un solo archivo; " +
+                    "el ZIP portable es para cuando tu antivirus bloquea o retrasa el ``.exe``. " +
                     "Windows SmartScreen o tu antivirus pueden avisar porque el programa no está firmado."
-          Set-Content notas.md $notas -Encoding utf8
-      - name: Crear la release
+          Set-Content notes.md $notes -Encoding utf8
+      - name: Create the release
         uses: softprops/action-gh-release@v3
         with:
           files: |
             Buscador-de-duplicados.exe
             Buscador-de-duplicados-portable.zip
-          body_path: notas.md
+          body_path: notes.md
