@@ -20,6 +20,7 @@ from core.quarantine import (
 )
 from core.perceptual import analyze_folder, ComparisonCancelled
 from core import history
+from core.file_moves import MOVE as MOVE_ACTION
 from . import styles
 from . import icons
 from .image_viewer import open_viewer
@@ -300,7 +301,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         try:
             res = analyze_folder(
                 folder, hamming_threshold=threshold,
-                progress=lambda a, t, m: self._queue.put(("progreso", (a, t, m))),
+                progress=lambda a, t, m: self._queue.put(("progress", (a, t, m))),
                 cancelled=self._cancel.is_set)
 
             thumbs = {}
@@ -312,7 +313,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
                         raise ComparisonCancelled()
                     processed_count += 1
                     if processed_count % 4 == 0 or processed_count == total:
-                        self._queue.put(("progreso", (
+                        self._queue.put(("progress", (
                             processed_count, total,
                             f"Cargando miniaturas… ({processed_count}/{total})")))
                     try:
@@ -320,9 +321,9 @@ class SimilarPhotosTab(ctk.CTkFrame):
                     except Exception as e:  # a broken file must not stop the gallery
                         log.info("No se pudo crear la miniatura de %s: %s", h.path, e)
                         thumbs[h.path] = None
-            self._queue.put(("hecho", (res, thumbs)))
+            self._queue.put(("done", (res, thumbs)))
         except ComparisonCancelled:
-            self._queue.put(("cancelado", None))
+            self._queue.put(("cancelled", None))
         except Exception as e:  # it is logged and shown to the user
             log.exception("Falló el análisis de fotos parecidas de %s", folder)
             self._queue.put(("error", e))
@@ -331,7 +332,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         try:
             while True:
                 kind, datum = self._queue.get_nowait()
-                if kind == "progreso":
+                if kind == "progress":
                     a, t, m = datum
                     self.lbl_state.configure(text=m)
                     if t:
@@ -339,10 +340,10 @@ class SimilarPhotosTab(ctk.CTkFrame):
                             self.progress_bar.stop()
                             self.progress_bar.configure(mode="determinate")
                         self.progress_bar.set(min(a / t, 1.0))
-                elif kind == "hecho":
+                elif kind == "done":
                     self._finished(*datum)
                     return
-                elif kind == "cancelado":
+                elif kind == "cancelled":
                     self._cancelled()
                     return
                 elif kind == "error":
@@ -621,7 +622,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
 
         if res.moved:
             history.record(
-                history.KIND_QUARANTINE, "mover", root, destination,
+                history.KIND_QUARANTINE, MOVE_ACTION, root, destination,
                 [(m.source, m.destination) for m in res.moved],
                 f"{len(res.moved)} fotos parecidas")
 

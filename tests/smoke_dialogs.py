@@ -1,7 +1,7 @@
 """Smoke test of the auxiliary windows, with the real interface:
 
   · the image viewer (zoom, fit, wheel, broken image, a file that is not an image),
-  · the history (undo a "mover", undo a "copiar", and an undo that fails),
+  · the history (undo a "move", undo a "copy", and an undo that fails),
   · the dialog about what to do with files that are not images (apply and cancel),
   · the breakdown by extension (excluding one),
   · the CSV export and the thumbnails / image preview.
@@ -132,9 +132,9 @@ def main():
     copied_source = source / "copiado.txt"
     copied_source.write_text("original")
     (destination / "copiado.txt").write_text("original")
-    history.record("cuarentena", "mover", str(source), str(destination),
+    history.record(history.KIND_QUARANTINE, "move", str(source), str(destination),
                         [(str(moved), str(destination / "movido.txt"))], "1 duplicado")
-    history.record("reunir", "copiar", str(source), str(destination),
+    history.record(history.KIND_GATHER, "copy", str(source), str(destination),
                         [(str(copied_source), str(destination / "copiado.txt"))], "1 imagen")
     window = HistoryWindow(app)
     app.update()
@@ -148,10 +148,10 @@ def main():
     check(copied_source.exists() and not (destination / "copiado.txt").exists(),
           "deshacer un «copiar» borra la copia y NO toca el original"
           + (f"  [avisos: {warning_texts}]" if warning_texts else ""))
-    check(all(o["deshecha"] for o in history.list_all()), "las dos quedan marcadas como deshechas")
+    check(all(o["undone"] for o in history.list_all()), "las dos quedan marcadas como deshechas")
 
     (destination / "otro.txt").write_text("x")
-    history.record("cuarentena", "mover", str(source), str(destination),
+    history.record(history.KIND_QUARANTINE, "move", str(source), str(destination),
                         [(str(source / "otro.txt"), str(destination / "no_esta.txt"))], "falla")
     warnings_before = warnings["aviso"]
     window._undo(history.list_all()[0])

@@ -41,7 +41,7 @@ def main():
     build(base)
 
     app = MainWindow()
-    app._mode = "sencillo"
+    app._mode = "simple"
     app._apply_mode()
     app.geometry("1200x820")
     app.exact.entry_folder.insert(0, str(base))
@@ -71,7 +71,7 @@ def main():
                              and "Backup" not in kept.path)
 
         # switching to Advanced shows the controls again
-        app._mode = "avanzado"
+        app._mode = "advanced"
         app._apply_mode()
         app.update()
         R["opciones_visibles_avanzada"] = app.exact._options_container.winfo_ismapped() == 1

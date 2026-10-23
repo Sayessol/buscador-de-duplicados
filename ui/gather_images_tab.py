@@ -427,7 +427,7 @@ class GatherImagesTab(ctk.CTkFrame):
                     lambda a, t, m: self._queue.put(("prog", (a, t, m))),
                     self._cancel.is_set)
                 self._queue.put(
-                    ("hecho", (res, action, destination, kind, description, self._folder)))
+                    ("done", (res, action, destination, kind, description, self._folder)))
             except Exception as e:  # it is logged and shown to the user
                 log.exception("Falló la operación «%s» (%s)", kind, description)
                 self._queue.put(("error", e))
@@ -445,7 +445,7 @@ class GatherImagesTab(ctk.CTkFrame):
                     self.lbl_state.configure(text=m)
                     if t:
                         self.progress_bar.set(min(a / t, 1.0))
-                elif kind == "hecho":
+                elif kind == "done":
                     self._finished(*datum)
                     return
                 elif kind == "error":

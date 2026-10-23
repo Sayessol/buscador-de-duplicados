@@ -33,7 +33,7 @@ def main():
     quarantine = Path(tmp) / "CUARENTENA"
 
     app = MainWindow()
-    app._mode = "avanzado"
+    app._mode = "advanced"
     app._apply_mode()
     app.geometry("1200x860")
     app.tabs.set(f"{icons.CAT_IMAGES}  Fotos parecidas")

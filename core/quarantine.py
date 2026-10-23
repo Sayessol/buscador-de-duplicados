@@ -91,8 +91,8 @@ def _destination_for(source: str, root_folder: str, quarantine_folder: str) -> s
         rel = os.path.basename(source)
     if rel.startswith(".." + os.sep) or rel == "..":
         # The file is outside the scanned folder: we hang it from a
-        # "_fuera_de_la_carpeta" subfolder with its name.
-        rel = os.path.join("_fuera_de_la_carpeta", os.path.basename(source))
+        # "_outside_scanned_folder" subfolder with its name.
+        rel = os.path.join("_outside_scanned_folder", os.path.basename(source))
     return os.path.join(quarantine_folder, rel)
 
 
@@ -173,7 +173,7 @@ def _write_log(
     moves: list[Move], quarantine_folder: str, root_folder: str,
 ) -> str:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_path = os.path.join(quarantine_folder, f"_log_cuarentena_{stamp}.csv")
+    log_path = os.path.join(quarantine_folder, f"_log_quarantine_{stamp}.csv")
     try:
         os.makedirs(quarantine_folder, exist_ok=True)
         with open(log_path, "w", newline="", encoding="utf-8-sig") as f:

@@ -63,14 +63,14 @@ def main():
             super().__init__(master)
             self.withdraw()
             self.rules = NonImageRules(
-                action_by_ext={"pdf": "agrupar", "txt": "dejar"},
+                action_by_ext={"pdf": "group", "txt": "leave"},
                 folder_by_ext={"pdf": "Documentos"})
             self.after(10, self.destroy)
     from ui import gather_images_tab as TR                      # noqa: E402
     TR.NonImageKindsWindow = FakeKinds   # the dialog is used from the Gather tab
 
     app = MW.MainWindow()
-    app._mode = "avanzado"
+    app._mode = "advanced"
     app._apply_mode()
     app.tabs.set(f"{icons.GATHER}  Reunir imágenes")
     app.gather.entry_folder.insert(0, str(root))
@@ -108,12 +108,12 @@ def main():
 
         ops = history.list_all()
         R["historial_n"] = len(ops)
-        R["op_tipo"] = ops[0]["tipo"] if ops else None
+        R["op_tipo"] = ops[0]["kind"] if ops else None
 
         # Undo the operation
         res = history.undo(ops[0]["id"])
-        R["deshacer_ok"] = res["ok"]
-        R["deshacer_fallos"] = len(res["fallos"])
+        R["deshacer_ok"] = res["reverted"]
+        R["deshacer_fallos"] = len(res["failures"])
         R["img_vuelta"] = (root / "2023" / "playa.jpg").exists()
         R["destino_vacio_img"] = not any(
             p.suffix.lower() in (".png", ".jpg", ".jpeg")
@@ -138,7 +138,7 @@ def main():
         and R.get("pdf_agrupado") is True
         and set(R.get("subcarpetas_origen", [])) >= {"2023", "2024", "2024\\boda"}
         and R.get("historial_n") == 1
-        and R.get("op_tipo") == "reunir"
+        and R.get("op_tipo") == "gather"
         and R.get("deshacer_ok") == 6   # 4 images + 2 pdf grouped
         and R.get("deshacer_fallos") == 0
         and R.get("img_vuelta") is True

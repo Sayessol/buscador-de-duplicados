@@ -12,7 +12,7 @@ import pytest
 
 _REAL = (Path(os.environ.get("APPDATA") or Path.home() / ".buscador_duplicados")
          / "BuscadorDuplicados")
-_FILES = ("historial.json", "config.json")
+_FILES = ("history.json", "historial.json", "config.json")
 
 
 def _fingerprint():

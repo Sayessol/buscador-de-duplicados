@@ -1,7 +1,7 @@
 """Generates the screenshots for the documentation.
 
     python docs/capture.py             # dark theme   -> 01_sencilla.png ...
-    python docs/capture.py claro       # light theme  -> 01_sencilla_claro.png ...
+    python docs/capture.py light       # light theme  -> 01_sencilla_claro.png ...
 
 It saves PNGs in docs/img/ (or in the folder of the CAPTURAS_SALIDA variable). Each
 capture limits the crop to the window of the app itself (never to the whole desktop).
@@ -23,8 +23,10 @@ APP = ROOT
 IMG = Path(os.environ.get("CAPTURAS_SALIDA") or Path(__file__).resolve().parent / "img")
 IMG.mkdir(exist_ok=True)
 
-THEME = sys.argv[1] if len(sys.argv) > 1 else "oscuro"
-SUFFIX = "" if THEME == "oscuro" else f"_{THEME}"
+# "light" / "dark" (the old "claro" / "oscuro" are still accepted)
+THEME = {"claro": "light", "oscuro": "dark"}.get(sys.argv[1], sys.argv[1]) \
+    if len(sys.argv) > 1 else "dark"
+SUFFIX = "" if THEME == "dark" else "_claro"      # the image names keep their Spanish suffix
 
 # Sample folder with a neutral path, so that the Windows user name
 # does not appear in the screenshots (as it would with the temporary folder).
@@ -113,10 +115,10 @@ for _f in tmp.rglob('*'):
     os.utime(_f, (FIXED_DATE.timestamp(), FIXED_DATE.timestamp()))
 
 # sample history
-history.record("cuarentena", "mover", str(base_dup), str(tmp / "Cuarentena"),
+history.record(history.KIND_QUARANTINE, "move", str(base_dup), str(tmp / "Cuarentena"),
                     [(str(base_dup / "x"), str(tmp / "Cuarentena" / "x"))] * 4,
                     "4 duplicados exactos")
-history.record("reunir", "copiar", str(gather_base), str(tmp / "Album"),
+history.record(history.KIND_GATHER, "copy", str(gather_base), str(tmp / "Album"),
                     [(str(gather_base / "y"), str(tmp / "Album" / "y"))] * 12,
                     "12 imágenes")
 
@@ -142,7 +144,7 @@ def run():
 
 # --- Simple --------------------------------------------------------
 def p_simple_scan():
-    app._mode = "sencillo"
+    app._mode = "simple"
     app._apply_mode()
     app.mode_selector.set("Sencilla")
     app.exact.entry_folder.insert(0, str(base_dup))
@@ -151,7 +153,7 @@ def p_simple_scan():
 
 def p_simple_shot():
     for iid, meta in app.exact.table._meta.items():
-        if meta[0] == "archivo" and meta[2].endswith("playa.png"):
+        if meta[0] == "file" and meta[2].endswith("playa.png"):
             app.exact.table.tree.selection_set(iid)
             app.exact.table.tree.see(iid)
             break
@@ -160,7 +162,7 @@ def p_simple_shot():
 
 # --- Advanced --------------------------------------------------
 def p_advanced():
-    app._mode = "avanzado"
+    app._mode = "advanced"
     app._apply_mode()
     app.mode_selector.set("Avanzada")
     app.exact._on_selection_change()

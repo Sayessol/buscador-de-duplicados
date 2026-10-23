@@ -36,7 +36,7 @@ def main():
     quarantine = Path(tmp) / "CUARENTENA"
 
     app = MainWindow()
-    app._mode = "avanzado"         # this test exercises the advanced flow
+    app._mode = "advanced"         # this test exercises the advanced flow
     app._apply_mode()           # (without persisting to the real config)
     app.exact.entry_folder.insert(0, str(base))
     app.exact._empty_filters()          # no exclusions -> 4 groups

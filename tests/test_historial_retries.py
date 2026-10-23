@@ -63,7 +63,7 @@ def test_removal_gives_up_after_the_last_attempt(tmp_path, monkeypatch, sleeps):
     assert len(sleeps) == history._REMOVE_ATTEMPTS - 1
 
 
-def test_removal_of_to_missing_path_is_not_an_error(tmp_path, sleeps):
+def test_removal_of_a_missing_path_is_not_an_error(tmp_path, sleeps):
     history._remove_with_retries(str(tmp_path / "not_there.txt"))
     assert sleeps == []
 
@@ -82,33 +82,33 @@ def test_removal_does_not_retry_other_errors(tmp_path, monkeypatch, sleeps):
     assert sleeps == []
 
 
-def test_undo_of_to_copy_survives_to_short_lock(isolated_appdata, monkeypatch, sleeps):
+def test_undo_of_a_copy_survives_a_short_lock(isolated_appdata, monkeypatch, sleeps):
     origin = isolated_appdata / "origin.txt"
     copy = isolated_appdata / "copy.txt"
     origin.write_text("original")
     copy.write_text("original")
-    op_id = history.record("reunir", "copiar", str(isolated_appdata),
+    op_id = history.record(history.KIND_GATHER, "copy", str(isolated_appdata),
                                 str(isolated_appdata), [(str(origin), str(copy))])
     _locked_for(monkeypatch, failures=2)
 
     result = history.undo(op_id)
 
-    assert result["fallos"] == []
+    assert result["failures"] == []
     assert not copy.exists() and origin.exists()     # the original is never touched
-    assert history.list_all()[0]["deshecha"] is True
+    assert history.list_all()[0]["undone"] is True
 
 
-def test_undo_of_to_copy_reports_to_lock_that_never_clears(isolated_appdata, monkeypatch, sleeps):
+def test_undo_of_a_copy_reports_a_lock_that_never_clears(isolated_appdata, monkeypatch, sleeps):
     origin = isolated_appdata / "origin.txt"
     copy = isolated_appdata / "copy.txt"
     origin.write_text("original")
     copy.write_text("original")
-    op_id = history.record("reunir", "copiar", str(isolated_appdata),
+    op_id = history.record(history.KIND_GATHER, "copy", str(isolated_appdata),
                                 str(isolated_appdata), [(str(origin), str(copy))])
     _locked_for(monkeypatch, failures=99)
 
     result = history.undo(op_id)
 
-    assert len(result["fallos"]) == 1
+    assert len(result["failures"]) == 1
     assert copy.exists() and origin.exists()
-    assert history.list_all()[0]["deshecha"] is False   # it can be retried later
+    assert history.list_all()[0]["undone"] is False   # it can be retried later

@@ -47,38 +47,38 @@ def main():
                 Transfer(str(source / "b.txt"), str(destination / "sub" / "b.txt"))]
         res = execute(plan, action=MOVE)
         op_id = history.record(
-            history.KIND_GATHER, "mover", str(tmp / "origen"), str(destination),
+            history.KIND_GATHER, "move", str(tmp / "origen"), str(destination),
             [(t.source, t.destination) for t in res.done], "2 archivos de prueba")
 
         ops = history.list_all()
         check(len(ops) == 1 and ops[0]["id"] == op_id, "la operación queda registrada")
-        check(ops[0]["deshecha"] is False, "arranca como no deshecha")
+        check(ops[0]["undone"] is False, "arranca como no deshecha")
         check(not (source / "a.txt").exists()
               and (destination / "sub" / "a.txt").exists(),
               "tras mover: los archivos están en el destino")
 
         # --- undo the MOVE ------------------------------------
         r = history.undo(op_id)
-        check(r["ok"] == 2 and not r["fallos"], "deshacer mover: 2 revertidos")
+        check(r["reverted"] == 2 and not r["failures"], "deshacer mover: 2 revertidos")
         check((source / "a.txt").exists() and (source / "b.txt").exists()
               and not (destination / "sub" / "a.txt").exists(),
               "los archivos han vuelto a su carpeta original")
-        check(history.list_all()[0]["deshecha"] is True,
+        check(history.list_all()[0]["undone"] is True,
               "la operación queda marcada como deshecha")
 
         r2 = history.undo(op_id)
-        check(r2["ok"] == 0 and r2["fallos"], "no se puede deshacer dos veces")
+        check(r2["reverted"] == 0 and r2["failures"], "no se puede deshacer dos veces")
 
         # --- COPY and undo (deletes the copies) ----------------
         plan_c = [Transfer(str(source / "a.txt"), str(destination / "c" / "a.txt"))]
         rc = execute(plan_c, action=COPY)
         op_c = history.record(
-            history.KIND_GATHER, "copiar", str(tmp / "origen"), str(destination),
+            history.KIND_GATHER, "copy", str(tmp / "origen"), str(destination),
             [(t.source, t.destination) for t in rc.done])
         check((destination / "c" / "a.txt").exists() and (source / "a.txt").exists(),
               "copiar: original y copia existen")
         rd = history.undo(op_c)
-        check(rd["ok"] == 1 and not (destination / "c" / "a.txt").exists()
+        check(rd["reverted"] == 1 and not (destination / "c" / "a.txt").exists()
               and (source / "a.txt").exists(),
               "deshacer copia: se borra la copia, el original sigue")
 
@@ -87,11 +87,11 @@ def main():
         plan_x = [Transfer(str(source / "x.txt"), str(destination / "x.txt"))]
         rx = execute(plan_x, action=MOVE)
         op_x = history.record(
-            history.KIND_GATHER, "mover", str(tmp / "origen"), str(destination),
+            history.KIND_GATHER, "move", str(tmp / "origen"), str(destination),
             [(t.source, t.destination) for t in rx.done])
         (source / "x.txt").write_text("otra cosa")  # we occupy the original path
         rr = history.undo(op_x)
-        check(rr["ok"] == 0 and rr["fallos"],
+        check(rr["reverted"] == 0 and rr["failures"],
               "deshacer con la ruta original ocupada -> reporta fallo, no pisa")
         check((source / "x.txt").read_text() == "otra cosa",
               "el archivo que ocupaba la ruta original no se ha tocado")

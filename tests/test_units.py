@@ -18,23 +18,23 @@ def appdata(tmp_path, monkeypatch):
 
 
 def test_config_default_values(appdata):
-    assert config.get_mode() == "sencillo"
+    assert config.get_mode() == "simple"
     assert config.get_theme() == "auto"
 
 
 def test_config_saves_and_remembers(appdata):
-    config.set_mode("avanzado")
-    config.set_theme("oscuro")
-    assert config.get_mode() == "avanzado"
-    assert config.get_theme() == "oscuro"
+    config.set_mode("advanced")
+    config.set_theme("dark")
+    assert config.get_mode() == "advanced"
+    assert config.get_theme() == "dark"
     assert (appdata / "BuscadorDuplicados" / "config.json").exists()
 
 
 def test_config_ignores_invalid_values(appdata):
-    config.set_mode("avanzado")
+    config.set_mode("advanced")
     config.set_mode("loquesea")           # ignored
     config.set_theme("fucsia")             # ignored
-    assert config.get_mode() == "avanzado"
+    assert config.get_mode() == "advanced"
     assert config.get_theme() == "auto"
 
 
@@ -42,7 +42,7 @@ def test_config_corrupt_does_not_break(appdata):
     path = appdata / "BuscadorDuplicados" / "config.json"
     path.parent.mkdir()
     path.write_text("{ esto no es json", encoding="utf-8")
-    assert config.get_mode() == "sencillo"   # back to the default value
+    assert config.get_mode() == "simple"   # back to the default value
 
 
 def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
@@ -50,8 +50,8 @@ def test_config_save_without_permission_does_not_raise(monkeypatch, tmp_path):
     file = tmp_path / "soy_un_fichero"
     file.write_text("x")
     monkeypatch.setenv("APPDATA", str(file))
-    config.set_mode("avanzado")              # fails silently
-    assert config.get_mode() == "sencillo"
+    config.set_mode("advanced")              # fails silently
+    assert config.get_mode() == "simple"
 
 
 def test_export_csv(tmp_path):

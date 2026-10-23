@@ -212,7 +212,7 @@ C += [bullet_list([
 C += [h2("2.7. Historial y deshacer")]
 C += [p(
     "Cada operación de mover/copiar se apunta en "
-    "<font face='Courier'>%APPDATA%\\BuscadorDuplicados\\historial.json</font> "
+    "<font face='Courier'>%APPDATA%\\BuscadorDuplicados\\history.json</font> "
     "con la lista de pares (origen, destino). "
     "<font face='Courier'>deshacer(id)</font>:")]
 C += [bullet_list([
@@ -357,7 +357,7 @@ C += [p(
     "<font face='Courier'>messagebox</font> se sustituyen por funciones que "
     "devuelven un valor fijo) y pulsan los métodos de los botones.")]
 C += [pre(
-    "pytest   # 134 pruebas;  pytest --cov = cobertura (núcleo 93 %, interfaz 79 %)\n"
+    "pytest   # 162 pruebas;  pytest --cov = cobertura (núcleo 93 %, interfaz 79 %)\n"
     "python tests/check_perceptual.py \"D:\\Fotos\" 10   # con datos reales")]
 
 C += [h1("6. Añadir una función nueva: receta")]

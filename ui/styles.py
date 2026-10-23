@@ -27,9 +27,9 @@ import customtkinter as ctk
 
 THEME_COLOR = "blue"        # base CustomTkinter theme for the buttons
 
-# "auto" (system) | "claro" (light) | "oscuro" (dark)  ->  internal CustomTkinter value
-_THEME_MAP = {"auto": "system", "claro": "light", "oscuro": "dark"}
-THEMES = ("auto", "claro", "oscuro")
+# "auto" (system) | "light" | "dark"  ->  internal CustomTkinter value
+_THEME_MAP = {"auto": "system", "light": "light", "dark": "dark"}
+THEMES = ("auto", "light", "dark")
 
 # ----------------------------------------------------------------------
 # Palette   (light, dark)

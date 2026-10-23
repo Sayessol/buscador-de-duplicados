@@ -112,9 +112,9 @@ class Progress:
     """Progress notification so the interface can show a bar.
 
     phase:
-      "tamanos"        -> Pass 1, counting and measuring files.
-      "hash_parcial"   -> Pass 2, hashing the first 64 KB.
-      "hash_completo"  -> Pass 3, hashing whole files.
+      "sizes"          -> Pass 1, counting and measuring files.
+      "partial_hash"   -> Pass 2, hashing the first 64 KB.
+      "full_hash"      -> Pass 3, hashing whole files.
     total == 0 means "I do not know yet how many there are in total" (Pass 1).
     """
 
@@ -179,7 +179,7 @@ def _size_pass(
 
             if total_files % 200 == 0:
                 progress(Progress(
-                    "tamanos", total_files, 0,
+                    "sizes", total_files, 0,
                     f"Paso 1/2: revisando tamaños... ({total_files} archivos)",
                 ))
 
@@ -217,7 +217,7 @@ def _partial_hash_pass(
 
             if processed % 50 == 0:
                 progress(Progress(
-                    "hash_parcial", processed, total_candidates,
+                    "partial_hash", processed, total_candidates,
                     f"Paso 2/2: calculando hashes... "
                     f"({processed}/{total_candidates})",
                 ))
@@ -265,7 +265,7 @@ def _full_hash_pass(
 
             if full_processed % 50 == 0:
                 progress(Progress(
-                    "hash_completo", full_processed, total_finalists,
+                    "full_hash", full_processed, total_finalists,
                     f"Paso 2/2: verificando archivos completos... "
                     f"({full_processed}/{total_finalists})",
                 ))
@@ -328,7 +328,7 @@ def scan(
 
     total_finalists = sum(len(r) for r in finalists.values())
     progress(Progress(
-        "hash_completo", max(total_finalists, 1), max(total_finalists, 1),
+        "full_hash", max(total_finalists, 1), max(total_finalists, 1),
         "Escaneo terminado.",
     ))
 

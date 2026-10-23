@@ -72,9 +72,9 @@ messagebox.showinfo = lambda *a, **k: None
 messagebox.showwarning = lambda *a, **k: None
 messagebox.showerror = lambda *a, **k: None
 
-styles.apply_theme("oscuro")
+styles.apply_theme("dark")
 app = MainWindow()
-app._mode = "sencillo"
+app._mode = "simple"
 app._apply_mode()
 app.geometry("1280x860+12+6")
 
@@ -119,7 +119,7 @@ def wait(condition, next, attempts=200):
 
 def choose_row():
     for iid, meta in app.exact.table._meta.items():
-        if meta[0] == "archivo" and meta[2].endswith("playa.png"):
+        if meta[0] == "file" and meta[2].endswith("playa.png"):
             app.exact.table.tree.selection_set(iid)
             app.exact.table.tree.see(iid)
             break
@@ -132,7 +132,7 @@ def move():
 
 
 def open_history():
-    app._mode = "avanzado"
+    app._mode = "advanced"
     app._apply_mode()
     app.mode_selector.set("Avanzada")
     app._hv = HistoryWindow(app)

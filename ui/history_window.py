@@ -2,8 +2,8 @@
 
 Lists the recorded operations (move to quarantine, gather images)
 and lets you revert each one:
-- "mover"  -> puts the files back in their place,
-- "copiar" -> deletes the copies in the destination (with a clear confirmation).
+- "move" -> puts the files back in their place,
+- "copy" -> deletes the copies in the destination (with a clear confirmation).
 """
 
 import os
@@ -12,6 +12,7 @@ from tkinter import messagebox
 import customtkinter as ctk
 
 from core import history
+from core.file_moves import COPY
 from core.hashing import format_size  # noqa: F401  (in case it is needed)
 from . import styles, icons
 
@@ -77,21 +78,21 @@ class HistoryWindow(ctk.CTkToplevel):
         card.grid(row=row, column=0, sticky="ew", pady=(0, 8))
         card.grid_columnconfigure(0, weight=1)
 
-        kind = _KIND_LABEL.get(op["tipo"], op["tipo"])
-        verb = "copiados" if op["accion"] == "copiar" else "movidos"
-        n = len(op["movimientos"])
-        date = op["fecha"].replace("T", "  ")
+        kind = _KIND_LABEL.get(op["kind"], op["kind"])
+        verb = "copiados" if op["action"] == COPY else "movidos"
+        n = len(op["moves"])
+        date = op["date"].replace("T", "  ")
         title = f"{kind}  ·  {n} archivo(s) {verb}"
         ctk.CTkLabel(card, text=title, font=styles.base_font(12, "bold"),
                      anchor="w").grid(row=0, column=0, padx=12, pady=(10, 2),
                                       sticky="w")
-        sub = f"{date}   →   {op['destino']}"
+        sub = f"{date}   →   {op['destination']}"
         ctk.CTkLabel(card, text=sub, font=styles.base_font(11),
                      text_color=styles.COLOR_MUTED_TEXT, anchor="w",
                      wraplength=520, justify="left").grid(
             row=1, column=0, padx=12, pady=(0, 10), sticky="w")
 
-        if op.get("deshecha"):
+        if op.get("undone"):
             ctk.CTkLabel(card, text=f"{icons.OK} deshecha",
                          font=styles.base_font(11),
                          text_color=styles.COLOR_OK).grid(
@@ -103,29 +104,29 @@ class HistoryWindow(ctk.CTkToplevel):
                 row=0, column=1, rowspan=2, padx=12, pady=8)
 
     def _undo(self, op):
-        n = len(op["movimientos"])
-        if op["accion"] == "copiar":
+        n = len(op["moves"])
+        if op["action"] == COPY:
             warning = (f"Se van a BORRAR {n} archivo(s) copiados en:\n\n"
-                     f"{op['destino']}\n\n"
+                     f"{op['destination']}\n\n"
                      "Son las copias que hizo la app. Los originales no se "
                      "tocan. Esta acción no se puede deshacer.\n\n¿Continuar?")
         else:
             warning = (f"Se van a devolver {n} archivo(s) a su ubicación "
-                     f"original (desde {op['destino']}).\n\n¿Continuar?")
+                     f"original (desde {op['destination']}).\n\n¿Continuar?")
         if not messagebox.askyesno("Deshacer operación", warning, parent=self):
             return
 
         res = history.undo(op["id"])
         self._paint()
 
-        if res["fallos"]:
+        if res["failures"]:
             detail = "\n".join(f"· {os.path.basename(r) or r}: {m}"
-                                for r, m in res["fallos"][:12])
+                                for r, m in res["failures"][:12])
             messagebox.showwarning(
                 "Deshacer con avisos",
-                f"Revertidos: {res['ok']}.\nNo se pudieron revertir "
-                f"{len(res['fallos'])}:\n\n{detail}", parent=self)
+                f"Revertidos: {res['reverted']}.\nNo se pudieron revertir "
+                f"{len(res['failures'])}:\n\n{detail}", parent=self)
         else:
             messagebox.showinfo(
-                "Hecho", f"Operación deshecha: {res['ok']} archivo(s).",
+                "Hecho", f"Operación deshecha: {res['reverted']} archivo(s).",
                 parent=self)

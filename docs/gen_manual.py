@@ -236,7 +236,7 @@ C += [bullet_list([
 ])]
 C += [p(
     "El historial se guarda en "
-    "<font face='Courier'>%APPDATA%\\BuscadorDuplicados\\historial.json</font> "
+    "<font face='Courier'>%APPDATA%\\BuscadorDuplicados\\history.json</font> "
     "y conserva las últimas operaciones.")]
 
 # ======================================================================
@@ -247,8 +247,8 @@ C += [bullet_list([
     "Dentro se recrea la estructura de subcarpetas del origen, para que "
     "sepas de dónde salió cada archivo.",
     "Se escribe un CSV "
-    "(<font face='Courier'>_log_cuarentena_FECHA.csv</font> o "
-    "<font face='Courier'>_log_reunir_FECHA.csv</font>) con origen y destino "
+    "(<font face='Courier'>_log_quarantine_FECHA.csv</font> o "
+    "<font face='Courier'>_log_gather_FECHA.csv</font>) con origen y destino "
     "de cada archivo, por si prefieres revisar o deshacer a mano.",
     "Nada se borra: revisa esa carpeta con calma y elimina tú lo que ya no "
     "necesites.",
@@ -265,7 +265,7 @@ C += [table([
      "pide confirmación."],
     ["Me ha salido un aviso de «error inesperado». ¿Qué hago?",
      r"La aplicación anota lo ocurrido en un archivo de texto: "
-     r"<font face='Courier'>%APPDATA%\BuscadorDuplicados\registro\buscador.log</font> "
+     r"<font face='Courier'>%APPDATA%\BuscadorDuplicados\logs\app.log</font> "
      "(pega esa ruta en el Explorador y ábrelo con el Bloc de notas). Puedes "
      "seguir usando la aplicación, y tus archivos no se han tocado. Si el fallo "
      "se repite, cierra y vuelve a abrirla; si quieres informar del problema, "

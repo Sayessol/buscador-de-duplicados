@@ -4,9 +4,9 @@ The app, packaged as an .exe, has no console: if something failed, the message
 used to disappear. Here it is saved in a text file that can be opened with
 Notepad:
 
-    %APPDATA%\\BuscadorDuplicados\\registro\\buscador.log
+    %APPDATA%\\BuscadorDuplicados\\logs\\app.log
 
-(or in ~/.buscador_duplicados/registro/ when there is no APPDATA). The file is
+(or in ~/.buscador_duplicados/logs/ when there is no APPDATA). The file is
 small: when it reaches 512 KB it is archived and 2 old copies are kept.
 
 How it is used from the rest of the code:
@@ -31,7 +31,7 @@ from types import TracebackType
 from . import __version__
 
 # Shared logger of the whole app. Unconfigured (in the tests, for example) it writes nothing.
-log = logging.getLogger("buscador")
+log = logging.getLogger("duplicate_finder")
 log.addHandler(logging.NullHandler())
 
 _MAX_SIZE = 512 * 1024
@@ -44,8 +44,8 @@ _path_file: Path | None = None               # path of the file, if it could be 
 def log_folder() -> Path:
     base = os.environ.get("APPDATA")
     if base:
-        return Path(base) / "BuscadorDuplicados" / "registro"
-    return Path.home() / ".buscador_duplicados" / "registro"
+        return Path(base) / "BuscadorDuplicados" / "logs"
+    return Path.home() / ".buscador_duplicados" / "logs"
 
 
 def file_path() -> Path | None:
@@ -56,17 +56,19 @@ def file_path() -> Path | None:
 def start() -> Path | None:
     """Turns on logging to a file. It can be called several times without duplicating anything.
 
-    Normal level: INFO. With the environment variable BUSCADOR_DEBUG=1 the details
-    (DEBUG) are logged too, which is useful to investigate a problem.
+    Normal level: INFO. With the environment variable DUPLICATE_FINDER_DEBUG=1 (the old name
+    BUSCADOR_DEBUG still works) the details (DEBUG) are logged too, which is useful to
+    investigate a problem.
     """
     global _handler, _path_file
     if _handler is not None:
         return _path_file
-    log.setLevel(logging.DEBUG if os.environ.get("BUSCADOR_DEBUG") else logging.INFO)
+    debug = os.environ.get("DUPLICATE_FINDER_DEBUG") or os.environ.get("BUSCADOR_DEBUG")
+    log.setLevel(logging.DEBUG if debug else logging.INFO)
     try:
         folder = log_folder()
         folder.mkdir(parents=True, exist_ok=True)
-        path = folder / "buscador.log"
+        path = folder / "app.log"
         handler = RotatingFileHandler(
             path, maxBytes=_MAX_SIZE, backupCount=_OLD_COPIES, encoding="utf-8")
     except OSError:

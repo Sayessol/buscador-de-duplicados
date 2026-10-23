@@ -25,6 +25,7 @@ from core.quarantine import (
     move_to_quarantine, validate_quarantine_folder, InvalidQuarantine,
 )
 from core import history
+from core.file_moves import MOVE as MOVE_ACTION
 from . import styles
 from . import icons
 from .widgets import SectionHeader, StatTile, EmptyState, make_card
@@ -552,30 +553,30 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         try:
             result = scan(
                 folder,
-                progress=lambda p: self._queue.put(("progreso", p)),
+                progress=lambda p: self._queue.put(("progress", p)),
                 cancelled=self._cancel_event.is_set,
                 filter=filter,
             )
-            self._queue.put(("hecho", result))
+            self._queue.put(("done", result))
         except ScanCancelled:
-            self._queue.put(("cancelado", None))
+            self._queue.put(("cancelled", None))
         except Exception as e:  # any failure is logged and shown
             log.exception("Falló el escaneo de %s", folder)
             self._queue.put(("error", e))
 
     def _poll_queue(self):
         """Runs in the MAIN THREAD. Empties the queue and acts according to the type
-        of message. It reschedules itself until "hecho",
-        "cancelado" or "error" arrives."""
+        of message. It reschedules itself until "done",
+        "cancelled" or "error" arrives."""
         try:
             while True:
                 kind, datum = self._queue.get_nowait()   # raises queue.Empty if there is none
-                if kind == "progreso":
+                if kind == "progress":
                     self._apply_progress(datum)
-                elif kind == "hecho":
+                elif kind == "done":
                     self._finish_scan(datum)
                     return
-                elif kind == "cancelado":
+                elif kind == "cancelled":
                     self._scan_cancelled()
                     return
                 elif kind == "error":
@@ -780,8 +781,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         try:
             res = move_to_quarantine(
                 selection, root, quarantine_folder,
-                progress=lambda a, t, m: self._quarantine_queue.put(("progreso", (a, t, m))))
-            self._quarantine_queue.put(("hecho", (res, quarantine_folder)))
+                progress=lambda a, t, m: self._quarantine_queue.put(("progress", (a, t, m))))
+            self._quarantine_queue.put(("done", (res, quarantine_folder)))
         except Exception as e:  # it is logged and shown to the user
             log.exception("Falló el movimiento a cuarentena (origen %s, destino %s)",
                           root, quarantine_folder)
@@ -791,12 +792,12 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         try:
             while True:
                 kind, datum = self._quarantine_queue.get_nowait()
-                if kind == "progreso":
+                if kind == "progress":
                     current, total, msg = datum
                     self.lbl_state.configure(text=msg)
                     if total:
                         self.progress_bar.set(min(current / total, 1.0))
-                elif kind == "hecho":
+                elif kind == "done":
                     self._quarantine_finished(*datum)
                     return
                 elif kind == "error":
@@ -816,7 +817,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         if res.moved:
             history.record(
-                history.KIND_QUARANTINE, "mover", self._scanned_folder,
+                history.KIND_QUARANTINE, MOVE_ACTION, self._scanned_folder,
                 quarantine_folder, [(m.source, m.destination) for m in res.moved],
                 f"{len(res.moved)} duplicados exactos")
 
@@ -927,7 +928,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             return
         path = filedialog.asksaveasfilename(
             title="Guardar informe CSV", defaultextension=".csv",
-            initialfile="duplicados_informe.csv",
+            initialfile="duplicates_report.csv",
             filetypes=[("CSV", "*.csv"), ("Todos los archivos", "*.*")])
         if not path:
             return
