@@ -15,13 +15,13 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from PIL import Image                                # noqa: E402
-from ui import styles                         # noqa: E402
-from ui.main_window import MainWindow          # noqa: E402
+from duplicate_finder.presentation import styles  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
 
 R = {}
 failures = []

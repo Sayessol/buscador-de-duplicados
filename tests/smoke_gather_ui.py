@@ -11,7 +11,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 R = {}
 failures = []
 
@@ -38,10 +38,10 @@ def main():
     tmp = Path(tempfile.mkdtemp(prefix="dup_reunir_"))
     os.environ["APPDATA"] = str(tmp / "appdata")
 
-    from ui import styles                         # noqa: E402
-    from ui import main_window as MW                      # noqa: E402
-    from core import history                            # noqa: E402
-    from core.gather import NonImageRules                # noqa: E402
+    from duplicate_finder.presentation import styles  # noqa: E402
+    from duplicate_finder.presentation import main_window as MW  # noqa: E402
+    from duplicate_finder.application import history  # noqa: E402
+    from duplicate_finder.domain.transfers import NonImageRules  # noqa: E402
     import customtkinter as ctk
 
     styles.apply_theme()
@@ -66,7 +66,7 @@ def main():
                 action_by_ext={"pdf": "group", "txt": "leave"},
                 folder_by_ext={"pdf": "Documents"})
             self.after(10, self.destroy)
-    from ui import gather_images_tab as TR                      # noqa: E402
+    from duplicate_finder.presentation import gather_images_tab as TR  # noqa: E402
     TR.NonImageKindsWindow = FakeKinds   # the dialog is used from the Gather tab
 
     app = MW.MainWindow()

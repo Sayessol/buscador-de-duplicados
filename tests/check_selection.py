@@ -8,11 +8,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from core.scanner import DuplicateFile, DuplicateGroup, ScanResult  # noqa: E402
-from core.selection import (  # noqa: E402
-    DuplicateSelection, KEEP, MOVE,
-    GROUP_OK, GROUP_MULTIPLE,
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from duplicate_finder.domain.duplicates import DuplicateFile, DuplicateGroup, ScanResult  # noqa: E402
+from duplicate_finder.domain.selection import (
+    DuplicateSelection,
+    KEEP,
+    MOVE,
+    GROUP_OK,
+    GROUP_MULTIPLE,
 )
 
 failures = []
@@ -99,7 +102,7 @@ def main():
 
     print("\n--- preselect_primary() (Simple view) ---")
     import tempfile
-    from core.scanner import scan
+    from duplicate_finder.application.scan_duplicates import scan
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         data = b"content identico\n" * 40

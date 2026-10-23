@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from core import history
+from duplicate_finder.application import history
 
 
 @pytest.fixture

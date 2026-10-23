@@ -16,13 +16,13 @@ ignore = ["B905"]   # zip(strict=...) adds nothing here
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 markers = ["gui: test with a window (needs a Windows desktop)"]
 
 [tool.coverage.run]
-source = ["core", "ui"]
+source = ["src/duplicate_finder"]
 # The window tests run in separate processes (tests/test_suites.py): they are followed
-# so the interface can be measured too. Minimums the CI requires: core 90 %, UI 70 %.
+# so the interface can be measured too. Minimums the CI requires: logic layers 90 %, interface 70 %.
 parallel = true
 patch = ["subprocess"]
 
@@ -30,11 +30,12 @@ patch = ["subprocess"]
 show_missing = true
 
 [tool.mypy]
-# Static typing: the core (core/) is fully annotated and mypy checks it.
-# The interface (ui/) is not checked: CustomTkinter/Tkinter are very dynamic and the
+# Static typing: the logic layers (domain, application, infrastructure) and i18n are fully
+# annotated and mypy checks them. The interface (presentation/) is not checked: CustomTkinter/Tkinter are very dynamic and the
 # benefit would be much smaller than the noise.
 python_version = "3.12"
-files = ["core"]
+mypy_path = "src"
+packages = ["duplicate_finder.domain", "duplicate_finder.application", "duplicate_finder.infrastructure", "duplicate_finder.i18n"]
 disallow_untyped_defs = true
 check_untyped_defs = true
 warn_unused_ignores = true

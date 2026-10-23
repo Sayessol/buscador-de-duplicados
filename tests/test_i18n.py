@@ -6,11 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from core import config, i18n
-from core.locales import en, es
+from duplicate_finder import i18n
+from duplicate_finder.infrastructure import settings
+from duplicate_finder.i18n.locales import en, es
 
 ROOT = Path(__file__).resolve().parents[1]
-CODE_FOLDERS = ("core", "ui")
+PACKAGE = ROOT / "src" / "duplicate_finder"
 PLACEHOLDER = re.compile(r"\{(\w+)")
 
 
@@ -26,8 +27,8 @@ def _placeholders(text: str) -> set[str]:
 
 
 def _code_files():
-    return [p for folder in CODE_FOLDERS for p in sorted((ROOT / folder).glob("*.py"))
-            if p.name != "i18n.py"]
+    """Every module of the package except the catalogs themselves."""
+    return [p for p in sorted(PACKAGE.rglob("*.py")) if "i18n" not in p.relative_to(PACKAGE).parts]
 
 
 def _tr_calls():
@@ -79,14 +80,14 @@ def test_every_call_passes_exactly_the_placeholders_of_its_text():
 
 def test_every_key_is_used_by_the_code():
     sources = "\n".join(p.read_text(encoding="utf-8") for p in _code_files())
-    # category.<name> is built from the category keys of core/filters.py
+    # category.<name> is built from the category keys of domain/filters.py
     unused = [key for key in en.MESSAGES
               if f'"{key}"' not in sources and not key.startswith("category.")]
     assert not unused
 
 
 def test_every_category_has_a_name():
-    from core.filters import CATEGORY_EXTENSIONS
+    from duplicate_finder.domain.filters import CATEGORY_EXTENSIONS
     assert all(f"category.{name}" in en.MESSAGES for name in CATEGORY_EXTENSIONS)
 
 
@@ -113,7 +114,7 @@ def test_the_saved_language_wins_over_the_system():
 
 def test_without_a_saved_language_the_system_decides(monkeypatch):
     monkeypatch.setattr(i18n, "detect_system_language", lambda: "es")
-    assert i18n.resolve_language(config.LANGUAGE_AUTO) == "es"
+    assert i18n.resolve_language(settings.LANGUAGE_AUTO) == "es"
     assert i18n.resolve_language("fr") == "es"
 
 
@@ -130,11 +131,11 @@ def test_language_of_the_environment(monkeypatch, variable, value, expected):
 
 def test_the_language_is_saved_in_the_configuration(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))
-    assert config.get_language() == config.LANGUAGE_AUTO
-    config.set_language("es")
-    assert config.get_language() == "es"
-    config.set_language("fr")             # not a language of the app: ignored
-    assert config.get_language() == "es"
+    assert settings.get_language() == settings.LANGUAGE_AUTO
+    settings.set_language("es")
+    assert settings.get_language() == "es"
+    settings.set_language("fr")             # not a language of the app: ignored
+    assert settings.get_language() == "es"
 
 
 @pytest.mark.parametrize("lang_id, expected", [(0x0C0A, "es"), (0x040A, "es"), (0x2C0A, "es"),

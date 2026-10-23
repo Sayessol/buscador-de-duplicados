@@ -5,7 +5,7 @@ What it does:
   1. Creates a tree of test folders with known duplicates
      (and several traps: same size but different content, empty
      files, large files that only differ at the end, etc.).
-  2. Scans it with the new core (core.scanner.scan).
+  2. Scans it with the new code (application.scan_duplicates.scan).
   3. Scans it with the logic of the original script.
   4. Compares the groups of duplicates from both: they must be identical
      (same sets of paths). The hash value may differ
@@ -29,8 +29,9 @@ from pathlib import Path
 APP_ROOT = Path(__file__).resolve().parents[1]          # root of the repo
 REPO_ROOT = APP_ROOT / "docs" / "origin"                 # the original script is here
 sys.path.insert(0, str(APP_ROOT))
+sys.path.insert(0, str(APP_ROOT / "src"))
 
-from core.scanner import scan                        # noqa: E402
+from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
 
 
 def _load_original_script():

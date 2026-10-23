@@ -12,7 +12,7 @@ checked is that it stays readable (≥ 2:1) and that it can be told apart from a
 
 import pytest
 
-from ui import styles
+from duplicate_finder.presentation import styles
 
 THEMES = {"light": 0, "dark": 1}
 AA_TEXT = 4.5           # WCAG AA, normal text
@@ -36,7 +36,7 @@ def contrast(a, b):
     return (la + 0.05) / (lb + 0.05)
 
 
-# Text of colour X on background Y (names from ui/styles.py)
+# Text of colour X on background Y (names from presentation/styles.py)
 TEXT_ON_BACKGROUND = [
     (text, background)
     for text, backgrounds in {

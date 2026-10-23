@@ -9,9 +9,9 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from core.scanner import scan                       # noqa: E402
-from core.filters import ScanFilter, CATEGORY_EXTENSIONS  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
+from duplicate_finder.domain.filters import ScanFilter, CATEGORY_EXTENSIONS  # noqa: E402
 
 failures = []
 

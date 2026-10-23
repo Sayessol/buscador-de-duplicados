@@ -17,23 +17,23 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 TMP = Path(tempfile.mkdtemp(prefix="dup_dlg_"))
 os.environ["APPDATA"] = str(TMP / "appdata")
 
 from PIL import Image                                   # noqa: E402
 
-from core import history                              # noqa: E402
-from core.file_moves import MOVE                            # noqa: E402
-from core.gather import GROUP, LEAVE                  # noqa: E402
-from core.scanner import scan                       # noqa: E402
-from ui import icons, styles, thumbnails                # noqa: E402
-from ui.history_window import HistoryWindow          # noqa: E402
-from ui.image_viewer import ImageViewer, open_viewer    # noqa: E402
-from ui.main_window import MainWindow             # noqa: E402
-from ui.non_image_kinds_dialog import NonImageKindsWindow        # noqa: E402
-from ui.extension_breakdown_dialog import ExtensionBreakdownWindow     # noqa: E402
+from duplicate_finder.application import history  # noqa: E402
+from duplicate_finder.domain.transfers import MOVE  # noqa: E402
+from duplicate_finder.domain.transfers import GROUP, LEAVE  # noqa: E402
+from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
+from duplicate_finder.presentation import icons, styles, thumbnails  # noqa: E402
+from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
+from duplicate_finder.presentation.image_viewer import ImageViewer, open_viewer  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.presentation.non_image_kinds_dialog import NonImageKindsWindow  # noqa: E402
+from duplicate_finder.presentation.extension_breakdown_dialog import ExtensionBreakdownWindow  # noqa: E402
 
 failures = []
 warnings = {"questions": 0, "info": 0, "warning": 0, "error": 0}

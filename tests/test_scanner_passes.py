@@ -1,4 +1,4 @@
-"""Each pass of the scanner on its own (core/scanner.py).
+"""Each pass of the scanner on its own (application/scan_duplicates.py).
 
 `scan()` chains three functions; here each one is tested with small, easy-to-understand
 cases. The whole function is already compared with the original script
@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from core.filters import ScanFilter
-from core.hashing import PARTIAL_HASH_SIZE
-from core.scanner import (
+from duplicate_finder.domain.filters import ScanFilter
+from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE
+from duplicate_finder.application.scan_duplicates import (
     ScanCancelled,
     _full_hash_pass,
     _partial_hash_pass,

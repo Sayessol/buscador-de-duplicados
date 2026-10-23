@@ -17,11 +17,13 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from core.scanner import scan                                  # noqa: E402
-from core.selection import DuplicateSelection                      # noqa: E402
-from core.quarantine import (                                       # noqa: E402
-    move_to_quarantine, validate_quarantine_folder, InvalidQuarantine,
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
+from duplicate_finder.domain.selection import DuplicateSelection  # noqa: E402
+from duplicate_finder.application.quarantine import (
+    move_to_quarantine,
+    validate_quarantine_folder,
+    InvalidQuarantine,
 )
 
 failures = []

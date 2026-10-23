@@ -1,7 +1,7 @@
-"""Manual console test of the core, without a graphical interface.
+"""Manual console test of the scan, without a graphical interface.
 
 It does the same as the original script from the user's point of view:
-asks for a folder, scans it and leaves a CSV. It is useful to try the core
+asks for a folder, scans it and leaves a CSV. It is useful to try the scan
 on real folders before building the window.
 
 Usage:
@@ -15,10 +15,10 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from core.scanner import scan, ScanCancelled          # noqa: E402
-from core.report import export_csv                         # noqa: E402
-from core.hashing import format_size                     # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from duplicate_finder.application.scan_duplicates import scan, ScanCancelled  # noqa: E402
+from duplicate_finder.application.report import export_csv  # noqa: E402
+from duplicate_finder.domain.formatting import format_size  # noqa: E402
 
 REPORT_NAME = "duplicados_reporte.csv"
 

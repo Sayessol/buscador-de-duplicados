@@ -8,7 +8,8 @@ import json
 
 import pytest
 
-from core import config, history
+from duplicate_finder.application import history
+from duplicate_finder.infrastructure import settings
 
 
 @pytest.fixture
@@ -162,20 +163,20 @@ def test_config_reads_the_version_1_keys_and_values(data_folder):
     (data_folder / "config.json").write_text(
         json.dumps({"modo": "avanzado", "tema": "oscuro"}), encoding="utf-8")
 
-    assert config.get_mode() == "advanced"
-    assert config.get_theme() == "dark"
+    assert settings.get_mode() == "advanced"
+    assert settings.get_theme() == "dark"
 
 
 @pytest.mark.parametrize("old, new", [("sencillo", "simple"), ("avanzado", "advanced")])
 def test_config_converts_every_mode(data_folder, old, new):
     (data_folder / "config.json").write_text(json.dumps({"modo": old}), encoding="utf-8")
-    assert config.get_mode() == new
+    assert settings.get_mode() == new
 
 
 @pytest.mark.parametrize("old, new", [("auto", "auto"), ("claro", "light"), ("oscuro", "dark")])
 def test_config_converts_every_theme(data_folder, old, new):
     (data_folder / "config.json").write_text(json.dumps({"tema": old}), encoding="utf-8")
-    assert config.get_theme() == new
+    assert settings.get_theme() == new
 
 
 def test_config_keeps_a_backup_before_the_first_rewrite(data_folder):
@@ -183,7 +184,7 @@ def test_config_keeps_a_backup_before_the_first_rewrite(data_folder):
     original = json.dumps({"modo": "avanzado", "tema": "claro"})
     config_file.write_text(original, encoding="utf-8")
 
-    config.set_theme("dark")
+    settings.set_theme("dark")
 
     backup = data_folder / "config.json.bak-1.0"
     assert backup.read_text(encoding="utf-8") == original          # untouched copy
@@ -194,12 +195,12 @@ def test_config_keeps_a_backup_before_the_first_rewrite(data_folder):
 def test_config_does_not_overwrite_an_existing_backup(data_folder):
     config_file = data_folder / "config.json"
     config_file.write_text(json.dumps({"modo": "avanzado"}), encoding="utf-8")
-    config.set_theme("dark")                                       # first rewrite: backup
+    settings.set_theme("dark")                                       # first rewrite: backup
     backup = data_folder / "config.json.bak-1.0"
     first = backup.read_bytes()
 
     config_file.write_text(json.dumps({"modo": "sencillo"}), encoding="utf-8")
-    config.set_theme("light")                                      # old keys again
+    settings.set_theme("light")                                      # old keys again
 
     assert backup.read_bytes() == first
 
@@ -208,22 +209,22 @@ def test_config_in_the_current_format_gets_no_backup(data_folder):
     (data_folder / "config.json").write_text(
         json.dumps({"mode": "advanced", "theme": "dark"}), encoding="utf-8")
 
-    config.set_theme("light")
+    settings.set_theme("light")
 
     assert not (data_folder / "config.json.bak-1.0").exists()
-    assert config.get_mode() == "advanced" and config.get_theme() == "light"
+    assert settings.get_mode() == "advanced" and settings.get_theme() == "light"
 
 
 def test_config_ignores_values_it_does_not_know_even_with_old_keys(data_folder):
     (data_folder / "config.json").write_text(
         json.dumps({"modo": "turbo", "tema": "azul"}), encoding="utf-8")
 
-    assert config.get_mode() == config.DEFAULT_MODE
-    assert config.get_theme() == config.DEFAULT_THEME
+    assert settings.get_mode() == settings.DEFAULT_MODE
+    assert settings.get_theme() == settings.DEFAULT_THEME
 
 
 def test_config_keeps_the_new_key_when_both_are_present(data_folder):
     (data_folder / "config.json").write_text(
         json.dumps({"modo": "avanzado", "mode": "simple"}), encoding="utf-8")
 
-    assert config.get_mode() == "simple"
+    assert settings.get_mode() == "simple"

@@ -1,4 +1,4 @@
-"""Tests of the operation history and of "undo" (core/history.py).
+"""Tests of the operation history and of "undo" (application/history.py).
 
   * record and list (most recent first),
   * undo a MOVE -> the files go back to their place,
@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 failures = []
 
 
@@ -33,8 +33,9 @@ def main():
         os.environ["APPDATA"] = str(tmp / "appdata")
 
         # import AFTER setting APPDATA
-        from core import history
-        from core.file_moves import execute, Transfer, MOVE, COPY
+        from duplicate_finder.application import history
+        from duplicate_finder.application.file_transfers import execute
+        from duplicate_finder.domain.transfers import Transfer, MOVE, COPY
 
         # --- set up a case: move 2 files to a destination ----------
         source = tmp / "source" / "sub"

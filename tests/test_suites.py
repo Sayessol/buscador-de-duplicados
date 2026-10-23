@@ -2,13 +2,13 @@
 
     pytest                          # everything
     pytest -m "not gui"             # logic only (fast, no windows)
-    pytest --cov                    # coverage of core/ (see pyproject.toml)
+    pytest --cov                    # coverage of the package (see pyproject.toml)
 
 The scripts still work on their own (`python tests/check_filters.py`) and
 with `python tests/run_all.py`; this only runs them from pytest.
 
 · Logic suites -> imported and their main() is called INSIDE the process,
-  so pytest-cov can measure which lines of core/ run.
+  so pytest-cov can measure which lines of the package run.
 · Window suites (smoke_*) -> a separate process each: Tkinter does not
   cope well with creating and destroying several main windows in the same process.
 """

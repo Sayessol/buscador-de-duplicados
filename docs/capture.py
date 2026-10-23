@@ -39,14 +39,16 @@ shutil.rmtree(tmp, ignore_errors=True)       # only this script's sample folder
 tmp.mkdir()
 os.environ["APPDATA"] = str(tmp / "appdata")
 sys.path.insert(0, str(APP))
+sys.path.insert(0, str(APP / "src"))
 
 from PIL import Image, ImageDraw, ImageGrab            # noqa: E402
-from ui import styles                            # noqa: E402
-from ui.main_window import MainWindow             # noqa: E402
-from ui.image_viewer import ImageViewer                 # noqa: E402
-from ui.history_window import HistoryWindow          # noqa: E402
-from ui.non_image_kinds_dialog import NonImageKindsWindow        # noqa: E402
-from core import history, i18n                        # noqa: E402
+from duplicate_finder.presentation import styles  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.presentation.image_viewer import ImageViewer  # noqa: E402
+from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
+from duplicate_finder.presentation.non_image_kinds_dialog import NonImageKindsWindow  # noqa: E402
+from duplicate_finder import i18n  # noqa: E402
+from duplicate_finder.application import history  # noqa: E402
 
 i18n.set_language(LANGUAGE)
 
@@ -214,7 +216,7 @@ def p_gather_shot():
 
 # --- Dialogs -----------------------------------------------
 def p_kinds():
-    from core.gather import non_image_kinds, list_all
+    from duplicate_finder.application.gather import non_image_kinds, list_all
     _img, others = list_all(str(gather_base))
     dlg = NonImageKindsWindow(app, non_image_kinds(others))
     dlg.geometry("620x420+200+140")

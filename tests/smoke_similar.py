@@ -12,15 +12,15 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from tests.check_perceptual import build            # noqa: E402
-from ui import styles, similar_photos_tab             # noqa: E402
-from ui.main_window import MainWindow                 # noqa: E402
-from core.quarantine import move_to_quarantine              # noqa: E402
-from core.selection import KEEP                        # noqa: E402
+from duplicate_finder.presentation import styles, similar_photos_tab  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.application.quarantine import move_to_quarantine  # noqa: E402
+from duplicate_finder.domain.selection import KEEP  # noqa: E402
 
 R = {}
 

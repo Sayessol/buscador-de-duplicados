@@ -27,13 +27,14 @@ BASE_DEMO.mkdir(parents=True, exist_ok=True)
 tmp = Path(tempfile.mkdtemp(prefix="", dir=BASE_DEMO))
 os.environ["APPDATA"] = str(tmp / "appdata")        # does not touch your real configuration
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
 from PIL import Image, ImageChops, ImageDraw, ImageGrab     # noqa: E402
 
-from core import history                                  # noqa: E402
-from ui import styles                                       # noqa: E402
-from ui.history_window import HistoryWindow              # noqa: E402
-from ui.main_window import MainWindow                 # noqa: E402
+from duplicate_finder.application import history  # noqa: E402
+from duplicate_finder.presentation import styles  # noqa: E402
+from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
 
 
 def photo(seed, size=(240, 160)):
