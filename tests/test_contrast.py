@@ -14,7 +14,7 @@ import pytest
 
 from ui import styles
 
-THEMES = {"claro": 0, "oscuro": 1}
+THEMES = {"light": 0, "dark": 1}
 AA_TEXT = 4.5           # WCAG AA, normal text
 WHITE = "#ffffff"
 

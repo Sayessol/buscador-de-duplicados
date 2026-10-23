@@ -15,7 +15,7 @@ Solo hace falta si cambias algo de la app o de los textos. Desde la raíz del re
 ```bash
 pip install -r requirements.txt -r requirements-docs.txt
 python docs/capture.py          # rehace las capturas oscuras (docs/img/)
-python docs/capture.py claro    # y las del tema claro
+python docs/capture.py light    # y las del tema claro
 python docs/record_gif.py        # el GIF del README
 python docs/gen_manual.py
 python docs/gen_process.py

@@ -60,17 +60,17 @@ class ResultsTable(ctk.CTkFrame):
         self._configure_ttk_style()
 
         self.tree = ttk.Treeview(
-            self, columns=("decision", "tamano", "info"),
-            selectmode="browse", style="Duplicados.Treeview")
+            self, columns=("decision", "size", "info"),
+            selectmode="browse", style="Duplicates.Treeview")
         self.tree.heading("#0", text="Grupo / Archivo", anchor="w")
         self.tree.heading("decision", text="Decisión", anchor="w")
-        self.tree.heading("tamano", text="Tamaño", anchor="e")
+        self.tree.heading("size", text="Tamaño", anchor="e")
         self.tree.heading("info", text="", anchor="w")
 
         self.tree.column("#0", width=520, minwidth=260, stretch=True, anchor="w")
         self.tree.column("decision", width=140, minwidth=110, stretch=False,
                          anchor="w")
-        self.tree.column("tamano", width=100, minwidth=80, stretch=False,
+        self.tree.column("size", width=100, minwidth=80, stretch=False,
                          anchor="e")
         self.tree.column("info", width=150, minwidth=100, stretch=False,
                          anchor="w")
@@ -99,32 +99,32 @@ class ResultsTable(ctk.CTkFrame):
         except tk.TclError:
             pass
         style.configure(
-            "Duplicados.Treeview",
+            "Duplicates.Treeview",
             background=c(styles.COLOR_TABLE_BACKGROUND),
             fieldbackground=c(styles.COLOR_TABLE_BACKGROUND),
             foreground=c(styles.COLOR_TEXT),
             rowheight=_ROW_HEIGHT, font=styles.table_font(), borderwidth=0)
         style.configure(
-            "Duplicados.Treeview.Heading",
+            "Duplicates.Treeview.Heading",
             background=c(styles.COLOR_HEADER), foreground=c(styles.COLOR_TEXT),
             font=styles.table_heading_font(), relief="flat")
-        style.map("Duplicados.Treeview.Heading",
+        style.map("Duplicates.Treeview.Heading",
                    background=[("active", c(styles.COLOR_HEADER))])
-        style.map("Duplicados.Treeview",
+        style.map("Duplicates.Treeview",
                    background=[("selected", c(styles.COLOR_SELECTION))],
                    foreground=[("selected", "#ffffff")])
 
     def _configure_tags(self):
         c = styles.col
-        self.tree.tag_configure("grupo", background=c(styles.COLOR_TABLE_BACKGROUND),
+        self.tree.tag_configure("group", background=c(styles.COLOR_TABLE_BACKGROUND),
                                 foreground=c(styles.COLOR_TEXT),
                                 font=styles.table_heading_font())
-        self.tree.tag_configure("grupo_pendiente",
+        self.tree.tag_configure("group_pending",
                                 background=c(styles.COLOR_PENDING_GROUP),
                                 foreground=c(styles.COLOR_TEXT),
                                 font=styles.table_heading_font())
-        self.tree.tag_configure("conservar", foreground=c(styles.COLOR_OK))
-        self.tree.tag_configure("mover", foreground=c(styles.COLOR_WARNING))
+        self.tree.tag_configure("keep", foreground=c(styles.COLOR_OK))
+        self.tree.tag_configure("move", foreground=c(styles.COLOR_WARNING))
 
     def _set_appearance_mode(self, mode_string):
         super()._set_appearance_mode(mode_string)
@@ -161,14 +161,14 @@ class ResultsTable(ctk.CTkFrame):
                 values=("", format_size(group.size),
                         f"libera {format_size(group.reclaimable_space)}"),
                 open=True)
-            self._meta[group_id] = ("grupo", gi)
+            self._meta[group_id] = ("group", gi)
             self._group_iid[gi] = group_id
 
             for file in group.files:
                 iid = self.tree.insert(
                     group_id, "end", text="  " + file.path,
                     values=("", format_size(file.size), ""))
-                self._meta[iid] = ("archivo", gi, file.path)
+                self._meta[iid] = ("file", gi, file.path)
                 self._file_iids[(gi, file.path)] = iid
                 pending_thumb.append((iid, file.path))
 
@@ -222,7 +222,7 @@ class ResultsTable(ctk.CTkFrame):
             return
         state = self.selection.group_state(gi)
         group_id = self._group_iid[gi]
-        tag_group = "grupo" if state == GROUP_OK else "grupo_pendiente"
+        tag_group = "group" if state == GROUP_OK else "group_pending"
         mark = "OK" if state == GROUP_OK else "!"
         vals = list(self.tree.item(group_id, "values"))
         vals[0] = f"{mark}  {_STATE_LABEL[state]}"
@@ -233,9 +233,9 @@ class ResultsTable(ctk.CTkFrame):
             decision = self.selection.decision(gi, file.path)
             vals = list(self.tree.item(iid, "values"))
             if decision == KEEP:
-                vals[0], tag = "✔ conservar", "conservar"
+                vals[0], tag = "✔ conservar", "keep"
             else:
-                vals[0], tag = "→ mover", "mover"
+                vals[0], tag = "→ mover", "move"
             self.tree.item(iid, values=vals, tags=(tag,))
 
     def refresh_all(self):
@@ -266,7 +266,7 @@ class ResultsTable(ctk.CTkFrame):
         if not iid:
             return None
         meta = self._meta.get(iid)
-        if not meta or meta[0] != "archivo":
+        if not meta or meta[0] != "file":
             return None
         return meta[1], meta[2]
 
@@ -305,7 +305,7 @@ class ResultsTable(ctk.CTkFrame):
             self.on_selection(None)
             return
         meta = self._meta.get(sel[0])
-        self.on_selection(meta[2] if meta and meta[0] == "archivo" else None)
+        self.on_selection(meta[2] if meta and meta[0] == "file" else None)
 
     def expand_all(self, open=True):
         for iid in self._group_iid.values():

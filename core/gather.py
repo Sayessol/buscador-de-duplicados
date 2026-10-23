@@ -26,9 +26,9 @@ from .file_moves import (
 # can preview: it includes raw, heic, etc.).
 IMAGE_EXT = {e.lower() for e in CATEGORY_EXTENSIONS["Imágenes"]}
 
-LEAVE = "dejar"
+LEAVE = "leave"
 # (for non-images: LEAVE | MOVE | GROUP)
-GROUP = "agrupar"
+GROUP = "group"
 
 
 def _ext(path: str) -> str:
@@ -64,8 +64,8 @@ def non_image_kinds(others: list[str]) -> dict[str, list[str]]:
 class NonImageRules:
     """What to do with each kind of file that is not an image.
 
-    action_by_ext: ext -> "dejar" | "mover" | "agrupar"
-    folder_by_ext: ext -> folder name (only if "agrupar")
+    action_by_ext: ext -> "leave" | "move" | "group"
+    folder_by_ext: ext -> folder name (only if "group")
     """
 
     action_by_ext: dict[str, str] = field(default_factory=dict)
@@ -104,7 +104,7 @@ def plan_by_files(
         if acc == GROUP:
             # destination/<folder named by the user>/<subpath>
             final_destination = os.path.join(destination, rules.folder(ext), rel)
-        else:  # "mover": same as the images
+        else:  # "move": same as the images
             final_destination = os.path.join(destination, rel)
         plan.append(Transfer(path, final_destination, size(path)))
 
@@ -125,7 +125,7 @@ def gather_by_files(
     os.makedirs(destination, exist_ok=True)
     plan = plan_by_files(images, others, root_folder, destination, rules)
     res = execute(plan, action=action, progress=progress, cancelled=cancelled)
-    res.log_path = write_log(plan, destination, "reunir", root_folder, action)
+    res.log_path = write_log(plan, destination, "gather", root_folder, action)
     return res
 
 
@@ -138,7 +138,7 @@ def gather_whole_folder(
     os.makedirs(destination, exist_ok=True)
     progress = progress or (lambda *_: None)
 
-    name = os.path.basename(os.path.normpath(root_folder)) or "carpeta"
+    name = os.path.basename(os.path.normpath(root_folder)) or "folder"
     final = collision_free_path(os.path.join(destination, name))
     verb = "Copiando" if action == COPY else "Moviendo"
     progress(0, 1, f"{verb} la carpeta «{name}»…")
@@ -155,6 +155,6 @@ def gather_whole_folder(
 
     progress(1, 1, "Listo.")
     res = TransferResult(transfers=[t], action=action)
-    res.log_path = write_log([t], destination, "reunir_carpeta", root_folder,
+    res.log_path = write_log([t], destination, "gather_folder", root_folder,
                                 action)
     return res

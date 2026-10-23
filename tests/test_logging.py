@@ -14,6 +14,7 @@ def appdata(tmp_path, monkeypatch):
     """Isolates the log in a temporary folder and closes it when done."""
     monkeypatch.setenv("APPDATA", str(tmp_path))
     monkeypatch.delenv("BUSCADOR_DEBUG", raising=False)
+    monkeypatch.delenv("DUPLICATE_FINDER_DEBUG", raising=False)
     app_logging.stop()
     yield tmp_path
     app_logging.stop()
@@ -27,7 +28,7 @@ def _read(path):
 
 def test_creates_the_file_and_logs_the_startup(appdata):
     path = app_logging.start()
-    assert path == appdata / "BuscadorDuplicados" / "registro" / "buscador.log"
+    assert path == appdata / "BuscadorDuplicados" / "logs" / "app.log"
     assert app_logging.file_path() == path
     text = _read(path)
     assert "Arranca Buscador de duplicados" in text and app_logging.__version__ in text
@@ -51,12 +52,14 @@ def test_logs_exceptions_with_their_traceback(appdata):
     assert "ZeroDivisionError" in text and "Traceback" in text
 
 
-def test_detail_is_only_logged_with_buscador_debug(appdata, monkeypatch):
+@pytest.mark.parametrize("variable", ["DUPLICATE_FINDER_DEBUG", "BUSCADOR_DEBUG"])
+def test_detail_is_only_logged_with_the_debug_variable(appdata, monkeypatch, variable):
+    """The old BUSCADOR_DEBUG name still works next to the current one."""
     app_logging.start()
     app_logging.log.debug("detalle-oculto")
     assert "detalle-oculto" not in _read(app_logging.file_path())
     app_logging.stop()
-    monkeypatch.setenv("BUSCADOR_DEBUG", "1")
+    monkeypatch.setenv(variable, "1")
     app_logging.start()
     app_logging.log.debug("detalle-visible")
     assert "detalle-visible" in _read(app_logging.file_path())

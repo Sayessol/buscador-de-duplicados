@@ -19,8 +19,8 @@ from datetime import datetime
 
 from .callbacks import CancelledCallback, ProgressCallback
 
-MOVE = "mover"
-COPY = "copiar"
+MOVE = "move"
+COPY = "copy"
 
 
 class InvalidDestination(Exception):

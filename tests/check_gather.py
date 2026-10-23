@@ -83,7 +83,7 @@ def main():
         img, others = list_all(str(root), recursive=True)
 
         rules = NonImageRules(
-            action_by_ext={"pdf": "agrupar", "mp3": "mover", "txt": "dejar"},
+            action_by_ext={"pdf": "group", "mp3": "move", "txt": "leave"},
             folder_by_ext={"pdf": "Documentos"})
         plan = plan_by_files(img, others, str(root), str(destination), rules)
         destinations = _rel([t.destination for t in plan], destination)
@@ -92,11 +92,11 @@ def main():
               "imagen -> destino/<misma subruta>")
         check("Documentos/vacaciones/info.pdf" in destinations
               and "Documentos/2024/gastos.pdf" in destinations,
-              "pdf 'agrupar' -> destino/Documentos/<subruta>")
+              "pdf 'group' -> destino/Documentos/<subruta>")
         check("2024/musica.mp3" in destinations,
-              "mp3 'mover' -> destino/<subruta> (sin agrupar)")
+              "mp3 'move' -> destino/<subruta> (sin agrupar)")
         check(not any("notas.txt" in d for d in destinations),
-              "txt 'dejar' -> no se planea")
+              "txt 'leave' -> no se planea")
 
     # ---- gather_by_files: MOVE ------------------------------
     with tempfile.TemporaryDirectory() as tmp:
@@ -112,7 +112,7 @@ def main():
               and not (root / "vacaciones" / "playa.jpg").exists(),
               "la imagen está en el destino y ya no en el origen")
         check((root / "vacaciones" / "info.pdf").exists(),
-              "el pdf ('dejar' por defecto) sigue en el origen")
+              "el pdf ('leave' por defecto) sigue en el origen")
         check((root / "vacaciones").is_dir() and (root / "2024" / "bodas").is_dir(),
               "las subcarpetas del origen NO se han movido")
         check(res.log_path and Path(res.log_path).exists(),

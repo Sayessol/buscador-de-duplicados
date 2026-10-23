@@ -73,7 +73,7 @@ def main():
     messagebox.showerror = lambda *a, **k: print("   [showerror]", a)
 
     app = MainWindow()
-    app._mode = "avanzado"
+    app._mode = "advanced"
     app._apply_mode()
     app.tabs.set(f"{icons.CAT_IMAGES}  Fotos parecidas")
     app.similar.entry_folder.insert(0, str(root))

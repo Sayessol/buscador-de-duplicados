@@ -1,12 +1,16 @@
 """Persistent history of the operations that move or copy files
 (move to quarantine, gather images), with the ability to undo them.
 
-It is stored in %APPDATA%\\BuscadorDuplicados\\historial.json (or in
+It is stored in %APPDATA%\\BuscadorDuplicados\\history.json (or in
 ~/.buscador_duplicados/ when there is no APPDATA). Standard library only.
 
+Version 1.0 kept it in historial.json with Spanish keys and values. That file is still
+read when history.json does not exist yet (converted on the fly) and is never modified,
+so it stays as a backup.
+
 Undo:
-* "mover"  -> returns each file/folder from the destination to its source.
-* "copiar" -> DELETES the copies in the destination. It is the ONLY place where the
+* "move" -> returns each file/folder from the destination to its source.
+* "copy" -> DELETES the copies in the destination. It is the ONLY place where the
   app deletes anything, and only files it created itself; the caller must
   ask for explicit confirmation first.
 """
@@ -21,6 +25,7 @@ from typing import Any
 
 from .app_logging import log
 from .callbacks import ProgressCallback
+from .file_moves import COPY
 
 _MAX_OPERATIONS = 80
 
@@ -29,24 +34,73 @@ _MAX_OPERATIONS = 80
 _REMOVE_ATTEMPTS = 5
 _REMOVE_DELAY = 0.1     # seconds, growing with each attempt (0.1 + 0.2 + 0.3 + 0.4)
 
-KIND_QUARANTINE = "cuarentena"
-KIND_GATHER = "reunir"
-KIND_GATHER_FOLDER = "reunir_carpeta"
+KIND_QUARANTINE = "quarantine"
+KIND_GATHER = "gather"
+KIND_GATHER_FOLDER = "gather_folder"
+
+# Spanish keys and values written by version 1.0.
+_LEGACY_KEYS = {"fecha": "date", "tipo": "kind", "accion": "action",
+                "origen_raiz": "source_root", "destino": "destination",
+                "descripcion": "description", "movimientos": "moves", "deshecha": "undone"}
+_LEGACY_VALUES = {"cuarentena": KIND_QUARANTINE, "reunir": KIND_GATHER,
+                  "reunir_carpeta": KIND_GATHER_FOLDER, "mover": "move", "copiar": "copy"}
+
+
+def _folder() -> Path:
+    base = os.environ.get("APPDATA")
+    if base:
+        return Path(base) / "BuscadorDuplicados"
+    return Path.home() / ".buscador_duplicados"
 
 
 def _path() -> Path:
-    base = os.environ.get("APPDATA")
-    if base:
-        return Path(base) / "BuscadorDuplicados" / "historial.json"
-    return Path.home() / ".buscador_duplicados" / "historial.json"
+    return _folder() / "history.json"
+
+
+def _legacy_path() -> Path:
+    return _folder() / "historial.json"
+
+
+def _upgrade(op: Any) -> dict[str, Any] | None:
+    """Converts an operation saved by version 1.0 to the current format.
+
+    Operations already in the current format are returned as they are; anything that is
+    not an operation (a malformed entry) gives None and is dropped.
+    """
+    if not isinstance(op, dict):
+        return None
+    if not any(key in op for key in _LEGACY_KEYS):
+        return op
+    new: dict[str, Any] = {
+        _LEGACY_KEYS[key] if key in _LEGACY_KEYS else str(key): value
+        for key, value in op.items()}
+    for field in ("kind", "action"):
+        value = new.get(field)
+        if isinstance(value, str):
+            new[field] = _LEGACY_VALUES.get(value, value)
+    moves = new.get("moves")
+    new["moves"] = [
+        move if "source" in move
+        else {"source": move.get("origen"), "destination": move.get("destino")}
+        for move in (moves if isinstance(moves, list) else []) if isinstance(move, dict)]
+    return new
+
+
+def _read(path: Path) -> list[dict[str, Any]]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [op for op in map(_upgrade, data) if op is not None]
 
 
 def _load() -> list[dict[str, Any]]:
-    try:
-        data = json.loads(_path().read_text(encoding="utf-8"))
-        return data if isinstance(data, list) else []
-    except (OSError, ValueError):
-        return []
+    """The history in the current format; falls back to the version 1.0 file."""
+    if _path().exists():
+        return _read(_path())
+    return _read(_legacy_path())
 
 
 def _save(items: list[dict[str, Any]]) -> None:
@@ -76,14 +130,14 @@ def record(
     now = datetime.now()
     op: dict[str, Any] = {
         "id": now.strftime("%Y%m%d%H%M%S%f"),
-        "fecha": now.isoformat(timespec="seconds"),
-        "tipo": kind,
-        "accion": action,          # "mover" | "copiar"
-        "origen_raiz": root_source,
-        "destino": destination,
-        "descripcion": description,
-        "movimientos": [{"origen": o, "destino": d} for o, d in moves],
-        "deshecha": False,
+        "date": now.isoformat(timespec="seconds"),
+        "kind": kind,
+        "action": action,          # "move" | "copy"
+        "source_root": root_source,
+        "destination": destination,
+        "description": description,
+        "moves": [{"source": s, "destination": d} for s, d in moves],
+        "undone": False,
     }
     items.append(op)
     _save(items)
@@ -99,7 +153,7 @@ def _mark_undone(op_id: str) -> None:
     items = _load()
     for op in items:
         if op["id"] == op_id:
-            op["deshecha"] = True
+            op["undone"] = True
     _save(items)
 
 
@@ -125,31 +179,31 @@ def _remove_with_retries(path: str) -> None:
 def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]:
     """Reverts the operation `op_id`.
 
-    Returns a dict: {"ok": n_reverted, "fallos": [(path, message), ...],
+    Returns a dict: {"reverted": n_reverted, "failures": [(path, message), ...],
     "op": operation}. Marks the operation as undone if there were no failures.
     """
     progress = progress or (lambda *_: None)
     op = next((o for o in _load() if o["id"] == op_id), None)
     if op is None:
-        return {"ok": 0, "fallos": [("", "operación no encontrada")], "op": None}
-    if op.get("deshecha"):
-        return {"ok": 0, "fallos": [("", "esta operación ya se deshizo")], "op": op}
+        return {"reverted": 0, "failures": [("", "operación no encontrada")], "op": None}
+    if op.get("undone"):
+        return {"reverted": 0, "failures": [("", "esta operación ya se deshizo")], "op": op}
 
-    op_moves = op["movimientos"]        # each one: {"origen": ..., "destino": ...}
+    op_moves = op["moves"]        # each one: {"source": ..., "destination": ...}
     total = len(op_moves)
     ok = 0
     failures: list[tuple[str, str]] = []
 
     for i, m in enumerate(op_moves, start=1):
-        source, destination = m["origen"], m["destino"]
+        source, destination = m["source"], m["destination"]
         progress(i, total, os.path.basename(destination) or destination)
         try:
-            if op["accion"] == "copiar":
+            if op["action"] == COPY:
                 # Undoing a copy = deleting what the app copied into the
                 # destination. The original is never touched.
                 _remove_with_retries(destination)
                 ok += 1
-            else:  # "mover" -> take the file back to its source
+            else:  # "move" -> take the file back to its source
                 if not os.path.exists(destination):
                     raise FileNotFoundError("ya no está en el destino")
                 if os.path.exists(source):
@@ -166,4 +220,4 @@ def undo(op_id: str, progress: ProgressCallback | None = None) -> dict[str, Any]
     # because their destination no longer exists).
     if not failures:
         _mark_undone(op_id)
-    return {"ok": ok, "fallos": failures, "op": op}
+    return {"reverted": ok, "failures": failures, "op": op}

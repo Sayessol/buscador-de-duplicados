@@ -19,8 +19,8 @@ from typing import Protocol
 
 from .scanner import DuplicateFile
 
-KEEP = "conservar"
-MOVE = "mover"
+KEEP = "keep"
+MOVE = "move"
 
 # Names that "smell" like a copy and not like the original.
 _LOOKS_LIKE_COPY = re.compile(
@@ -29,7 +29,7 @@ _LOOKS_LIKE_COPY = re.compile(
 
 # Possible states of a group with respect to the "single copy" rule.
 GROUP_OK = "ok"                 # exactly one copy on KEEP
-GROUP_NOTHING_KEPT = "sin_conservar"   # no copy on KEEP
+GROUP_NOTHING_KEPT = "nothing_kept"   # no copy on KEEP
 GROUP_MULTIPLE = "multiple"     # two or more copies on KEEP (undecided)
 
 

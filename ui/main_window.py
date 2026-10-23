@@ -42,7 +42,7 @@ class MainWindow(ctk.CTk):
         self.minsize(920, 640)
         self._set_window_icon()
 
-        self._mode = config.get_mode()  # "sencillo" | "avanzado"
+        self._mode = config.get_mode()  # "simple" | "advanced"
         self._error_warned = False     # the unexpected-error warning appears only once
 
         self.grid_columnconfigure(0, weight=1)
@@ -56,7 +56,7 @@ class MainWindow(ctk.CTk):
         self.tab_similar = self.tabs.add(f"{icons.CAT_IMAGES}  Fotos parecidas")
         self.tab_gather = self.tabs.add(f"{icons.GATHER}  Reunir imágenes")
 
-        self.exact = ExactDuplicatesTab(self.tab_exact, self._mode == "avanzado")
+        self.exact = ExactDuplicatesTab(self.tab_exact, self._mode == "advanced")
         self.similar = SimilarPhotosTab(self.tab_similar)
         self.gather = GatherImagesTab(self.tab_gather)
 
@@ -138,8 +138,8 @@ class MainWindow(ctk.CTk):
         self.theme_selector = ctk.CTkOptionMenu(
             right, values=["Automático", "Claro", "Oscuro"], width=118,
             command=self._change_theme)
-        self.theme_selector.set({"auto": "Automático", "claro": "Claro",
-                                "oscuro": "Oscuro"}[config.get_theme()])
+        self.theme_selector.set({"auto": "Automático", "light": "Claro",
+                                "dark": "Oscuro"}[config.get_theme()])
         self.theme_selector.grid(row=0, column=1, pady=(0, 4), sticky="w")
 
         ctk.CTkLabel(right, text="Vista:", font=styles.base_font(11),
@@ -147,7 +147,7 @@ class MainWindow(ctk.CTk):
             row=1, column=0, padx=(0, 6), sticky="e")
         self.mode_selector = ctk.CTkSegmentedButton(
             right, values=["Sencilla", "Avanzada"], command=self._change_mode)
-        self.mode_selector.set("Sencilla" if self._mode == "sencillo"
+        self.mode_selector.set("Sencilla" if self._mode == "simple"
                                else "Avanzada")
         self.mode_selector.grid(row=1, column=1, sticky="w")
 
@@ -155,23 +155,23 @@ class MainWindow(ctk.CTk):
         HistoryWindow(self)
 
     def _change_theme(self, label):
-        theme = {"Automático": "auto", "Claro": "claro", "Oscuro": "oscuro"}[label]
+        theme = {"Automático": "auto", "Claro": "light", "Oscuro": "dark"}[label]
         config.set_theme(theme)
         styles.change_theme(theme)     # CustomTkinter repaints; ttk does it in _set_appearance_mode
 
     def _change_mode(self, value):
         """Called by the switch in the header."""
-        self._mode = "sencillo" if value == "Sencilla" else "avanzado"
+        self._mode = "simple" if value == "Sencilla" else "advanced"
         config.set_mode(self._mode)          # remembered for next time
         self._apply_mode()
-        if self._mode == "sencillo":
+        if self._mode == "simple":
             self.exact.on_switch_to_simple()
 
     def _apply_mode(self):
         """Shows or hides the "advanced" controls. It does not delete widgets:
         it only removes/puts them back in the grid with grid_remove()/grid(), so the
         state is kept when toggling."""
-        advanced = self._mode == "avanzado"
+        advanced = self._mode == "advanced"
 
         # "Exact duplicates" tab: in Simple mode the options panel,
         # the preferred folder, "View kinds" and "Export CSV" are hidden.
