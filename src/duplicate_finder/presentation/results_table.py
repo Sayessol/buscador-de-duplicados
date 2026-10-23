@@ -12,6 +12,7 @@ The table decides nothing by itself: it reads and writes on a
 `DuplicateSelection` handed to it by the main window.
 """
 
+import logging
 import queue
 import threading
 import tkinter as tk
@@ -21,7 +22,6 @@ import customtkinter as ctk
 from PIL import ImageTk
 
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.infrastructure.app_logging import log
 from duplicate_finder.domain.selection import (
     DuplicateSelection,
     KEEP,
@@ -32,6 +32,8 @@ from duplicate_finder.domain.selection import (
 from . import styles
 from .thumbnails import thumbnail_or_placeholder
 from duplicate_finder.i18n import tr
+
+log = logging.getLogger(__name__)
 
 # Catalog key of the text each state of a group shows.
 _STATE_LABEL = {

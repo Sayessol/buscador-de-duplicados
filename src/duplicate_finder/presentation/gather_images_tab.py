@@ -4,6 +4,7 @@ It is a component with its OWN state (the list of images, the queues, the thread
 the main window only creates it and notifies it of the Simple / Advanced mode.
 """
 
+import logging
 import os
 import queue
 import threading
@@ -12,10 +13,11 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
-from duplicate_finder.application import gather, history
-from duplicate_finder.infrastructure.app_logging import log
+from duplicate_finder.application.gather import non_image_kinds
+from duplicate_finder.application.services import Services
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_GATHER_FOLDER
 from duplicate_finder.application.file_transfers import InvalidDestination, validate_destination
-from duplicate_finder.domain.transfers import MOVE, COPY
+from duplicate_finder.domain.transfers import COPY, LEAVE, MOVE, NonImageRules
 from . import styles
 from . import icons
 from .image_viewer import open_viewer
@@ -26,15 +28,18 @@ from .thumbnails import (
 from .non_image_kinds_dialog import NonImageKindsWindow
 from duplicate_finder.i18n import tr
 
+log = logging.getLogger(__name__)
+
 # Keys of the options of the selectors (the labels the user sees come from the catalog).
 SCOPE_ALL, SCOPE_FIRST = "all", "first"
 STRATEGY_FILES, STRATEGY_FOLDER = "files", "folder"
 
 
 class GatherImagesTab(ctk.CTkFrame):
-    def __init__(self, container):
+    def __init__(self, container, services: Services):
         """`container` is the CTkTabview tab where this component is placed."""
         super().__init__(container, fg_color="transparent")
+        self._services = services
         container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
@@ -225,7 +230,7 @@ class GatherImagesTab(ctk.CTkFrame):
         self._folder = folder
         clear_cache()
         try:
-            images, others = gather.list_all(folder, recursive=recursive)
+            images, others = self._services.gather.list_all(folder, recursive=recursive)
         except OSError as e:
             messagebox.showerror(tr("gather.read_error_title"), str(e))
             return
@@ -374,9 +379,9 @@ class GatherImagesTab(ctk.CTkFrame):
                    destination=destination)):
                 return
             self._launch(
-                lambda p, c: gather.gather_whole_folder(
+                lambda p, c: self._services.gather.gather_whole_folder(
                     source, destination, action=action, progress=p),
-                action, destination, history.KIND_GATHER_FOLDER,
+                action, destination, KIND_GATHER_FOLDER,
                 tr("gather.description_folder", name=name))
             return
 
@@ -386,11 +391,11 @@ class GatherImagesTab(ctk.CTkFrame):
         if not images:
             return
         others = self._others
-        rules = gather.NonImageRules()               # default: leave all non-images
+        rules = NonImageRules()               # default: leave all non-images
         if others:
             # MODAL dialog: wait_window() blocks here until it is closed;
             # afterwards we read dlg.rules (or None if the user cancelled).
-            dlg = NonImageKindsWindow(self.winfo_toplevel(), gather.non_image_kinds(others))
+            dlg = NonImageKindsWindow(self.winfo_toplevel(), non_image_kinds(others))
             self.wait_window(dlg)
             if dlg.rules is None:
                 return
@@ -398,7 +403,7 @@ class GatherImagesTab(ctk.CTkFrame):
 
         n_others = sum(1 for r in others
                       if rules.action(os.path.splitext(r)[1].lower().lstrip("."))
-                      != gather.LEAVE)
+                      != LEAVE)
         if not messagebox.askyesno(
             tr("common.confirm"),
             tr("gather.confirm_files", upper=verb.upper(), count=len(images))
@@ -407,10 +412,10 @@ class GatherImagesTab(ctk.CTkFrame):
             return
 
         self._launch(
-            lambda p, c: gather.gather_by_files(
+            lambda p, c: self._services.gather.gather_by_files(
                 images, others, source, destination, action=action,
                 rules=rules, progress=p, cancelled=c),
-            action, destination, history.KIND_GATHER,
+            action, destination, KIND_GATHER,
             tr("gather.description_files", count=len(images)))
 
     def _launch(self, fn, action, destination, kind, description):
@@ -463,7 +468,7 @@ class GatherImagesTab(ctk.CTkFrame):
 
         done = res.done
         if done:
-            history.record(
+            self._services.history.record(
                 kind, action, source, destination,
                 [(t.source, t.destination) for t in done], description)
 

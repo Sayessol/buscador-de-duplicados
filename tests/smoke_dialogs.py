@@ -24,10 +24,14 @@ os.environ["APPDATA"] = str(TMP / "appdata")
 
 from PIL import Image                                   # noqa: E402
 
-from duplicate_finder.application import history  # noqa: E402
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_QUARANTINE  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+history = SERVICES.history
 from duplicate_finder.domain.transfers import MOVE  # noqa: E402
 from duplicate_finder.domain.transfers import GROUP, LEAVE  # noqa: E402
-from duplicate_finder.application.scan_duplicates import scan  # noqa: E402
+scan = SERVICES.scan_duplicates
 from duplicate_finder.presentation import icons, styles, thumbnails  # noqa: E402
 from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
 from duplicate_finder.presentation.image_viewer import ImageViewer, open_viewer  # noqa: E402
@@ -63,7 +67,7 @@ def stub_dialogs():
 def main():
     styles.apply_theme()
     stub_dialogs()
-    app = MainWindow()
+    app = MainWindow(SERVICES)
     app.update()
 
     # ------------------------------------------------------------ image viewer
@@ -117,7 +121,7 @@ def main():
 
     # ------------------------------------------------------------------ history
     print("History")
-    empty = HistoryWindow(app)
+    empty = HistoryWindow(app, history)
     app.update()
     check(len(empty.items.winfo_children()) == 1, "no operations: the \"nothing yet\" notice")
     empty.destroy()
@@ -132,11 +136,11 @@ def main():
     copied_source = source / "copiado.txt"
     copied_source.write_text("original")
     (destination / "copiado.txt").write_text("original")
-    history.record(history.KIND_QUARANTINE, "move", str(source), str(destination),
+    history.record(KIND_QUARANTINE, "move", str(source), str(destination),
                         [(str(moved), str(destination / "movido.txt"))], "1 duplicado")
-    history.record(history.KIND_GATHER, "copy", str(source), str(destination),
+    history.record(KIND_GATHER, "copy", str(source), str(destination),
                         [(str(copied_source), str(destination / "copiado.txt"))], "1 image")
-    window = HistoryWindow(app)
+    window = HistoryWindow(app, history)
     app.update()
     ops = history.list_all()
     check(len(ops) == 2, "the history lists the two operations")
@@ -151,7 +155,7 @@ def main():
     check(all(o["undone"] for o in history.list_all()), "both are marked as undone")
 
     (destination / "otro.txt").write_text("x")
-    history.record(history.KIND_QUARANTINE, "move", str(source), str(destination),
+    history.record(KIND_QUARANTINE, "move", str(source), str(destination),
                         [(str(source / "otro.txt"), str(destination / "no_esta.txt"))], "falla")
     warnings_before = warnings["warning"]
     window._undo(history.list_all()[0])

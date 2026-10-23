@@ -7,17 +7,19 @@ It opens when a preview is clicked. It lets you see details:
   real size.
 """
 
+import logging
 import os
 import tkinter as tk
 
 import customtkinter as ctk
 from PIL import Image, ImageOps, ImageTk
 
-from duplicate_finder.infrastructure.app_logging import log
 
 from . import styles
 from .thumbnails import IMAGE_EXT
 from duplicate_finder.i18n import tr
+
+log = logging.getLogger(__name__)
 
 # Limit when loading (px, longer side): avoids exhausting memory with huge
 # photos; zoom keeps working within that limit.

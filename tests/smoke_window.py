@@ -18,10 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
-from duplicate_finder.infrastructure import settings  # noqa: E402
 from tests.compare_with_original import build_test_tree  # noqa: E402
 from duplicate_finder.presentation import styles  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
 from duplicate_finder.presentation.extension_breakdown_dialog import ExtensionBreakdownWindow  # noqa: E402
 
 R = {}
@@ -37,7 +39,7 @@ def main():
 
     quarantine = Path(tmp) / "QUARANTINE"
 
-    app = MainWindow()
+    app = MainWindow(SERVICES)
     app._mode = "advanced"         # this test exercises the advanced flow
     app._apply_mode()           # (without persisting to the real config)
     app.exact.entry_folder.insert(0, str(base))
@@ -76,13 +78,11 @@ def main():
         R["quarantine_enabled_at_end"] = str(app.exact.btn_quarantine.cget("state")) == "normal"
         R["to_move"] = sel.count_to_move()
 
-        from duplicate_finder.application.report import export_csv
-        R["csv_groups"] = export_csv(sel.result, str(csv_output))
+        R["csv_groups"] = SERVICES.export_report(sel.result, str(csv_output))
 
         # Really move to quarantine (same logic the button uses)
-        from duplicate_finder.application.quarantine import move_to_quarantine
         to_move_before = sel.count_to_move()
-        res = move_to_quarantine(sel, app.exact._scanned_folder, str(quarantine))
+        res = SERVICES.move_to_quarantine(sel, app.exact._scanned_folder, str(quarantine))
         R["moved"] = len(res.moved)
         R["moved_ok"] = (len(res.moved) == to_move_before and not res.failed)
         R["log_exists"] = bool(res.log_path) and Path(res.log_path).exists()
@@ -112,15 +112,15 @@ def main():
         shown = []
         messagebox.showinfo = lambda *a, **k: shown.append(a)
         app._change_language("English")          # already the current one: nothing happens
-        R["language_same_is_silent"] = settings.get_language() == "auto" and not shown
+        R["language_same_is_silent"] = SERVICES.settings.get_language() == "auto" and not shown
         app._change_language("Español")
-        R["language_saved"] = settings.get_language() == "es" and len(shown) == 1
+        R["language_saved"] = SERVICES.settings.get_language() == "es" and len(shown) == 1
         app.theme_selector.set_key("dark")
         app._change_theme(app.theme_selector.get())
-        R["theme_saved"] = settings.get_theme() == "dark"
+        R["theme_saved"] = SERVICES.settings.get_theme() == "dark"
         app.mode_selector.set_key("simple")
         app._change_mode(app.mode_selector.get())
-        R["mode_saved"] = settings.get_mode() == "simple"
+        R["mode_saved"] = SERVICES.settings.get_mode() == "simple"
 
         top = ExtensionBreakdownWindow(app, sel.result, app.exact._add_extension_to_filter)
         R["extensions"] = len(sel.result.summary_by_extension())

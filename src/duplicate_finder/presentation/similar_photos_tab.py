@@ -4,6 +4,7 @@ It is a component with its OWN state (result, selection, queues, thread, thumbna
 the main window only creates it and notifies it of the Simple / Advanced mode.
 """
 
+import logging
 import os
 import queue
 import threading
@@ -13,16 +14,14 @@ from tkinter import filedialog, messagebox
 import customtkinter as ctk
 
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.infrastructure.app_logging import log
-from duplicate_finder.domain.selection import DuplicateSelection, KEEP as _KEEP
+from duplicate_finder.domain.selection import KEEP as _KEEP
 from duplicate_finder.application.quarantine import (
-    move_to_quarantine,
     validate_quarantine_folder,
     InvalidQuarantine,
 )
-from duplicate_finder.application.find_similar_photos import analyze_folder
+from duplicate_finder.application.services import Services
 from duplicate_finder.domain.similarity import ComparisonCancelled
-from duplicate_finder.application import history
+from duplicate_finder.domain.operations import KIND_QUARANTINE
 from duplicate_finder.domain.transfers import MOVE as MOVE_ACTION
 from . import styles
 from . import icons
@@ -32,6 +31,8 @@ from .thumbnails import (
     load_thumbnail, clear_cache,
 )
 from duplicate_finder.i18n import tr
+
+log = logging.getLogger(__name__)
 
 
 # Windows does not draw windows taller than 32,767 px: past that point the
@@ -64,9 +65,10 @@ def split_into_pages(counts):
 
 
 class SimilarPhotosTab(ctk.CTkFrame):
-    def __init__(self, container):
+    def __init__(self, container, services: Services):
         """`container` is the CTkTabview tab where this component is placed."""
         super().__init__(container, fg_color="transparent")
+        self._services = services
         container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
@@ -301,7 +303,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
 
     def _job(self, folder, threshold):
         try:
-            res = analyze_folder(
+            res = self._services.find_similar_photos(
                 folder, hamming_threshold=threshold,
                 progress=lambda a, t, m: self._queue.put(("progress", (a, t, m))),
                 cancelled=self._cancel.is_set)
@@ -382,7 +384,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         # Preselection: in each group the "best" copy is kept (the
         # first one, which perceptual sorts by resolution). The user
         # changes it with one click if they disagree.
-        self._selection = DuplicateSelection(res)
+        self._selection = self._services.start_selection(res)
         for gi, g in enumerate(res.groups):
             self._selection.keep_only(gi, g.files[0].path)
 
@@ -613,7 +615,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
             return
 
         try:
-            res = move_to_quarantine(self._selection, root, destination)
+            res = self._services.move_to_quarantine(self._selection, root, destination)
         except Exception as e:  # it is logged and shown to the user
             log.exception("Move of similar photos to quarantine failed")
             messagebox.showerror(tr("common.move_error_title"), tr("similar.error_detail",
@@ -621,8 +623,8 @@ class SimilarPhotosTab(ctk.CTkFrame):
             return
 
         if res.moved:
-            history.record(
-                history.KIND_QUARANTINE, MOVE_ACTION, root, destination,
+            self._services.history.record(
+                KIND_QUARANTINE, MOVE_ACTION, root, destination,
                 [(m.source, m.destination) for m in res.moved],
                 tr("similar.history_description", count=len(res.moved)))
 

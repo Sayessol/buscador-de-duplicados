@@ -18,6 +18,9 @@ os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
 from duplicate_finder.presentation import styles  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
 
 R = {}
 
@@ -40,7 +43,7 @@ def main():
     base = Path(tmp) / "root"
     build(base)
 
-    app = MainWindow()
+    app = MainWindow(SERVICES)
     app._mode = "simple"
     app._apply_mode()
     app.geometry("1200x820")

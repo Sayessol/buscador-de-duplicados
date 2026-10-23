@@ -109,7 +109,8 @@ def test_unexpected_ui_error_is_logged_and_warned_once(appdata, monkeypatch):
     warnings = []
     monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: warnings.append(a))
     app_logging.start()
-    window = SimpleNamespace(_error_warned=False)          # the attribute it uses is enough
+    window = SimpleNamespace(                              # the attributes it uses are enough
+        _error_warned=False, services=SimpleNamespace(log_file_path=app_logging.file_path))
     for _ in range(3):                                       # the same failure, three times
         try:
             _ = {}["does not exist"]

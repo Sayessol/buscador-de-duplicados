@@ -102,7 +102,9 @@ def main():
 
     print("\n--- preselect_primary() (Simple view) ---")
     import tempfile
-    from duplicate_finder.application.scan_duplicates import scan
+    from duplicate_finder.bootstrap import build_services
+
+    scan = build_services().scan_duplicates
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         data = b"content identico\n" * 40

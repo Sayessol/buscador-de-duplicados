@@ -16,8 +16,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.application.scan_duplicates import scan, ScanCancelled  # noqa: E402
-from duplicate_finder.application.report import export_csv  # noqa: E402
+from duplicate_finder.application.scan_duplicates import ScanCancelled  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+scan = SERVICES.scan_duplicates
+export_csv = SERVICES.export_report
 from duplicate_finder.domain.formatting import format_size  # noqa: E402
 
 REPORT_NAME = "duplicados_reporte.csv"

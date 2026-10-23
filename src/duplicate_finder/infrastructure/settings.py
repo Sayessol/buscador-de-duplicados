@@ -1,4 +1,4 @@
-"""Minimal persistent configuration of the app.
+"""The settings in a JSON file: the implementation of the `SettingsStore` port.
 
 It is stored in %APPDATA%\\BuscadorDuplicados\\config.json (on Windows) or
 in ~/.buscador_duplicados/config.json when there is no APPDATA. Standard
@@ -7,21 +7,14 @@ the app works the same with the default values.
 """
 
 import json
-import os
+import logging
 import shutil
 from pathlib import Path
 from typing import Any
 
-from duplicate_finder import i18n
-from duplicate_finder.infrastructure.app_logging import log
+from duplicate_finder.infrastructure.data_folder import data_folder
 
-LANGUAGE_AUTO = "auto"    # nothing chosen yet: follow the language of the system
-
-MODES = ("simple", "advanced")
-DEFAULT_MODE = "simple"
-
-THEMES = ("auto", "light", "dark")   # auto = follow the system
-DEFAULT_THEME = "auto"
+log = logging.getLogger(__name__)
 
 # Spanish keys and values written by version 1.0.
 _LEGACY_KEYS = {"modo": "mode", "tema": "theme"}
@@ -29,10 +22,7 @@ _LEGACY_VALUES = {"sencillo": "simple", "avanzado": "advanced", "claro": "light"
 
 
 def _path() -> Path:
-    base = os.environ.get("APPDATA")
-    if base:
-        return Path(base) / "BuscadorDuplicados" / "config.json"
-    return Path.home() / ".buscador_duplicados" / "config.json"
+    return data_folder() / "config.json"
 
 
 def _upgrade(data: dict[str, Any]) -> dict[str, Any]:
@@ -57,61 +47,21 @@ def _backup_legacy(path: Path) -> None:
         pass
 
 
-def load() -> dict[str, Any]:
-    try:
-        data = json.loads(_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    # A JSON that is valid but is not a dictionary (e.g. a list) is also ignored.
-    return _upgrade(data) if isinstance(data, dict) else {}
+class JsonSettingsStore:
+    def load(self) -> dict[str, Any]:
+        try:
+            data = json.loads(_path().read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        # A JSON that is valid but is not a dictionary (e.g. a list) is also ignored.
+        return _upgrade(data) if isinstance(data, dict) else {}
 
-
-def save(data: dict[str, Any]) -> None:
-    path = _path()
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        _backup_legacy(path)
-        path.write_text(json.dumps(data, indent=2, ensure_ascii=False),
-                        encoding="utf-8")
-    except OSError:
-        log.warning("Could not save the configuration to %s", path, exc_info=True)
-
-
-def get_mode() -> str:
-    mode = load().get("mode")
-    return mode if mode in MODES else DEFAULT_MODE
-
-
-def set_mode(mode: str) -> None:
-    if mode not in MODES:
-        return
-    data = load()
-    data["mode"] = mode
-    save(data)
-
-
-def get_theme() -> str:
-    theme = load().get("theme")
-    return theme if theme in THEMES else DEFAULT_THEME
-
-
-def set_theme(theme: str) -> None:
-    if theme not in THEMES:
-        return
-    data = load()
-    data["theme"] = theme
-    save(data)
-
-
-def get_language() -> str:
-    """The saved language ("en" | "es"), or "auto" when none was chosen yet."""
-    language = load().get("language")
-    return language if language in i18n.LANGUAGES else LANGUAGE_AUTO
-
-
-def set_language(language: str) -> None:
-    if language not in i18n.LANGUAGES:
-        return
-    data = load()
-    data["language"] = language
-    save(data)
+    def save(self, data: dict[str, Any]) -> None:
+        path = _path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _backup_legacy(path)
+            path.write_text(json.dumps(data, indent=2, ensure_ascii=False),
+                            encoding="utf-8")
+        except OSError:
+            log.warning("Could not save the configuration to %s", path, exc_info=True)

@@ -31,7 +31,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from PIL import Image, ImageChops, ImageDraw, ImageGrab     # noqa: E402
 
-from duplicate_finder.application import history  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+history = SERVICES.history
 from duplicate_finder.presentation import styles  # noqa: E402
 from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
@@ -74,7 +77,7 @@ messagebox.showwarning = lambda *a, **k: None
 messagebox.showerror = lambda *a, **k: None
 
 styles.apply_theme("dark")
-app = MainWindow()
+app = MainWindow(SERVICES)
 app._mode = "simple"
 app._apply_mode()
 app.geometry("1280x860+12+6")
@@ -136,7 +139,7 @@ def open_history():
     app._mode = "advanced"
     app._apply_mode()
     app.mode_selector.set_key("advanced")
-    app._hv = HistoryWindow(app)
+    app._hv = HistoryWindow(app, history)
     app._hv.geometry("720x520+300+120")
     app.after(1800, undo)
 

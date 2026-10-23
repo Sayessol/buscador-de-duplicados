@@ -11,7 +11,8 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
-from duplicate_finder.application import history
+from duplicate_finder.application.history import OperationHistory
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_GATHER_FOLDER, KIND_QUARANTINE
 from duplicate_finder.domain.transfers import COPY
 from duplicate_finder.domain.formatting import format_size  # noqa: F401  (in case it is needed)
 from . import styles, icons
@@ -19,15 +20,16 @@ from duplicate_finder.i18n import tr
 
 # Catalog key of the label of each kind of operation (translated when the window is drawn).
 _KIND_LABEL = {
-    history.KIND_QUARANTINE: "common.move_quarantine",
-    history.KIND_GATHER: "history_ui.kind_gather",
-    history.KIND_GATHER_FOLDER: "history_ui.kind_gather_folder",
+    KIND_QUARANTINE: "common.move_quarantine",
+    KIND_GATHER: "history_ui.kind_gather",
+    KIND_GATHER_FOLDER: "history_ui.kind_gather_folder",
 }
 
 
 class HistoryWindow(ctk.CTkToplevel):
-    def __init__(self, master):
+    def __init__(self, master, history: OperationHistory):
         super().__init__(master)
+        self._history = history
         self.title(tr("history_ui.title"))
         self.geometry("720x560")
         self.configure(fg_color=styles.COLOR_BACKGROUND)
@@ -62,7 +64,7 @@ class HistoryWindow(ctk.CTkToplevel):
         for child in self.items.winfo_children():
             child.destroy()
 
-        ops = history.list_all()
+        ops = self._history.list_all()
         if not ops:
             ctk.CTkLabel(
                 self.items, text=tr("history_ui.empty"),
@@ -113,7 +115,7 @@ class HistoryWindow(ctk.CTkToplevel):
         if not messagebox.askyesno(tr("history_ui.undo_title"), warning, parent=self):
             return
 
-        res = history.undo(op["id"])
+        res = self._history.undo(op["id"])
         self._paint()
 
         if res["failures"]:

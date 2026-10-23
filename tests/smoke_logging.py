@@ -23,6 +23,9 @@ from duplicate_finder.infrastructure import app_logging  # noqa: E402
 from duplicate_finder.domain.filters import ScanFilter  # noqa: E402
 from duplicate_finder.presentation import styles  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
 
 failures = []
 warnings = []
@@ -40,7 +43,7 @@ def main():
     log_path = app_logging.start()
     check(log_path is not None and log_path.exists(), "the log file is created at start-up")
 
-    app = MainWindow()
+    app = MainWindow(SERVICES)
 
     def ui_failure():
         raise RuntimeError("failure triggered in the interface")

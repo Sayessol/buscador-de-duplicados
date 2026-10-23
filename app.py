@@ -26,7 +26,7 @@ def _ensure_outputs():
 
 _ensure_outputs()
 
-from duplicate_finder.__main__ import main  # noqa: E402
+from duplicate_finder.bootstrap import main  # noqa: E402
 
 if __name__ == "__main__":
     main()

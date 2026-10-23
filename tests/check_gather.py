@@ -16,17 +16,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.application.file_transfers import InvalidDestination
+from duplicate_finder.application.file_transfers import InvalidDestination, validate_destination  # noqa: E402
 from duplicate_finder.domain.transfers import MOVE, COPY  # noqa: E402
-from duplicate_finder.application.file_transfers import validate_destination
-from duplicate_finder.application.gather import (
-    list_all,
-    non_image_kinds,
-    plan_by_files,
-    gather_by_files,
-    gather_whole_folder,
-)
-from duplicate_finder.domain.transfers import NonImageRules
+from duplicate_finder.application.gather import non_image_kinds  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
+
+SERVICES = build_services()
+list_all = SERVICES.gather.list_all
+plan_by_files = SERVICES.gather.plan_by_files
+gather_by_files = SERVICES.gather.gather_by_files
+gather_whole_folder = SERVICES.gather.gather_whole_folder
+from duplicate_finder.domain.transfers import NonImageRules  # noqa: E402
 
 failures = []
 
@@ -147,7 +147,7 @@ def main():
         destination = Path(tmp) / "Gathered"
         # we flatten on purpose with odd rules: we use the normal relpath,
         # but force a collision by moving both to the same place.
-        from duplicate_finder.application.file_transfers import execute
+        execute = SERVICES.gather._transfers.execute
         from duplicate_finder.domain.transfers import Transfer
         plan = [Transfer(str(root / "a" / "photo.jpg"), str(destination / "photo.jpg")),
                 Transfer(str(root / "b" / "photo.jpg"), str(destination / "photo.jpg"))]

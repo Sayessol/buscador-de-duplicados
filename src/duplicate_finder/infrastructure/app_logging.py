@@ -29,6 +29,7 @@ from pathlib import Path
 from types import TracebackType
 
 from duplicate_finder import __version__
+from duplicate_finder.infrastructure.data_folder import data_folder
 
 # Shared logger of the whole app. Unconfigured (in the tests, for example) it writes nothing.
 log = logging.getLogger("duplicate_finder")
@@ -42,10 +43,7 @@ _path_file: Path | None = None               # path of the file, if it could be 
 
 
 def log_folder() -> Path:
-    base = os.environ.get("APPDATA")
-    if base:
-        return Path(base) / "BuscadorDuplicados" / "logs"
-    return Path.home() / ".buscador_duplicados" / "logs"
+    return data_folder() / "logs"
 
 
 def file_path() -> Path | None:

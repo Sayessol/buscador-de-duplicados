@@ -12,6 +12,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - Files and folders the app creates inside the user's folders have fixed English names: `_log_quarantine_<date>.csv`, `_log_gather_<date>.csv`, `_outside_scanned_folder` and the default `duplicates_report.csv`.
 
 - The code lives in the package `src/duplicate_finder`, split into layers: `domain` (data and rules, no input or output), `application` (the use cases), `infrastructure` (disk, history, settings, logs, Pillow) and `presentation` (the interface), plus `i18n`. `python app.py` still starts the app, and so does `python -m duplicate_finder`. Nothing changes for the user.
+- The use cases reach the disk, the file hashes, the images, the history and the settings through ports (interfaces) that the infrastructure implements; `bootstrap.py` is the only place that wires them. The domain no longer reads the disk. Nothing changes for the user.
 - The folders suggested for grouping the files that are not images (`Documents`, `Music`, `Videos`, `Archives`, `Other`) are English, like the other names the app creates inside your folders; you can still type your own.
 
 ### Added

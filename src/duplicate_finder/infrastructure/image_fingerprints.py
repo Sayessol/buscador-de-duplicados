@@ -65,3 +65,10 @@ def compute_fingerprint(path: str) -> ImageFingerprint:
         path=path, size=size, width=width, height=height,
         dhash=bits, color=tuple(rgb),
     )
+
+
+class PillowFingerprintReader:
+    """The `FingerprintReader` port with Pillow."""
+
+    def read(self, path: str) -> ImageFingerprint:
+        return compute_fingerprint(path)

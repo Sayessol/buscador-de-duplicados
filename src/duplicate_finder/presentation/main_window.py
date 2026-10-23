@@ -19,14 +19,14 @@ exact_duplicates_tab.py:_scan_job.
 Interface in English or Spanish (texts in i18n/locales), light/dark theme, icons made of
 Unicode glyphs.
 """
+import logging
 from pathlib import Path
 from tkinter import TclError, messagebox
 
 import customtkinter as ctk
 
 from duplicate_finder import __version__, i18n
-from duplicate_finder.infrastructure import settings, app_logging
-from duplicate_finder.infrastructure.app_logging import log
+from duplicate_finder.application.services import Services
 from . import styles
 from . import icons
 from .history_window import HistoryWindow
@@ -36,9 +36,11 @@ from .widgets import KeyedOptionMenu, KeyedSegmentedButton
 from .similar_photos_tab import SimilarPhotosTab
 from duplicate_finder.i18n import tr
 
+log = logging.getLogger(__name__)
+
 
 class MainWindow(ctk.CTk):
-    def __init__(self):
+    def __init__(self, services: Services):
         super().__init__()
 
         self.title(tr("main.window_title", version=__version__))
@@ -46,7 +48,8 @@ class MainWindow(ctk.CTk):
         self.minsize(920, 640)
         self._set_window_icon()
 
-        self._mode = settings.get_mode()  # "simple" | "advanced"
+        self.services = services
+        self._mode = services.settings.get_mode()  # "simple" | "advanced"
         self._error_warned = False     # the unexpected-error warning appears only once
 
         self.grid_columnconfigure(0, weight=1)
@@ -65,9 +68,9 @@ class MainWindow(ctk.CTk):
         self.tab_similar = self.tabs.add(self._tab_titles["similar"])
         self.tab_gather = self.tabs.add(self._tab_titles["gather"])
 
-        self.exact = ExactDuplicatesTab(self.tab_exact, self._mode == "advanced")
-        self.similar = SimilarPhotosTab(self.tab_similar)
-        self.gather = GatherImagesTab(self.tab_gather)
+        self.exact = ExactDuplicatesTab(self.tab_exact, self._mode == "advanced", services)
+        self.similar = SimilarPhotosTab(self.tab_similar, services)
+        self.gather = GatherImagesTab(self.tab_gather, services)
 
         self._apply_mode()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -83,7 +86,7 @@ class MainWindow(ctk.CTk):
         if self._error_warned:
             return
         self._error_warned = True
-        path = app_logging.file_path()
+        path = self.services.log_file_path()
         where = (tr("main.log_saved", path=path) if path
                  else tr("main.log_failed"))
         messagebox.showerror(
@@ -145,7 +148,7 @@ class MainWindow(ctk.CTk):
             right, {"auto": tr("main.theme_auto"), "light": tr("main.theme_light"),
                     "dark": tr("main.theme_dark")},
             width=118, command=self._change_theme)
-        self.theme_selector.set_key(settings.get_theme())
+        self.theme_selector.set_key(self.services.settings.get_theme())
         self.theme_selector.grid(row=0, column=1, pady=(0, 4), sticky="w")
 
         ctk.CTkLabel(right, text=tr("main.view_label"), font=styles.base_font(11),
@@ -171,11 +174,11 @@ class MainWindow(ctk.CTk):
         self.tabs.set(self._tab_titles[name])
 
     def _open_history(self):
-        HistoryWindow(self)
+        HistoryWindow(self, self.services.history)
 
     def _change_theme(self, label):
         theme = self.theme_selector.key_of(label)
-        settings.set_theme(theme)
+        self.services.settings.set_theme(theme)
         styles.change_theme(theme)     # CustomTkinter repaints; ttk does it in _set_appearance_mode
 
     def _change_language(self, name):
@@ -183,13 +186,13 @@ class MainWindow(ctk.CTk):
         code = next(code for code, label in i18n.LANGUAGE_NAMES.items() if label == name)
         if code == i18n.get_language():
             return
-        settings.set_language(code)
+        self.services.settings.set_language(code)
         messagebox.showinfo(tr("main.language_changed_title"), tr("main.language_changed_msg"))
 
     def _change_mode(self, value):
         """Called by the switch in the header."""
         self._mode = self.mode_selector.get_key()
-        settings.set_mode(self._mode)          # remembered for next time
+        self.services.settings.set_mode(self._mode)          # remembered for next time
         self._apply_mode()
         if self._mode == "simple":
             self.exact.on_switch_to_simple()
@@ -220,10 +223,10 @@ class MainWindow(ctk.CTk):
         self.destroy()
 
 
-def launch():
+def launch(services: Services):
     # The language is chosen before any text is created: the saved one, or the system's.
-    i18n.set_language(i18n.resolve_language(settings.get_language()))
+    i18n.set_language(i18n.resolve_language(services.settings.get_language()))
     # Applies the saved theme (auto/light/dark) BEFORE creating the window.
-    styles.apply_theme(settings.get_theme())
-    app = MainWindow()
+    styles.apply_theme(services.settings.get_theme())
+    app = MainWindow(services)
     app.mainloop()
