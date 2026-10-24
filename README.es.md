@@ -17,7 +17,7 @@ App de escritorio para Windows que **encuentra archivos duplicados y fotos parec
 > La única vez que la app borra algo es al **deshacer una copia**: elimina las copias que ella misma creó, y antes te pide confirmación.
 
 <p align="center">
-  <img src="docs/img/demo.gif" alt="Demo: escanear, mover a cuarentena y deshacer" width="860">
+  <img src="docs/img/es/demo.gif" alt="Demo: escanear, mover a cuarentena y deshacer" width="860">
 </p>
 
 <p align="center">
@@ -50,23 +50,23 @@ Además:
 <summary>Capturas (se adaptan a tu tema de GitHub)</summary>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/02_avanzada.png">
-  <img alt="Modo Avanzada" src="docs/img/02_avanzada_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/es/02_advanced.png">
+  <img alt="Modo Avanzada" src="docs/img/es/02_advanced_light.png">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/04_parecidas.png">
-  <img alt="Fotos parecidas" src="docs/img/04_parecidas_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/es/04_similar.png">
+  <img alt="Fotos parecidas" src="docs/img/es/04_similar_light.png">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/05_reunir.png">
-  <img alt="Reunir imágenes" src="docs/img/05_reunir_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/es/05_gather.png">
+  <img alt="Reunir imágenes" src="docs/img/es/05_gather_light.png">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/07_historial.png">
-  <img alt="Historial y deshacer" src="docs/img/07_historial_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/es/07_history.png">
+  <img alt="Historial y deshacer" src="docs/img/es/07_history_light.png">
 </picture>
 
 </details>
