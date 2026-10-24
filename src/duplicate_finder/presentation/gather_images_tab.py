@@ -15,9 +15,9 @@ import customtkinter as ctk
 
 from duplicate_finder.application.gather import non_image_kinds
 from duplicate_finder.application.services import Services
-from duplicate_finder.domain.operations import KIND_GATHER, KIND_GATHER_FOLDER
 from duplicate_finder.application.file_transfers import InvalidDestination, validate_destination
 from duplicate_finder.domain.transfers import COPY, LEAVE, MOVE, NonImageRules
+from .dialogs import offer_to_open_folder, proceed_despite
 from . import styles
 from . import icons
 from .image_viewer import open_viewer
@@ -363,8 +363,7 @@ class GatherImagesTab(ctk.CTkFrame):
         except InvalidDestination as e:
             messagebox.showerror(tr("gather.invalid_destination_title"), str(e))
             return
-        if warning and not messagebox.askyesno(
-                tr("common.warning"), warning + tr("common.continue_question")):
+        if not proceed_despite(warning):
             return
 
         action = self.seg_action.get_key()
@@ -380,9 +379,9 @@ class GatherImagesTab(ctk.CTkFrame):
                 return
             self._launch(
                 lambda p, c: self._services.gather.gather_whole_folder(
-                    source, destination, action=action, progress=p),
-                action, destination, KIND_GATHER_FOLDER,
-                tr("gather.description_folder", name=name))
+                    source, destination, action=action, progress=p,
+                    description=tr("gather.description_folder", name=name)),
+                action, destination)
             return
 
         # --- By files ---
@@ -414,11 +413,11 @@ class GatherImagesTab(ctk.CTkFrame):
         self._launch(
             lambda p, c: self._services.gather.gather_by_files(
                 images, others, source, destination, action=action,
-                rules=rules, progress=p, cancelled=c),
-            action, destination, KIND_GATHER,
-            tr("gather.description_files", count=len(images)))
+                rules=rules, progress=p, cancelled=c,
+                description=tr("gather.description_files", count=len(images))),
+            action, destination)
 
-    def _launch(self, fn, action, destination, kind, description):
+    def _launch(self, fn, action, destination):
         self._cancel.clear()
         self.progress_area.grid()
         self.progress_bar.set(0)
@@ -432,10 +431,9 @@ class GatherImagesTab(ctk.CTkFrame):
                 res = fn(
                     lambda a, t, m: self._queue.put(("prog", (a, t, m))),
                     self._cancel.is_set)
-                self._queue.put(
-                    ("done", (res, action, destination, kind, description, self._folder)))
+                self._queue.put(("done", (res, action, destination)))
             except Exception as e:  # it is logged and shown to the user
-                log.exception("Operation %s failed (%s)", kind, description)
+                log.exception("Gather (%s) from %s to %s failed", action, self._folder, destination)
                 self._queue.put(("error", e))
 
         self._thread = threading.Thread(target=job, daemon=True)
@@ -461,17 +459,12 @@ class GatherImagesTab(ctk.CTkFrame):
             pass
         self.after(100, self._poll_queue)
 
-    def _finished(self, res, action, destination, kind, description, source):
+    def _finished(self, res, action, destination):
         styles.activate_button(self.btn_search, True)
         styles.activate_button(self.btn_choose, True)
         self.progress_bar.set(1.0)
 
         done = res.done
-        if done:
-            self._services.history.record(
-                kind, action, source, destination,
-                [(t.source, t.destination) for t in done], description)
-
         verb = tr("gather.past_copy" if action == COPY else "gather.past_move")
         self.lbl_state.configure(
             text=tr("gather.done_summary", count=len(done), verb=verb)
@@ -494,12 +487,7 @@ class GatherImagesTab(ctk.CTkFrame):
         detail = tr("gather.result_detail", count=len(done), verb=verb, destination=destination)
         if res.log_path:
             detail += tr("common.log_note", log_path=res.log_path)
-        if messagebox.askyesno(tr("common.done_title"),
-                               detail + tr("gather.open_destination_question")):
-            try:
-                os.startfile(destination)  # noqa: S606
-            except OSError:
-                pass
+        offer_to_open_folder(detail + tr("gather.open_destination_question"), destination)
 
     def _error(self, e):
         styles.action_button(self.btn_gather, True)

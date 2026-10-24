@@ -10,12 +10,17 @@
     python tests/check_gather.py
 """
 
+import os
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+# It does not touch the user's real data: the history these scripts record is temporary.
+os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
+
 from duplicate_finder.application.file_transfers import InvalidDestination, validate_destination  # noqa: E402
 from duplicate_finder.domain.transfers import MOVE, COPY  # noqa: E402
 from duplicate_finder.application.gather import non_image_kinds  # noqa: E402

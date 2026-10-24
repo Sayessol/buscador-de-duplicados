@@ -13,12 +13,17 @@ It tests both the "Exact duplicates" flow and the "Similar photos" one.
     python tests/check_quarantine_folders.py
 """
 
+import os
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+# It does not touch the user's real data: the history these scripts record is temporary.
+os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
+
 from PIL import Image                                          # noqa: E402
 
 from duplicate_finder.bootstrap import build_services  # noqa: E402

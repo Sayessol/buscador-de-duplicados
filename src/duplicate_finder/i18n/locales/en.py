@@ -112,7 +112,6 @@ MESSAGES = {
         "{count} group(s) unresolved (highlighted in the table). Mark exactly "
         "one copy to keep in each. The “Move to quarantine” button is locked."
     ),
-    "exact.history_description": "{count} exact duplicates",
     "exact.ignore_also": "Also ignore:",
     "exact.ignore_empty": "Ignore 0-byte files",
     "exact.invalid_folder_msg": "The path does not exist or is not a folder:\n\n{folder}",
@@ -250,6 +249,8 @@ MESSAGES = {
     "history.gone_from_destination": "it is no longer in the destination",
     "history.op_not_found": "operation not found",
     "history.original_path_taken": "something already exists at the original path",
+    "history.description_exact": "{count} exact duplicates",
+    "history.description_similar": "{count} similar photos",
 
     # history_ui
     "history_ui.confirm_delete_copies": (
@@ -393,7 +394,6 @@ MESSAGES = {
     "similar.folder_placeholder": "Folder with photos.  e.g.  D:\\Photos",
     "similar.group_title": "Group {number}   ·   {count} similar photos   ·   frees {size}",
     "similar.header": "Look for similar photos (not identical)",
-    "similar.history_description": "{count} similar photos",
     "similar.intro": (
         "Finds the same photo saved several times: recompressed, at a lower "
         "resolution or with a colour filter. It does not detect crops or "

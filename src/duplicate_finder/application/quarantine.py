@@ -18,9 +18,11 @@ from datetime import datetime
 
 from duplicate_finder.application.callbacks import CancelledCallback, ProgressCallback
 from duplicate_finder.application.file_transfers import collision_free_path
+from duplicate_finder.application.history import OperationHistory
 from duplicate_finder.application.ports import FileSystem
+from duplicate_finder.domain.operations import KIND_QUARANTINE
 from duplicate_finder.domain.selection import DuplicateSelection
-from duplicate_finder.domain.transfers import Move, QuarantineResult
+from duplicate_finder.domain.transfers import MOVE, Move, QuarantineResult
 from duplicate_finder.i18n import tr
 
 
@@ -79,8 +81,9 @@ def plan_moves(
 
 
 class MoveToQuarantine:
-    def __init__(self, fs: FileSystem) -> None:
+    def __init__(self, fs: FileSystem, history: OperationHistory) -> None:
         self._fs = fs
+        self._history = history
 
     def __call__(
         self,
@@ -89,13 +92,15 @@ class MoveToQuarantine:
         quarantine_folder: str,
         progress: ProgressCallback | None = None,
         cancelled: CancelledCallback | None = None,
+        description_key: str = "history.description_exact",
     ) -> QuarantineResult:
-        """Carries out the move. Returns a QuarantineResult.
+        """Carries out the move and records it in the history. Returns a QuarantineResult.
 
         progress : optional callable(current, total, message).
         cancelled: optional callable() -> bool. If it turns True, moving stops
                    (what was already moved stays moved) and the log is
                    still written.
+        description_key: catalog text for the history entry (it receives `count`).
         """
         if not selection.all_ready():
             raise ValueError(tr("quarantine.unresolved_groups"))
@@ -127,6 +132,11 @@ class MoveToQuarantine:
 
         result = QuarantineResult(moves=plan)
         result.log_path = self._write_log(plan, quarantine_folder, root_folder)
+        if result.moved:
+            self._history.record(
+                KIND_QUARANTINE, MOVE, root_folder, quarantine_folder,
+                [(m.source, m.destination) for m in result.moved],
+                tr(description_key, count=len(result.moved)))
         progress(total, total, tr("common.done"))
         return result
 

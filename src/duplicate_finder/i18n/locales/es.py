@@ -114,7 +114,6 @@ MESSAGES = {
         "sola copia para conservar en cada uno. El botón «Mover a cuarentena» "
         "está bloqueado."
     ),
-    "exact.history_description": "{count} duplicados exactos",
     "exact.ignore_also": "Ignorar además:",
     "exact.ignore_empty": "Ignorar archivos de 0 bytes",
     "exact.invalid_folder_msg": "La ruta no existe o no es una carpeta:\n\n{folder}",
@@ -257,6 +256,8 @@ MESSAGES = {
     "history.gone_from_destination": "ya no está en el destino",
     "history.op_not_found": "operación no encontrada",
     "history.original_path_taken": "ya hay algo en la ruta original",
+    "history.description_exact": "{count} duplicados exactos",
+    "history.description_similar": "{count} fotos parecidas",
 
     # history_ui
     "history_ui.confirm_delete_copies": (
@@ -403,7 +404,6 @@ MESSAGES = {
     "similar.folder_placeholder": "Carpeta con fotos.  Ej.  D:\\Fotos",
     "similar.group_title": "Grupo {number}   ·   {count} fotos parecidas   ·   liberas {size}",
     "similar.header": "Busca fotos parecidas (no idénticas)",
-    "similar.history_description": "{count} fotos parecidas",
     "similar.intro": (
         "Encuentra la misma foto guardada varias veces: recomprimida, en menor "
         "resolución o con un filtro de color. No detecta recortes ni "
