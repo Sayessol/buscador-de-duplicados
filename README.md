@@ -256,6 +256,10 @@ I built it **working with [Claude](https://claude.com/claude-code) (Anthropic) a
 - Similar photos do not detect crops or rotations.
 - Windows only.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up the project, the checks a change has to pass and the layer rules. To report a vulnerability, read [SECURITY.md](SECURITY.md).
+
 ## Suggestions
 
 There is no fixed roadmap: I will keep improving the application as I go, depending on which features I find it lacks in practice. **If you have ideas for future features, I would love to hear them**: open an issue with the "Suggestion" template.
