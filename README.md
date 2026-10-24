@@ -1,229 +1,265 @@
-# Buscador de duplicados
+# Duplicate Finder
 
-[English](README.en.md) · **Español**
+**English** · [Español](README.es.md)
 
-[![Pruebas](https://github.com/Sayessol/buscador-de-duplicados/actions/workflows/tests.yml/badge.svg)](https://github.com/Sayessol/buscador-de-duplicados/actions/workflows/tests.yml)
+[![Tests](https://github.com/Sayessol/buscador-de-duplicados/actions/workflows/tests.yml/badge.svg)](https://github.com/Sayessol/buscador-de-duplicados/actions/workflows/tests.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![Windows](https://img.shields.io/badge/plataforma-Windows-lightgrey)
-![Licencia MIT](https://img.shields.io/badge/licencia-MIT-green)
-![Proyecto de aprendizaje](https://img.shields.io/badge/proyecto-de%20aprendizaje-2ea44f)
-![Hecho con Claude](https://img.shields.io/badge/hecho%20con-Claude%20como%20copiloto-D97757)
+![Windows](https://img.shields.io/badge/platform-Windows-lightgrey)
+![MIT License](https://img.shields.io/badge/license-MIT-green)
+![Learning project](https://img.shields.io/badge/learning-project-2ea44f)
+![Built with Claude](https://img.shields.io/badge/built%20with-Claude%20as%20copilot-D97757)
 
-App de escritorio para Windows que **encuentra archivos duplicados y fotos parecidas**, y te ayuda a ordenarlos sin riesgo.
+A Windows desktop app that **finds duplicate files and similar photos** and helps you tidy them up safely.
 
-> **Regla de oro: la app nunca borra ni modifica tus archivos originales.**
-> Solo lee, y solo *mueve* a una carpeta de cuarentena cuando tú lo confirmas. Todo se puede deshacer.
+> **Golden rule: the app never deletes or modifies your original files.**
+> It only reads, and only *moves* files to a quarantine folder when you confirm. Everything can be undone.
 >
-> La única vez que la app borra algo es al **deshacer una copia**: elimina las copias que ella misma creó, y antes te pide confirmación.
+> The only time the app deletes anything is when you **undo a copy**: it removes the copies it created itself, and asks for confirmation first.
 
 <p align="center">
-  <img src="docs/img/demo.gif" alt="Demo: escanear, mover a cuarentena y deshacer" width="860">
+  <img src="docs/img/demo.gif" alt="Demo: scan, move to quarantine and undo" width="860">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados.exe"><b>⬇ Descargar para Windows (.exe)</b></a>
-  · <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados-portable.zip">versión ZIP</a> si tu antivirus bloquea el <code>.exe</code> · no necesita instalar Python
+  <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados.exe"><b>⬇ Download for Windows (.exe)</b></a>
+  · <a href="https://github.com/Sayessol/buscador-de-duplicados/releases/latest/download/Buscador-de-duplicados-portable.zip">ZIP version</a> if your antivirus blocks the <code>.exe</code> · no Python needed
 </p>
 
-Nació de una necesidad mía y de un script de 150 líneas ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)), y creció hasta ser una aplicación completa con interfaz gráfica, pruebas automáticas, integración continua y un `.exe` de un solo archivo. [Aquí cuento cómo nació](#cómo-nació-este-proyecto).
+It was born from a need of mine and from a 150-line script ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)), and grew into a full application with a GUI, automated tests, continuous integration and a single-file `.exe`. [Here is how it started](#how-this-project-started).
 
-> 📚 **Proyecto de aprendizaje.** Lo hice para profundizar en Python partiendo de un nivel básico, con Claude como copiloto. [Más abajo](#por-qué-existe-este-proyecto) explico qué significa eso.
+> 📚 **Learning project.** I built it to go deeper into Python starting from a basic level, with Claude as a copilot. [Further down](#why-this-project-exists) I explain what that means.
 
-## Qué hace
+## Features
 
-| Pestaña | Para qué sirve |
+| Tab | What it does |
 |---|---|
-| **Duplicados exactos** | Encuentra archivos idénticos byte a byte, aunque tengan nombres distintos. Muestra miniatura y vista previa, y elige sola la copia principal. |
-| **Fotos parecidas** | Agrupa la misma foto guardada varias veces: recomprimida, en menor resolución o con un filtro. Conserva la de mejor calidad. |
-| **Reunir imágenes** | Junta en una carpeta común las fotos repartidas por muchas subcarpetas (mover o copiar, por archivos o carpeta entera). |
+| **Exact duplicates** | Finds files that are identical byte for byte, even with different names. Shows thumbnails and a preview, and picks the main copy for you. |
+| **Similar photos** | Groups the same photo saved several times: recompressed, downscaled or with a filter applied. Keeps the best-quality copy. |
+| **Gather images** | Collects photos scattered across many subfolders into one place (move or copy, file by file or whole folder). |
 
-Además:
+Also:
 
-- **Modo Sencilla / Avanzada.** Arranca en Sencilla (carpeta → escanear → mover) y recuerda tu elección.
-- **Historial y deshacer.** Cada movimiento queda registrado y se puede revertir.
-- **Visor de imagen** con zoom y desplazamiento para comparar detalles.
-- **Tema claro, oscuro o automático** (sigue a Windows), con contraste WCAG AA y botones deshabilitados claramente distintos de los de error.
-- **Filtros** por categoría (imágenes, audio, vídeo, documentos, comprimidos), extensión, nombre, carpeta y tamaño.
-- **Interfaz en español de España.**
+- **Simple / Advanced mode.** Starts in Simple (pick folder → scan → move) and remembers your choice.
+- **History and undo.** Every move is logged and can be reverted.
+- **Image viewer** with zoom and pan to compare details.
+- **Light, dark or automatic theme** (follows Windows), WCAG AA contrast, and disabled buttons that are clearly different from error buttons.
+- **Filters** by category (images, audio, video, documents, archives), extension, name, folder and size.
+- **English and Spanish interface.** It follows the language of Windows, and a selector in the header lets you change it (it applies the next time the app starts).
 
 <details>
-<summary>Capturas (se adaptan a tu tema de GitHub)</summary>
+<summary>Screenshots (they follow your GitHub theme; shown with the Spanish interface)</summary>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/02_avanzada.png">
-  <img alt="Modo Avanzada" src="docs/img/02_avanzada_claro.png">
+  <img alt="Advanced mode" src="docs/img/02_avanzada_claro.png">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/04_parecidas.png">
-  <img alt="Fotos parecidas" src="docs/img/04_parecidas_claro.png">
+  <img alt="Similar photos" src="docs/img/04_parecidas_claro.png">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/05_reunir.png">
-  <img alt="Reunir imágenes" src="docs/img/05_reunir_claro.png">
+  <img alt="Gather images" src="docs/img/05_reunir_claro.png">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/07_historial.png">
-  <img alt="Historial y deshacer" src="docs/img/07_historial_claro.png">
+  <img alt="History and undo" src="docs/img/07_historial_claro.png">
 </picture>
 
 </details>
 
-## Cómo nació este proyecto
+## Download and run
 
-Siempre he guardado copias de seguridad de mis dispositivos antiguos, como teléfonos u ordenadores, en discos duros externos de varios teras. Con el tiempo, muchos archivos acaban duplicados en subcarpetas, y eso termina comiéndose el espacio del disco.
+If you just want to use it, grab one of these files from **[Releases](https://github.com/Sayessol/buscador-de-duplicados/releases)**:
 
-Revisarlo a mano es tedioso, y se vuelve incluso un lío cuando ya no sabes qué carpetas has revisado y cuáles no. Mi idea de partida era poder lanzar órdenes rápidas y sencillas que compararan imágenes y otros tipos de archivos y me dijeran enseguida si había duplicados o no. Descubrí que la forma más rápida de conseguirlo era usar Python.
-
-Empecé con un script sencillo de unas 150 líneas ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)): le introducía la ruta de una carpeta y me decía si había archivos duplicados y cuántos había analizado. Tras usarlo varias veces me di cuenta de que era poco práctico: tener que escribir la ruta cada vez era lento. Así que decidí crearle una interfaz para que fuese más fácil de usar.
-
-Al construir la interfaz vi que podía añadirle funciones que adaptaran mejor la búsqueda a lo que yo quería. Así, lo que empezó siendo un script pasó a ser un programa de escritorio completo, con varias funciones y opciones de filtrado.
-
-| Etapa | Qué había |
+| File | When to use it |
 |---|---|
-| 1. Una necesidad | Copias de seguridad con archivos duplicados que se comen el espacio del disco |
-| 2. Un script | 150 líneas: una ruta de entrada, y me decía si había duplicados y cuántos archivos analizó |
-| 3. Una interfaz | Para no tener que escribir la ruta cada vez |
-| 4. Un programa de escritorio | Varias funciones y opciones de filtrado, hechas a medida de lo que yo quería |
+| `Buscador-de-duplicados.exe` | A single file: double-click and go. The most convenient. |
+| `Buscador-de-duplicados-portable.zip` | Unzip it into a folder with a **short path** (for example `C:\Apps`) and run the `.exe` inside. **Use it if your antivirus blocks or delays the single `.exe`.** |
 
-## Por qué existe este proyecto
+> **Windows and antivirus warnings.** The program is not code-signed (certificates are paid), so SmartScreen may warn you. Also, the single-file `.exe` unpacks itself into a temp folder every time it starts, and some antivirus products (Avast, for instance) hold it for a few minutes the first time. The ZIP version extracts nothing at startup and gives far fewer problems.
 
-Además de resolver esa necesidad, es un **proyecto de aprendizaje**. Lo hice para **profundizar en Python y aprender**, partiendo de un **nivel básico**: quería enfrentarme a un problema real de principio a fin, y no solo a ejercicios sueltos.
-
-Para conseguirlo, el proyecto toca temas que no suelen aparecer en los primeros ejercicios: algoritmos de búsqueda de duplicados (hashing, hash perceptual, BK-tree), hilos y colas para que una ventana no se quede bloqueada, interfaces gráficas, pruebas automáticas, integración continua y empaquetado de un programa para Windows.
-
-**Qué significa para quien lo revise:** no es código de una persona experta, y no lo presento como tal. Es un ejercicio de aprendizaje hecho en serio, con sus límites a la vista (ver [Limitaciones conocidas](#limitaciones-conocidas)). Las mejoras que vaya haciendo quedarán anotadas en el [CHANGELOG](CHANGELOG.md) y forman parte de ese aprendizaje.
-
-## Qué he aprendido
-
-- **Lo que más me costó:** cómo dividir el código para que no quedaran archivos demasiado largos. Se nota en la estructura actual: la lógica (`core/`) separada de la interfaz (`ui/`) y un componente por pestaña.
-- **Lo que más he aprendido:** la versatilidad de Python para ejecutar scripts directamente sobre los archivos: con muy pocas líneas se puede recorrer un disco, comparar contenidos y mover archivos.
-
-## Lo que encontré probándola
-
-Probé la app yo mismo, con mis propios archivos, y estos fueron los problemas que encontré y que cambiaron el programa:
-
-- **El `.exe` no arrancaba.** Al descargar el ejecutable de la release me salió el error «Failed to start embedded python interpreter». Era mi antivirus (Avast), que retiene unos minutos el archivo único la primera vez que se abre. Por eso cada versión incluye también un ZIP con carpeta, que no tiene ese problema.
-- **La galería de «Fotos parecidas» se cortaba.** Con muchas fotos, algunas imágenes aparecían cortadas y a la derecha había un hueco con aspecto de barra de desplazamiento que no existía. Resultó ser un límite de Windows con las ventanas muy altas, y ahora los grupos se reparten en páginas.
-- **«Reunir imágenes» movía carpetas en vez de fotos.** Lo vi probándola y se corrigió; hay una prueba automática que lo comprueba.
-- **Mis móviles no aparecían.** Pregunté si la app podía leer un teléfono conectado por USB. No es posible: Windows no les da una ruta de carpeta normal. Quedó anotado en las [limitaciones](#limitaciones-conocidas), con la solución de copiar antes las fotos al PC.
-- **Las capturas no debían mostrar mi usuario de Windows.** Pedí que las imágenes y el GIF del README usaran una carpeta de ejemplo, y no una ruta con mi nombre.
-
-## Cómo se ha hecho: con Claude como copiloto
-
-Lo construí **trabajando con [Claude](https://claude.com/claude-code) (Anthropic) como copiloto de programación**, y quiero que quede claro:
-
-- **Yo (Sayessol)** decidí qué construir y en qué orden, probé la app a mano, planteé las dudas y los problemas que fui encontrando (por ejemplo, si movía carpetas en vez de fotos) y fui aprobando cada paso.
-- **Claude** escribió el código, las pruebas y la documentación, propuso alternativas y explicó sus decisiones, siempre dentro de las reglas del proyecto (como la de no borrar nunca los originales). La [guía del código](docs/guia-del-codigo.pdf) está escrita precisamente para aprender de ese código.
-- **Por eso no presento este código como escrito solo por mí.** Lo que sí es mío es el objetivo, lo que se decidió construir y el aprendizaje que busco con ello.
-- **Las pruebas son la red de seguridad**: ningún cambio se da por bueno sin las 196 pruebas en verde, y el CI las vuelve a ejecutar en cada *push*.
-- Los commits llevan la línea `Co-Authored-By: Claude` para que la autoría compartida sea visible en el historial.
-
-## Descarga y ejecución
-
-Si solo quieres usarla, baja uno de estos archivos desde **[Releases](https://github.com/Sayessol/buscador-de-duplicados/releases)**:
-
-| Archivo | Cuándo usarlo |
-|---|---|
-| `Buscador-de-duplicados.exe` | Un solo archivo: doble clic y listo. Es lo más cómodo. |
-| `Buscador-de-duplicados-portable.zip` | Descomprímelo en una carpeta con **ruta corta** (por ejemplo `C:\Apps`) y abre el `.exe` de dentro. **Úsalo si tu antivirus bloquea o retrasa el `.exe` único.** |
-
-> **Avisos de Windows y antivirus.** El programa no está firmado digitalmente (el certificado es de pago), así que SmartScreen puede avisar. Además, el `.exe` de un solo archivo se descomprime en una carpeta temporal cada vez que se abre, y algunos antivirus (por ejemplo Avast) lo retienen unos minutos la primera vez. La versión ZIP no extrae nada al arrancar y da muchos menos problemas.
-
-Desde el código (Python 3.12 en Windows):
+From source (Python 3.12 on Windows):
 
 ```bash
 pip install -r requirements.txt
 python app.py
 ```
 
-Para generar tu propia versión:
+Build your own:
 
 ```bash
-python build_exe.py                  # un solo archivo: dist/duplicados.exe
-python build_exe.py --folder --zip   # carpeta + ZIP:    dist/Buscador-de-duplicados.zip
+python build_exe.py                  # single file:    dist/duplicados.exe
+python build_exe.py --folder --zip   # folder + ZIP:   dist/Buscador-de-duplicados.zip
 ```
 
-## Cómo funciona por dentro
+## Architecture
 
-**Duplicados exactos: 3 pasadas**, para leer lo mínimo posible:
+The code lives in the `src/duplicate_finder/` package, split into four layers (a pragmatic take on Clean Architecture) plus a cross-cutting `i18n` package. Dependencies only point inwards:
 
-1. **Tamaño.** Se agrupan los archivos por tamaño en bytes. Si un tamaño es único, no puede tener duplicado y no se lee.
-2. **Hash parcial.** Para los que comparten tamaño, BLAKE2b de los primeros 64 KB.
-3. **Hash completo.** Solo para los que siguen coincidiendo. Si el hash completo coincide, son idénticos.
+```mermaid
+flowchart LR
+    P["presentation<br/>CustomTkinter windows and tabs"] --> A["application<br/>use cases + ports"]
+    P --> D["domain<br/>rules and data, no I/O"]
+    A --> D
+    I["infrastructure<br/>disk, hashing, Pillow, JSON files"] -. implements the ports .-> A
+    I --> D
+    B["bootstrap.py<br/>composition root"] --> P
+    B --> I
+```
 
-**Fotos parecidas** (`core/perceptual.py`): hash perceptual **dHash de 64 bits** (compara píxeles adyacentes en una miniatura en gris) más una **firma de color 4×4**. La búsqueda usa un **BK-tree** sobre la distancia de Hamming, para no comparar todas contra todas, y **Union-Find** para unir cadenas (A~B y B~C ⇒ {A, B, C}). Detecta recompresión, reescalado y filtros; **no** detecta recortes ni rotaciones.
-
-**Interfaz sin bloqueos:** el trabajo pesado va en un hilo y manda mensajes por una `queue.Queue`; el hilo principal los lee con `after()` y es el único que toca los widgets (Tkinter no es seguro entre hilos).
-
-**Seguridad al mover:** `shutil.move`, nombres con colisión resueltos como `nombre (1).ext`, la cuarentena no puede estar dentro de la carpeta escaneada, y CSV de registro de cada operación.
-
-### Decisiones de diseño
-
-| Decisión | Por qué |
-|---|---|
-| **Nunca borrar tus originales; mover a cuarentena** | Un error de la app no puede costarte datos. Lo que se mueve se puede devolver. |
-| **BLAKE2b** | Está en la librería estándar, es más rápido que SHA-256 y de sobra fiable para detectar archivos idénticos. |
-| **Hash parcial antes del completo** | La mayoría de archivos con el mismo tamaño ya difieren en los primeros 64 KB; así no se leen enteros. |
-| **dHash y no OpenCV** | Cubre recompresión, reescalado y filtros con muy poco peso. OpenCV (para recortes y rotaciones) multiplicaría el tamaño del `.exe`. |
-| **Lógica (`core/`) separada de la interfaz (`ui/`)** | `core/` no importa nada de la ventana, así que se prueba entera por consola y con pytest. |
-| **Una pestaña = un componente** | `ui/main_window.py` es una carcasa de ~200 líneas; cada pestaña es un componente con su propio estado (`ExactDuplicatesTab`, `SimilarPhotosTab`, `GatherImagesTab`) y la ventana solo le pasa el modo y el cierre. |
-
-### Rendimiento
-
-`python tests/benchmark.py` genera 4.000 archivos (830 MB, con copias exactas y «casi duplicados» a propósito) y compara con hashear todo el contenido:
-
-| Método | Tiempo | Bytes leídos |
+| Layer | What lives there | May import |
 |---|---|---|
-| Hashear todo (ingenuo) | 2,02 s | 830 MB (100 %) |
-| **3 pasadas (esta app)** | **0,90 s** | **284 MB (34 %)** |
+| `domain/` | Pure rules and data: filters, duplicate groups, the similarity algorithm (BK-tree, Union-Find), keep-one selection, transfer rules | nothing from the package |
+| `application/` | One class per use case (`ScanDuplicates`, `FindSimilarPhotos`, `MoveToQuarantine`, `GatherImages`, …) and the **ports** they need (`FileSystem`, `FileHasher`, `FingerprintReader`, `HistoryStore`, `SettingsStore`) | `domain`, `i18n` |
+| `infrastructure/` | The adapters that implement the ports: local file system (with retries for locked files), BLAKE2b hashing, Pillow fingerprints, JSON history and settings, logging | `domain`, `application` |
+| `presentation/` | The CustomTkinter interface: main window, one component per tab, reusable panels, and `BackgroundJob` (thread + queue + polling) | `application`, `domain`, `i18n` |
+| `i18n/` | The English and Spanish catalogs and `tr("key")` | nothing |
 
-Encuentran **exactamente los mismos 386 grupos**. Lee un 66 % menos de datos. Los tiempos son con los archivos en caché del sistema; en un disco «frío» la diferencia a favor de las 3 pasadas es mayor, porque ahí manda la lectura.
+`bootstrap.py` is the **composition root**: it is the only module that knows every layer. It builds the adapters, injects them into the use cases and hands the result to the window. Use cases receive their ports in the constructor, so the tests run them against in-memory fakes (`tests/fakes.py`) without touching the disk.
 
-## Calidad del código
-
-- **196 pruebas con pytest** (15 suites de lógica y de ventana + 181 unitarias), con **93 % de cobertura del núcleo y 79 % de la interfaz**.
-- **ruff** como linter y **mypy** para comprobar los tipos del núcleo (`core/`, completamente anotado), y todo se ejecuta en **GitHub Actions** en cada push.
-- **Registro de errores** en un archivo (`%APPDATA%\BuscadorDuplicados\logs\app.log`), con rotación, y un aviso claro al usuario si algo inesperado falla. Las pruebas nunca tocan los datos reales de la app.
-- Las pruebas **no simulan el sistema de archivos**: crean archivos reales en carpetas temporales y comprueban el resultado en disco (incluida la comprobación de que se mueven *archivos* y no carpetas).
-- **Contraste WCAG AA** en tema claro y oscuro, comprobado con medición.
+These rules are not just a convention: `tests/test_architecture.py` reads every module with `ast` and fails if a layer imports something it should not (for example, `domain` importing `tkinter`, or `presentation` importing `infrastructure`) or if the domain or the use cases touch the disk directly.
 
 ```
-core/      Lógica pura, sin interfaz (librería estándar + Pillow para las fotos)
-ui/        Interfaz CustomTkinter; un componente por pestaña (pestana_*.py)
-tests/   15 suites + pruebas unitarias + benchmark
-docs/      Manual de usuario, guía del código y proceso de creación (PDF)
+src/duplicate_finder/
+  domain/           Pure rules and data (standard library only)
+  application/      Use cases and ports
+  infrastructure/   Adapters: disk, hashes, images, JSON, logging
+  presentation/     CustomTkinter interface
+  i18n/             Catalogs (en, es) and tr()
+  bootstrap.py      Composition root
+tests/              Unit, use-case, architecture and window tests, plus a benchmark
+docs/               User manual, code guide and build process (PDF), screenshot tools
 ```
+
+## How it works
+
+**Exact duplicates: 3 passes**, to read as little as possible:
+
+1. **Size.** Files are grouped by byte size. A unique size cannot have a duplicate, so it is never read.
+2. **Partial hash.** For files sharing a size, a BLAKE2b hash of the first 64 KB.
+3. **Full hash.** Only for files that still match. A full-hash match means identical content.
+
+**Similar photos** (`domain/similarity.py`): a **64-bit dHash** perceptual hash (compares adjacent pixels on a small grayscale thumbnail) plus a **4×4 colour signature**. Matching uses a **BK-tree** over Hamming distance, avoiding all-pairs comparison, and **Union-Find** to merge chains (A~B and B~C ⇒ {A, B, C}). It handles recompression, rescaling and filters; it does **not** detect crops or rotations.
+
+**Responsive UI:** heavy work runs in a worker thread and posts messages to a `queue.Queue`; the main thread polls it with `after()` and is the only one touching widgets (Tkinter is not thread-safe). That pattern lives in one place, `presentation/background_job.py`, and every long task uses it.
+
+**Safe moving:** `shutil.move`, name collisions resolved as `name (1).ext`, the quarantine folder cannot be inside the scanned folder, and a CSV log for every operation.
+
+### Design decisions
+
+| Decision | Why |
+|---|---|
+| **Never delete your originals; move to quarantine** | A bug in the app cannot cost you data. Whatever is moved can be put back. |
+| **BLAKE2b** | In the standard library, faster than SHA-256 and more than reliable enough to detect identical files. |
+| **Partial hash before full hash** | Most same-size files already differ in the first 64 KB, so they are never read in full. |
+| **dHash instead of OpenCV** | Covers recompression, rescaling and filters at very low cost. OpenCV (for crops and rotations) would multiply the `.exe` size. |
+| **Layers with ports and adapters** | The rules and the use cases never touch the disk or a window directly, so they are tested without either, and the interface could be replaced without touching them. |
+| **Ports only where there is real I/O** | Disk, hashing, images, history and settings have a port. Pure computations (filters, similarity, selection) are plain functions: an interface there would add nothing. |
+| **One tab = one component** | Each tab owns its state (`ExactDuplicatesTab`, `SimilarPhotosTab`, `GatherImagesTab`) and shares panels and dialogs with the others; the window only passes it the mode and the close signal. |
+| **Texts in catalogs, not in the code** | Every text of the interface goes through `tr("key")`; a test checks that English and Spanish have the same keys and placeholders. |
+
+### Performance
+
+`python tests/benchmark.py` generates 4,000 files (830 MB, with exact copies and deliberate "near duplicates") and compares against hashing all content:
+
+| Method | Time | Bytes read |
+|---|---|---|
+| Hash everything (naive) | 2.02 s | 830 MB (100 %) |
+| **3 passes (this app)** | **0.90 s** | **284 MB (34 %)** |
+
+Both find **exactly the same 386 groups**. It reads 66 % less data. Timings are with files in the OS cache; on a "cold" disk the gap in favour of the 3 passes is larger, because reading dominates.
+
+## Code quality
+
+- **Automated tests with pytest** at several levels: unit tests, use cases against in-memory fakes, the architecture rules, data migration, internationalisation, and window tests that drive the real interface. CI requires at least **90 % coverage of the logic layers** and **70 % of the interface**.
+- **ruff** as linter and **mypy** on `domain`, `application`, `infrastructure` and `i18n` (fully annotated), all run on **GitHub Actions** on every push and pull request.
+- **Error log** in a file (`%APPDATA%\BuscadorDuplicados\logs\app.log`), with rotation, and a clear notice to the user if something unexpected fails. Tests never touch the app's real data.
+- File-system behaviour is tested **with real files** in temp folders (including a check that *files* are moved, not folders); the in-memory fakes are only used to test the use cases' own logic.
+- **WCAG AA contrast** in light and dark themes, verified by measurement.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                    # todo (las pruebas de ventana necesitan escritorio de Windows)
-pytest -m "not gui"       # solo lógica, sin abrir ventanas
-pytest --cov              # con cobertura (núcleo e interfaz)
+pytest                    # everything (window tests need a Windows desktop)
+pytest -m "not gui"       # logic only, no windows
+pytest --cov              # with coverage
 ruff check .
-python -m mypy            # tipos del núcleo
+python -m mypy            # type check of the logic layers
 ```
 
-## Documentación
+## Documentation
 
-Tres PDF con portada e índice, en [`docs/`](docs/):
+Three PDFs with cover and table of contents, in [`docs/`](docs/) (currently in Spanish):
 
-- [Manual de usuario](docs/manual-de-usuario.pdf)
-- [Guía del código](docs/guia-del-codigo.pdf): cómo está construida, pensada para quien quiere aprender.
-- [Proceso de creación](docs/proceso-de-creacion.pdf): fases y decisiones.
+- [User manual](docs/manual-de-usuario.pdf)
+- [Code guide](docs/guia-del-codigo.pdf): how it is built, written for anyone who wants to learn from it.
+- [Build process](docs/proceso-de-creacion.pdf): phases and decisions.
 
-## Limitaciones conocidas
+The [CHANGELOG](CHANGELOG.md) lists what changed in every version.
 
-- **No lee móviles conectados por USB** (modo MTP/PTP): Windows no les da una ruta de carpeta real. Copia antes las fotos al PC o usa un lector de tarjetas.
-- Las fotos parecidas no detectan recortes ni rotaciones.
-- Solo Windows.
+## How this project started
 
-## Sugerencias
+I have always kept backups of my old devices, such as phones or computers, on external hard drives of several terabytes. Over time, many files end up duplicated in subfolders, and that ends up eating the disk space.
 
-No hay una hoja de ruta cerrada: iré mejorando la aplicación sobre la marcha, según vea con la práctica qué funciones le faltan. **Si tienes ideas para funcionalidades futuras, me encantará conocerlas**: abre una *issue* con la plantilla «Suggestion».
+Checking by hand is tedious, and it even gets confusing once you no longer know which folders you have already reviewed. My starting idea was to run quick, simple commands that compare images and other kinds of files and tell me right away whether there were duplicates. I found that the fastest way to do it was to use Python.
 
-## Licencia
+I started with a simple script of about 150 lines ([`docs/origin/buscar_duplicados.py`](docs/origin/buscar_duplicados.py)): I typed in a folder path and it told me whether there were duplicate files and how many it had analysed. After using it a few times I realised it was impractical: typing the path every time was slow. So I decided to build an interface to make it easier to use.
+
+While building the interface I saw that I could add features that fitted the search better to what I wanted. That is how what began as a script became a complete desktop program with several features and filtering options.
+
+| Stage | What existed |
+|---|---|
+| 1. A need | Backups with duplicate files eating the disk space |
+| 2. A script | 150 lines: a path as input, and it told me whether there were duplicates and how many files it analysed |
+| 3. An interface | So I would not have to type the path every time |
+| 4. A desktop program | Several features and filtering options, made to fit what I wanted |
+
+## Why this project exists
+
+On top of solving that need, this is a **learning project**. I built it to **go deeper into Python and learn**, starting from a **basic level**: I wanted to tackle a real problem from start to finish, not just isolated exercises.
+
+To get there, the project touches topics that rarely show up in first exercises: duplicate-detection algorithms (hashing, perceptual hashing, BK-tree), threads and queues so a window never freezes, graphical interfaces, layered architecture, internationalisation, automated tests, continuous integration and packaging a program for Windows.
+
+**What this means for a reviewer:** this is not expert-level code, and I do not present it as such. It is a learning exercise taken seriously, with its limits in plain sight (see [Known limitations](#known-limitations)). The improvements I make from now on will be listed in the [CHANGELOG](CHANGELOG.md) and are part of that learning.
+
+## What I learned
+
+- **What was hardest:** how to split the code so that no file ended up too long and each part had a single job. The first version separated the logic from the interface; later I went further and organised it in layers (domain, application, infrastructure, presentation) with ports and adapters, and split the biggest tabs into smaller components.
+- **What I learned most:** the versatility of Python for running scripts directly on files: with very few lines you can walk through a disk, compare contents and move files. And that a rule written as a test (like the architecture rules) holds far better than one written in a document.
+
+## What I found while testing it
+
+I tested the app myself, with my own files, and these are the problems I found that changed the program:
+
+- **The `.exe` would not start.** When I downloaded the executable from the release I got the error "Failed to start embedded python interpreter". It was my antivirus (Avast), which holds the single file for a few minutes the first time it is opened. That is why every version also includes a ZIP with a folder, which does not have this problem.
+- **The "Similar photos" gallery got cut off.** With many photos, some images appeared cut off and on the right there was a gap that looked like a scrollbar but was not one. It turned out to be a Windows limit on very tall windows, and now the groups are split into pages.
+- **"Gather images" moved folders instead of photos.** I noticed it while testing and it was fixed; an automated test now checks it.
+- **My phones did not show up.** I asked whether the app could read a phone connected by USB. It cannot: Windows does not give them a normal folder path. It is noted under [known limitations](#known-limitations), with the workaround of copying the photos to the PC first.
+- **The screenshots must not show my Windows username.** I asked for the images and the GIF in the README to use a sample folder instead of a path with my name.
+
+## How it was made: with Claude as a copilot
+
+I built it **working with [Claude](https://claude.com/claude-code) (Anthropic) as a programming copilot**, and I want that to be clear:
+
+- **I (Sayessol)** decided what to build and in which order, tested the app by hand, raised the doubts and problems I found along the way (for example, whether it moved folders instead of photos) and approved each step as we went.
+- **Claude** wrote the code, tests and documentation, proposed alternatives and explained its decisions, always within the project's rules (such as never deleting the originals). The [code guide](docs/guia-del-codigo.pdf) is written precisely so one can learn from that code.
+- **That is why I do not present this code as written by me alone.** What is mine is the goal, what was decided to build, and the learning I am after.
+- **The tests are the safety net**: no change counts as done without the whole suite passing, and CI runs it again on every push and pull request.
+- Commits carry a `Co-Authored-By: Claude` line so the shared authorship is visible in the history.
+
+## Known limitations
+
+- **Cannot read phones connected over USB** (MTP/PTP mode): Windows gives them no real folder path. Copy the photos to the PC first, or use a card reader.
+- Similar photos do not detect crops or rotations.
+- Windows only.
+
+## Suggestions
+
+There is no fixed roadmap: I will keep improving the application as I go, depending on which features I find it lacks in practice. **If you have ideas for future features, I would love to hear them**: open an issue with the "Suggestion" template.
+
+## License
 
 [MIT](LICENSE) © 2026 Sayessol
