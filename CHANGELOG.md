@@ -15,6 +15,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - The use cases reach the disk, the file hashes, the images, the history and the settings through ports (interfaces) that the infrastructure implements; `bootstrap.py` is the only place that wires them. The domain no longer reads the disk. Nothing changes for the user.
 - Moving to quarantine and gathering images now record their own history entry (the interface no longer does), and the three tabs that move files share their dialogs (choosing the quarantine folder, the warnings and the offer to open the folder). Nothing changes for the user.
 - The biggest tab (`exact_duplicates_tab.py`, 900 lines) is split into components: the scan options panel and the preview panel are their own classes, and a `BackgroundJob` helper replaces the thread, queue and polling code that the scan, the quarantine, the analysis and the gather each wrote by hand. Nothing changes for the user.
+- An automatic test (`tests/test_architecture.py`) checks the layer rules on every run: the domain imports nothing from the other layers and does no input or output, the use cases reach the disk only through ports, the interface never imports the infrastructure, and only `bootstrap.py` builds the adapters.
 - The folders suggested for grouping the files that are not images (`Documents`, `Music`, `Videos`, `Archives`, `Other`) are English, like the other names the app creates inside your folders; you can still type your own.
 
 ### Added
