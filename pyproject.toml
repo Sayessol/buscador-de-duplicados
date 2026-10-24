@@ -25,7 +25,7 @@ classifiers = [
 # .exe is built and tested with.
 dependencies = [
     "customtkinter>=5.2,<6",
-    "pillow>=12,<13",
+    "pillow>=13,<14",
 ]
 
 [project.optional-dependencies]
