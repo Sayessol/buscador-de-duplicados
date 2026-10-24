@@ -24,6 +24,9 @@ Based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The interface is available in English and Spanish. The first time it follows the language of Windows; the header has a selector to change it (it applies the next time the app opens) and the choice is remembered. The texts live in `src/duplicate_finder/i18n/locales/` (one catalog per language) and a test checks that both have the same keys and placeholders, and that every text the code asks for exists.
 - The column names of the CSV files follow the language of the interface (in Spanish they are the same as always).
 
+### Security
+- Pillow is updated from 12.3.0 to 13.0.0, which fixes the known vulnerabilities `pip-audit` reports for 12.3.0 (the app opens images the user chooses). Nothing changes for the user: the tests pass and the 32 documentation screenshots are pixel-identical.
+
 ### Fixed
 - Undoing a copy now retries for a moment when Windows reports the copied file as in use (antivirus, indexer) before reporting a failure.
 

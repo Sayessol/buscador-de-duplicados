@@ -4,7 +4,7 @@
 #
 # The "similar photos" module (core/perceptual.py) and the thumbnails of the
 # interface need Pillow:
-pillow==12.3.0
+pillow==13.0.0
 
 # --- Graphical interface (ui/) ---------------------------------------
 customtkinter==5.2.2
