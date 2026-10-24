@@ -16,4 +16,4 @@ and (when the user confirms) move.**
 # Single source of the version: the window and the release name use it.
 # When publishing a new version, change it here and add its section to CHANGELOG.md
 # (a test checks that the two match).
-__version__ = "1.0.0"
+__version__ = "1.1.0"

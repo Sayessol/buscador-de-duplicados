@@ -4,6 +4,10 @@ Based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-24
+
+The app looks and works as before; what changes is the code underneath, the languages and the project around it. The saved data of version 1.0 is read and converted the first time, and never modified.
+
 ### Changed
 - Code, comments and docstrings are in English (`pruebas/` is now `tests/`, modules and names renamed).
 - The data the app saves is in English too. `history.json` replaces `historial.json`: the old file is still read, converted on the fly, and never modified, so it stays as a backup. `config.json` keys and values are converted on load and a `config.json.bak-1.0` copy is kept before the first rewrite.
