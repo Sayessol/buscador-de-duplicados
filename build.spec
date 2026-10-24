@@ -1,41 +1,41 @@
-# PyInstaller spec. Genera la app en uno de estos dos formatos:
+# PyInstaller spec. It builds the app in one of two formats:
 #
 #   pyinstaller build.spec --noconfirm
-#       -> dist/duplicados.exe : UN solo archivo, sin consola. Se descomprime
-#          en una carpeta temporal cada vez que se abre.
+#       -> dist/duplicados.exe : ONE single file, no console. It unpacks
+#          into a temporary folder every time it is opened.
 #
-#   FORMATO=carpeta pyinstaller build.spec --noconfirm        (en PowerShell: $env:FORMATO="carpeta")
-#       -> dist/Buscador-de-duplicados/ : una CARPETA con el .exe y sus
-#          librerías (_internal/). No extrae nada al arrancar, así que los
-#          antivirus la molestan mucho menos. Es lo que se publica en el ZIP.
+#   BUILD_FORMAT=folder pyinstaller build.spec --noconfirm   (in PowerShell: $env:BUILD_FORMAT="folder")
+#       -> dist/Buscador-de-duplicados/ : a FOLDER with the .exe and its
+#          libraries (_internal/). It extracts nothing at startup, so antivirus
+#          programs bother it much less. This is what is published in the ZIP.
 #
-# (Normalmente se usa  python construir_exe.py [--carpeta]  en vez de esto.)
+# (Normally `python build_exe.py [--folder]` is used instead of this.)
 
 import os
 
 from PyInstaller.utils.hooks import collect_data_files
 
-CARPETA = os.environ.get("FORMATO") == "carpeta"
+FOLDER = os.environ.get("BUILD_FORMAT") == "folder"
 
-# CustomTkinter trae archivos de tema (.json) y assets que hay que
-# empaquetar aparte del código.
-datos = collect_data_files("customtkinter")
+# CustomTkinter ships theme files (.json) and assets that have to be
+# packaged apart from the code.
+data = collect_data_files("customtkinter")
 
 a = Analysis(
     ["app.py"],
-    pathex=["."],
+    pathex=["src"],
     binaries=[],
-    datas=datos,
+    datas=data,
     hiddenimports=["customtkinter"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        # Nada de esto se usa; recorta tamaño del exe.
-        # (PIL/Pillow SÍ se usa ahora: fotos parecidas + miniaturas.)
+        # None of this is used; it trims the size of the exe.
+        # (PIL/Pillow IS used: similar photos + thumbnails.)
         "numpy", "pandas", "matplotlib", "scipy",
         "pytest", "setuptools", "pip", "unittest", "pydoc",
-        "PIL.ImageQt",  # backend Qt: no se usa (sí ImageTk, para CTkImage)
+        "PIL.ImageQt",  # Qt backend: not used (ImageTk is, for CTkImage)
     ],
     noarchive=False,
 )
@@ -45,27 +45,27 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    # En formato carpeta, las librerías y datos van aparte (en COLLECT).
-    [] if CARPETA else a.binaries,
-    [] if CARPETA else a.datas,
+    # In folder format, libraries and data go apart (in COLLECT).
+    [] if FOLDER else a.binaries,
+    [] if FOLDER else a.datas,
     [],
-    exclude_binaries=CARPETA,
-    name="Buscador-de-duplicados" if CARPETA else "duplicados",
+    exclude_binaries=FOLDER,
+    name="Buscador-de-duplicados" if FOLDER else "duplicados",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
     runtime_tmpdir=None,
-    console=False,          # app de ventana, sin consola negra detrás
+    console=False,          # windowed app, no black console behind it
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="icono.ico",   # generado con: python generar_icono.py
+    icon="icon.ico",   # generated with: python gen_icon.py
 )
 
-if CARPETA:
+if FOLDER:
     coll = COLLECT(
         exe,
         a.binaries,

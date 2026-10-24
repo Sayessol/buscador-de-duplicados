@@ -1,0 +1,151 @@
+"""Reproduces EXACTLY what the user does: opens the window, analyzes
+a folder with photos spread across subfolders, and presses "Move to
+quarantine" choosing a new folder (the dialogs are stubbed).
+
+It checks that FILES are moved and NOT folders, both in the
+"Similar photos" tab and in "Exact duplicates".
+
+    python tests/smoke_quarantine_ui.py
+"""
+
+import os
+import sys
+import tempfile
+from pathlib import Path
+from tkinter import filedialog, messagebox
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+# It does not touch the user's real data (history, configuration):
+os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
+
+from PIL import Image
+
+from duplicate_finder.bootstrap import build_services
+from duplicate_finder.presentation import styles
+from duplicate_finder.presentation.main_window import MainWindow
+
+SERVICES = build_services()
+
+R = {}
+failures = []
+
+
+def check(cond, msg):
+    print(f"  [{'OK  ' if cond else 'FAIL'}] {msg}")
+    if not cond:
+        failures.append(msg)
+
+
+def _photo(seed):
+    import random
+
+    rnd = random.Random(seed)
+    im = Image.new("RGB", (600, 400), (12, 12, 12))
+    for _ in range(14):
+        x, y = rnd.randint(0, 600), rnd.randint(0, 400)
+        im.paste(
+            (rnd.randint(0, 255), rnd.randint(0, 255), rnd.randint(0, 255)),
+            (x, y, x + 110, y + 110),
+        )
+    return im
+
+
+def build(root: Path):
+    (root / "2023" / "summer").mkdir(parents=True)
+    (root / "2024").mkdir(parents=True)
+    (root / "unsorted").mkdir(parents=True)
+    _photo(1).save(root / "2023" / "summer" / "beach.jpg", quality=92)
+    _photo(1).save(root / "2024" / "beach.jpg", quality=45)  # similar
+    _photo(1).save(root / "unsorted" / "beach (copy).jpg", quality=70)  # similar
+    _photo(2).save(root / "2023" / "portrait.jpg", quality=92)
+    _photo(2).save(root / "unsorted" / "portrait.jpg", quality=45)  # similar
+
+
+def main():
+    styles.apply_theme()
+    tmp = tempfile.mkdtemp(prefix="dup_uic_")
+    root = Path(tmp) / "Phone photos"
+    build(root)
+    # Quarantine folder "on the desktop", created by the user:
+    quarantine = Path(tmp) / "Desktop" / "Quarantine"
+    quarantine.mkdir(parents=True)
+
+    # Stub the dialogs.
+    filedialog.askdirectory = lambda *a, **k: str(quarantine)
+    messagebox.askyesno = lambda *a, **k: True
+    os.startfile = lambda *a, **k: None  # without this the real Explorer would open
+    messagebox.showinfo = lambda *a, **k: None
+    messagebox.showwarning = lambda *a, **k: None
+    messagebox.showerror = lambda *a, **k: print("   [showerror]", a)
+
+    app = MainWindow(SERVICES)
+    app._mode = "advanced"
+    app._apply_mode()
+    app.show_tab("similar")
+    app.similar.entry_folder.insert(0, str(root))
+    app.similar.sensitivity_slider.set(14)
+
+    folders_before = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_dir())
+    files_before = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_file())
+
+    def when_ready():
+        if app.similar._selection is None:
+            app.after(200, when_ready)
+            return
+        app.after(600, move)
+
+    def move():
+        R["to_move"] = app.similar._selection.count_to_move()
+        app.similar._move_to_quarantine()
+        app.after(1500, verify)
+
+    def verify():
+        folders_after = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_dir())
+        files_after = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_file())
+        dirs_in_quarantine = sorted(
+            str(x.relative_to(quarantine)) for x in quarantine.rglob("*") if x.is_dir()
+        )
+        files_in_quarantine = sorted(
+            str(x.relative_to(quarantine))
+            for x in quarantine.rglob("*")
+            if x.is_file() and not x.name.endswith(".csv")
+        )
+
+        print("  source folders BEFORE: ", folders_before)
+        print("  source folders AFTER:", folders_after)
+        print("  files left in the source:", files_after)
+        print("  folders created in the quarantine:", dirs_in_quarantine)
+        print("  files moved to quarantine:", files_in_quarantine)
+
+        check(
+            folders_before == folders_after,
+            "ALL the source subfolders are still there (they were not moved)",
+        )
+        check(len(files_after) + len(files_in_quarantine) == len(files_before), "no file was lost")
+        check(
+            len(files_in_quarantine) == R["to_move"] and R["to_move"] >= 2,
+            f"{R['to_move']} regular files were moved to the quarantine",
+        )
+        check(
+            all("." in Path(f).name for f in files_in_quarantine),
+            "what is in the quarantine are files with an extension, not folders",
+        )
+
+        app.after(200, app.destroy)
+
+    app.after(400, app.similar._start)
+    app.after(800, when_ready)
+    app.after(20000, app.destroy)
+    app.mainloop()
+
+    print()
+    if failures:
+        print(f"{len(failures)} CHECKS FAILED.")
+        sys.exit(1)
+    print("THE UI MOVES FILES, NOT FOLDERS: OK")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

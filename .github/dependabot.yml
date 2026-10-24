@@ -1,6 +1,6 @@
-# Dependabot avisa (con una pull request) cuando hay versiones nuevas de las
-# dependencias de Python y de las acciones que usa el CI. Una vez al mes, para
-# no llenar el repositorio de avisos.
+# Dependabot warns (with a pull request) when there are new versions of the
+# Python dependencies and of the actions the CI uses. Once a month, so as not
+# to fill the repository with notices.
 version: 2
 updates:
   - package-ecosystem: "pip"
@@ -8,9 +8,9 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 3
-    # Las versiones mayores de customtkinter y Pillow pueden cambiar cómo se ve la
-    # interfaz o cómo se leen las fotos, y PyInstaller cambia el .exe: se actualizan
-    # a mano, comprobando la ventana y el ejecutable, no con un aviso automático.
+    # Major versions of customtkinter and Pillow can change how the interface looks or how
+    # photos are read, and PyInstaller changes the .exe: they are updated by hand,
+    # checking the window and the executable, not with an automatic notice.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

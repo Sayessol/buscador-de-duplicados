@@ -5,28 +5,31 @@ __pycache__/
 venv/
 .pytest_cache/
 
-# Resultados de compilar el .exe (se publican en GitHub Releases, no en el repo)
+# Results of building the .exe (published in GitHub Releases, not in the repo)
 build/
 dist/
 *.exe
 *.spec.bak
 
-# Registros que genera la app al mover archivos
-_log_cuarentena_*.csv
-_log_reunir_*.csv
-duplicados_reporte.csv
+# Logs and reports the app writes when it moves files or exports
+_log_quarantine_*.csv
+_log_gather_*.csv
+duplicates_report.csv
 
-# Editor / sistema
+# Editor / system
 .vscode/
 .idea/
 Thumbs.db
 desktop.ini
 .claude/
 
-# Resultados de pruebas y linter
+# Test and linter output
 .coverage
 htmlcov/
 .ruff_cache/
 
-# Datos de cobertura en paralelo
+# Parallel coverage data
 .coverage.*
+
+# Build metadata of `pip install -e .`
+*.egg-info/

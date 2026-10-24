@@ -1,0 +1,128 @@
+"""Error log in a file (infrastructure/app_logging.py) and warning about unexpected errors."""
+
+import sys
+import threading
+from types import SimpleNamespace
+
+import pytest
+
+from duplicate_finder.infrastructure import app_logging
+
+
+@pytest.fixture
+def appdata(tmp_path, monkeypatch):
+    """Isolates the log in a temporary folder and closes it when done."""
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    monkeypatch.delenv("BUSCADOR_DEBUG", raising=False)
+    monkeypatch.delenv("DUPLICATE_FINDER_DEBUG", raising=False)
+    app_logging.stop()
+    yield tmp_path
+    app_logging.stop()
+
+
+def _read(path):
+    for h in app_logging.log.handlers:
+        h.flush()
+    return path.read_text(encoding="utf-8")
+
+
+def test_creates_the_file_and_logs_the_startup(appdata):
+    path = app_logging.start()
+    assert path == appdata / "BuscadorDuplicados" / "logs" / "app.log"
+    assert app_logging.file_path() == path
+    text = _read(path)
+    assert "Starting Duplicate Finder" in text and app_logging.__version__ in text
+
+
+def test_starting_twice_does_not_duplicate_lines(appdata):
+    app_logging.start()
+    app_logging.start()
+    app_logging.log.info("only once")
+    assert _read(app_logging.file_path()).count("only once") == 1
+
+
+def test_logs_exceptions_with_their_traceback(appdata):
+    app_logging.start()
+    try:
+        _ = 1 / 0
+    except ZeroDivisionError:
+        app_logging.log.exception("A calculation failed")
+    text = _read(app_logging.file_path())
+    assert "A calculation failed" in text
+    assert "ZeroDivisionError" in text and "Traceback" in text
+
+
+@pytest.mark.parametrize("variable", ["DUPLICATE_FINDER_DEBUG", "BUSCADOR_DEBUG"])
+def test_detail_is_only_logged_with_the_debug_variable(appdata, monkeypatch, variable):
+    """The old BUSCADOR_DEBUG name still works next to the current one."""
+    app_logging.start()
+    app_logging.log.debug("hidden-detail")
+    assert "hidden-detail" not in _read(app_logging.file_path())
+    app_logging.stop()
+    monkeypatch.setenv(variable, "1")
+    app_logging.start()
+    app_logging.log.debug("visible-detail")
+    assert "visible-detail" in _read(app_logging.file_path())
+
+
+def test_without_write_permission_the_app_carries_on(tmp_path, monkeypatch):
+    # APPDATA points to a FILE: the log folder cannot be created.
+    file = tmp_path / "soy_un_fichero"
+    file.write_text("x")
+    monkeypatch.setenv("APPDATA", str(file))
+    app_logging.stop()
+    assert app_logging.start() is None
+    app_logging.log.error("this must not raise")  # keeps working, without a file
+    assert app_logging.file_path() is None
+
+
+def test_hooks_log_unhandled_errors(appdata, monkeypatch):
+    previous = (sys.excepthook, threading.excepthook)
+    calls = []
+    monkeypatch.setattr(sys, "excepthook", lambda *a: calls.append("principal"))
+    monkeypatch.setattr(threading, "excepthook", lambda a: calls.append("hilo"))
+    app_logging.start()
+    app_logging.install_hooks()
+    try:
+        raise ValueError("failure in the main thread")
+    except ValueError:
+        sys.excepthook(*sys.exc_info())
+    try:
+        raise KeyError("failure in another thread")
+    except KeyError:
+        kind, value, trace = sys.exc_info()
+        threading.excepthook(
+            SimpleNamespace(
+                exc_type=kind,
+                exc_value=value,
+                exc_traceback=trace,
+                thread=SimpleNamespace(name="Test-thread"),
+            )
+        )
+    text = _read(app_logging.file_path())
+    assert "failure in the main thread" in text
+    assert "Test-thread" in text and "KeyError" in text
+    assert calls == ["principal", "hilo"]  # the previous hook is also called
+    sys.excepthook, threading.excepthook = previous
+
+
+def test_unexpected_ui_error_is_logged_and_warned_once(appdata, monkeypatch):
+    from tkinter import messagebox
+
+    from duplicate_finder.presentation.main_window import MainWindow
+
+    warnings = []
+    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: warnings.append(a))
+    app_logging.start()
+    window = SimpleNamespace(  # the attributes it uses are enough
+        _error_warned=False, services=SimpleNamespace(log_file_path=app_logging.file_path)
+    )
+    for _ in range(3):  # the same failure, three times
+        try:
+            _ = {}["does not exist"]
+        except KeyError:
+            MainWindow.report_callback_exception(window, *sys.exc_info())
+    text = _read(app_logging.file_path())
+    assert text.count("Unexpected error in the interface") == 3  # all three are logged
+    assert len(warnings) == 1  # but warned only once
+    assert str(app_logging.file_path()) in warnings[0][1]  # and it says where the log is

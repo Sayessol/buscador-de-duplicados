@@ -1,28 +1,82 @@
-# Solo configuración de herramientas (linter y pruebas).
-# La app NO se instala con pip: se ejecuta con `python app.py` o con el .exe.
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "duplicate-finder"
+dynamic = ["version"]
+description = "Windows desktop app that finds duplicate files and similar photos and tidies them up safely."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Sayessol" }]
+keywords = ["duplicates", "photos", "deduplication", "desktop", "customtkinter"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+]
+# The app runs with `python app.py` or from the .exe; installing it (pip install -e .[dev]) is
+# optional and gives the `duplicate-finder` command. requirements*.txt pin the versions the
+# .exe is built and tested with.
+dependencies = [
+    "customtkinter>=5.2,<6",
+    "pillow>=13,<14",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "mypy", "pre-commit", "pip-audit"]
+docs = ["reportlab", "pymupdf"]
+build = ["pyinstaller>=6.11,<7"]
+
+[project.urls]
+Homepage = "https://github.com/Sayessol/buscador-de-duplicados"
+Issues = "https://github.com/Sayessol/buscador-de-duplicados/issues"
+Changelog = "https://github.com/Sayessol/buscador-de-duplicados/blob/main/CHANGELOG.md"
+
+[project.gui-scripts]
+duplicate-finder = "duplicate_finder.bootstrap:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "duplicate_finder.__version__" }
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# docs/origen es el script original, se conserva tal cual como pieza histórica
-extend-exclude = ["build", "dist", "docs/origen"]
+# docs/origin holds the original script, kept as it is as a historical piece
+extend-exclude = ["build", "dist", "docs/origin"]
 
 [tool.ruff.lint]
-# E/W: estilo pycodestyle · F: errores reales (imports sin usar, nombres sin definir)
-# B: fallos típicos (bugbear)
-select = ["E", "F", "W", "B"]
-ignore = ["B905"]   # zip(strict=...) no aporta aquí
+# E/W: pycodestyle · F: real errors (unused imports, undefined names) · B: typical bugs
+# (bugbear) · I: sorted imports · UP: modern syntax · SIM: simplifications · C4: comprehensions
+# RUF100: `noqa` comments that no longer silence anything
+select = ["E", "F", "W", "B", "I", "UP", "SIM", "C4", "RUF100"]
+ignore = ["B905"]   # zip(strict=...) adds nothing here
+
+[tool.ruff.lint.per-file-ignores]
+# The text of the PDFs: long lines of prose inside strings
+"docs/content/*.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["duplicate_finder"]
 
 [tool.pytest.ini_options]
-testpaths = ["pruebas"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
-pythonpath = ["."]
-markers = ["gui: prueba con ventana (necesita escritorio de Windows)"]
+pythonpath = ["src", "."]
+markers = ["gui: test with a window (needs a Windows desktop)"]
 
 [tool.coverage.run]
-source = ["core", "ui"]
-# Las pruebas de ventana corren en procesos aparte (pruebas/test_suites.py): se siguen
-# para poder medir también la interfaz. Mínimos que exige el CI: núcleo 90 %, interfaz 70 %.
+source = ["src/duplicate_finder"]
+# The window tests run in separate processes (tests/test_suites.py): they are followed
+# so the interface can be measured too. Minimums the CI requires: logic layers 90 %, interface 70 %.
 parallel = true
 patch = ["subprocess"]
 
@@ -30,13 +84,25 @@ patch = ["subprocess"]
 show_missing = true
 
 [tool.mypy]
-# Tipado estático: el núcleo (core/) está completamente anotado y mypy lo comprueba.
-# La interfaz (ui/) no se comprueba: CustomTkinter/Tkinter son muy dinámicos y el
-# beneficio sería mucho menor que el ruido.
+# Static typing for the whole package. The logic layers (domain, application, infrastructure,
+# i18n) are fully annotated and strict about it; the interface (presentation) is checked too,
+# but it is not required to annotate every function: CustomTkinter/Tkinter are very dynamic and
+# that would add more noise than value.
 python_version = "3.12"
-files = ["core"]
+mypy_path = "src"
+packages = ["duplicate_finder"]
 disallow_untyped_defs = true
 check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_return_any = true
+
+[[tool.mypy.overrides]]
+module = ["duplicate_finder.presentation.*"]
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = ["customtkinter", "customtkinter.*"]
+ignore_missing_imports = true

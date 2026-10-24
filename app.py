@@ -1,38 +1,32 @@
-"""Punto de entrada de la app de duplicados.
+"""Entry point of the duplicates app.
 
-    python app.py
+python app.py            (or  python -m duplicate_finder  with src/ on the path)
 """
 
 import os
 import sys
 
-# Permite ejecutar tanto `python app.py` como otros lanzadores.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The package lives in src/: this launcher makes `python app.py` work without installing it.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 
-def _asegurar_salidas():
-    """Evita que la app se caiga por un simple aviso en el .exe sin consola.
+def _ensure_outputs():
+    """Keeps the app from crashing over a simple warning in the .exe without a console.
 
-    En un .exe de ventana (sin consola) sys.stdout y sys.stderr valen None. Si
-    una librería intenta escribir un aviso (por ejemplo CustomTkinter cuando no
-    puede cargar una fuente porque la ruta de la carpeta es demasiado larga),
-    daría «'NoneType' object has no attribute 'write'» y la app no abriría.
-    Se sustituyen por un destino que descarta lo escrito.
+    In a windowed .exe (no console) sys.stdout and sys.stderr are None. If
+    a library tries to write a warning (for example CustomTkinter when it
+    cannot load a font because the folder path is too long),
+    it would raise "'NoneType' object has no attribute 'write'" and the app would not open.
+    They are replaced by a destination that discards what is written.
     """
-    for nombre in ("stdout", "stderr"):
-        if getattr(sys, nombre) is None:
-            setattr(sys, nombre, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115
+    for name in ("stdout", "stderr"):
+        if getattr(sys, name) is None:
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115
 
 
-_asegurar_salidas()
+_ensure_outputs()
 
-from core import registro  # noqa: E402
-
-registro.iniciar()              # empieza a anotar en %APPDATA%\BuscadorDuplicados\registro
-registro.instalar_ganchos()     # y anota también los errores que nadie ha capturado
-
-from ui.main_window import lanzar  # noqa: E402
-
+from duplicate_finder.bootstrap import main  # noqa: E402
 
 if __name__ == "__main__":
-    lanzar()
+    main()
