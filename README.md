@@ -17,7 +17,7 @@ A Windows desktop app that **finds duplicate files and similar photos** and help
 > The only time the app deletes anything is when you **undo a copy**: it removes the copies it created itself, and asks for confirmation first.
 
 <p align="center">
-  <img src="docs/img/demo.gif" alt="Demo: scan, move to quarantine and undo" width="860">
+  <img src="docs/img/en/demo.gif" alt="Demo: scan, move to quarantine and undo" width="860">
 </p>
 
 <p align="center">
@@ -47,26 +47,26 @@ Also:
 - **English and Spanish interface.** It follows the language of Windows, and a selector in the header lets you change it (it applies the next time the app starts).
 
 <details>
-<summary>Screenshots (they follow your GitHub theme; shown with the Spanish interface)</summary>
+<summary>Screenshots (they follow your GitHub theme)</summary>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/02_avanzada.png">
-  <img alt="Advanced mode" src="docs/img/02_avanzada_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/en/02_advanced.png">
+  <img alt="Advanced mode" src="docs/img/en/02_advanced_light.png">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/04_parecidas.png">
-  <img alt="Similar photos" src="docs/img/04_parecidas_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/en/04_similar.png">
+  <img alt="Similar photos" src="docs/img/en/04_similar_light.png">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/05_reunir.png">
-  <img alt="Gather images" src="docs/img/05_reunir_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/en/05_gather.png">
+  <img alt="Gather images" src="docs/img/en/05_gather_light.png">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/07_historial.png">
-  <img alt="History and undo" src="docs/img/07_historial_claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/en/07_history.png">
+  <img alt="History and undo" src="docs/img/en/07_history_light.png">
 </picture>
 
 </details>

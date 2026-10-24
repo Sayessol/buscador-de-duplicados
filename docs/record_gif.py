@@ -1,6 +1,7 @@
-"""Records docs/img/demo.gif: scan -> move to quarantine -> undo.
+"""Records docs/img/<language>/demo.gif: scan -> move to quarantine -> undo.
 
-    python docs/record_gif.py
+    python docs/record_gif.py        # Spanish (default)
+    python docs/record_gif.py en     # English
 
 It opens the app itself with sample folders and takes screenshots of ITS window
 (never of the whole desktop) every few tenths of a second. The system dialogs
@@ -18,11 +19,14 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = Path(__file__).resolve().parent / "img" / "demo.gif"
+LANGUAGE = sys.argv[1] if len(sys.argv) > 1 else "es"
+assert LANGUAGE in ("es", "en"), "usage: record_gif.py [es|en]"
+OUTPUT = Path(__file__).resolve().parent / "img" / LANGUAGE / "demo.gif"
+OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 GIF_WIDTH = 960                    # final width of the GIF (smaller = fewer MB)
 INTERVAL_MS = 90                  # how often a frame is captured
 
-BASE_DEMO = Path(os.environ.get("CAPTURAS_BASE", "C:/Demo"))
+BASE_DEMO = Path(os.environ.get("CAPTURE_BASE", "C:/Demo"))
 BASE_DEMO.mkdir(parents=True, exist_ok=True)
 tmp = Path(tempfile.mkdtemp(prefix="", dir=BASE_DEMO))
 os.environ["APPDATA"] = str(tmp / "appdata")        # does not touch your real configuration
@@ -31,8 +35,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from PIL import Image, ImageChops, ImageDraw, ImageGrab     # noqa: E402
 
+from duplicate_finder import i18n  # noqa: E402
 from duplicate_finder.bootstrap import build_services  # noqa: E402
 
+i18n.set_language(LANGUAGE)
 SERVICES = build_services()
 history = SERVICES.history
 from duplicate_finder.presentation import styles  # noqa: E402
@@ -53,19 +59,31 @@ def photo(seed, size=(240, 160)):
 
 
 # ---- sample folders --------------------------------------------------
-base = tmp / "Fotos"
-names = {"2023/verano/playa.png": 1, "2023/verano/atardecer.png": 2,
-           "2023/cumple.png": 3, "Descargas/montaña.png": 4, "Escritorio/portada.png": 5}
+def T(es, en):
+    """The sample name in the language of the recording."""
+    return es if LANGUAGE == "es" else en
+
+
+BEACH, SUNSET = T("playa.png", "beach.png"), T("atardecer.png", "sunset.png")
+BIRTHDAY = T("cumple.png", "birthday.png")
+SUMMER, DOWNLOADS = T("verano", "summer"), T("Descargas", "Downloads")
+DESKTOP = T("Escritorio", "Desktop")
+base = tmp / T("Fotos", "Photos")
+names = {f"2023/{SUMMER}/{BEACH}": 1, f"2023/{SUMMER}/{SUNSET}": 2,
+         f"2023/{BIRTHDAY}": 3, f"{DOWNLOADS}/{T('montaña.png', 'mountain.png')}": 4,
+         f"{DESKTOP}/{T('portada.png', 'cover.png')}": 5}
 for rel, seed in names.items():
     path = base / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     photo(seed).save(path)
-for source, copy in [("2023/verano/playa.png", "Descargas/playa.png"),
-                      ("2023/verano/atardecer.png", "Descargas/atardecer (1).png"),
-                      ("2023/cumple.png", "Escritorio/cumple - copia.png")]:
+SUNSET_COPY = T("atardecer (1).png", "sunset (1).png")
+BIRTHDAY_COPY = T("cumple - copia.png", "birthday - copy.png")
+for source, copy in [(f"2023/{SUMMER}/{BEACH}", f"{DOWNLOADS}/{BEACH}"),
+                     (f"2023/{SUMMER}/{SUNSET}", f"{DOWNLOADS}/{SUNSET_COPY}"),
+                     (f"2023/{BIRTHDAY}", f"{DESKTOP}/{BIRTHDAY_COPY}")]:
     (base / copy).parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(base / source, base / copy)
-quarantine = tmp / "Cuarentena"
+quarantine = tmp / T("Cuarentena", "Quarantine")
 quarantine.mkdir()
 
 # ---- simulated dialogs -----------------------------------------------------
@@ -123,7 +141,7 @@ def wait(condition, next, attempts=200):
 
 def choose_row():
     for iid, meta in app.exact.table._meta.items():
-        if meta[0] == "file" and meta[2].endswith("playa.png"):
+        if meta[0] == "file" and meta[2].endswith(BEACH):
             app.exact.table.tree.selection_set(iid)
             app.exact.table.tree.see(iid)
             break
@@ -181,8 +199,8 @@ for (t0, im), next in zip(frames, frames[1:] + [(frames[-1][0] + .6, None)]):
     previous = small
 imgs[0].save(OUTPUT, save_all=True, append_images=imgs[1:], duration=durations,
              loop=0, optimize=True, disposal=1)
-print(f"{OUTPUT.name}: {len(imgs)} fotogramas, {OUTPUT.stat().st_size / 1e6:.1f} MB, "
-      f"{sum(durations) / 1000:.1f} s")
+print(f"{OUTPUT.parent.name}/{OUTPUT.name}: {len(imgs)} frames, "
+      f"{OUTPUT.stat().st_size / 1e6:.1f} MB, {sum(durations) / 1000:.1f} s")
 
 # Cleanup: deletes only the sample folder created by this script.
 shutil.rmtree(tmp, ignore_errors=True)

@@ -1,11 +1,13 @@
 """Generates the screenshots for the documentation.
 
-    python docs/capture.py             # dark theme   -> 01_sencilla.png ...
-    python docs/capture.py light       # light theme  -> 01_sencilla_claro.png ...
-    python docs/capture.py dark en     # the second argument is the language: es (default) or en
+    python docs/capture.py                 # dark theme, Spanish -> docs/img/es/01_simple.png ...
+    python docs/capture.py light           # light theme -> docs/img/es/01_simple_light.png ...
+    python docs/capture.py dark en         # the second argument is the language: es (default) or en
 
-It saves PNGs in docs/img/ (or in the folder of the CAPTURAS_SALIDA variable). Each
-capture limits the crop to the window of the app itself (never to the whole desktop).
+It saves PNGs in docs/img/<language>/ (or under the folder of the CAPTURE_OUTPUT variable).
+Each capture limits the crop to the window of the app itself (never to the whole desktop). The
+sample folders and files get names in the language of the interface, so the screenshots read
+naturally.
 
 It is DETERMINISTIC: sample folder with a fixed name, photos always generated the same, and
 fixed dates. Two runs in a row give pixel-identical images, and that is useful
@@ -21,20 +23,26 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT
-IMG = Path(os.environ.get("CAPTURAS_SALIDA") or Path(__file__).resolve().parent / "img")
-IMG.mkdir(exist_ok=True)
+THEME = sys.argv[1] if len(sys.argv) > 1 else "dark"
+SUFFIX = "" if THEME == "dark" else "_light"
+LANGUAGE = sys.argv[2] if len(sys.argv) > 2 else "es"
+assert THEME in ("dark", "light") and LANGUAGE in ("es", "en"), \
+    "usage: capture.py [dark|light] [es|en]"
+IMG = Path(os.environ.get("CAPTURE_OUTPUT") or Path(__file__).resolve().parent / "img") / LANGUAGE
+IMG.mkdir(parents=True, exist_ok=True)
 
-# "light" / "dark" (the old "claro" / "oscuro" are still accepted)
-THEME = {"claro": "light", "oscuro": "dark"}.get(sys.argv[1], sys.argv[1]) \
-    if len(sys.argv) > 1 else "dark"
-SUFFIX = "" if THEME == "dark" else "_claro"      # the image names keep their Spanish suffix
-LANGUAGE = sys.argv[2] if len(sys.argv) > 2 else "es"    # the documentation is Spanish for now
+
+def T(es, en):
+    """The sample name in the language of the screenshots."""
+    return es if LANGUAGE == "es" else en
+
+
 
 # Sample folder with a neutral path, so that the Windows user name
 # does not appear in the screenshots (as it would with the temporary folder).
-BASE_DEMO = Path(os.environ.get("CAPTURAS_BASE", "C:/Demo"))
+BASE_DEMO = Path(os.environ.get("CAPTURE_BASE", "C:/Demo"))
 BASE_DEMO.mkdir(parents=True, exist_ok=True)
-tmp = BASE_DEMO / "muestra"
+tmp = BASE_DEMO / T("muestra", "sample")
 shutil.rmtree(tmp, ignore_errors=True)       # only this script's sample folder
 tmp.mkdir()
 os.environ["APPDATA"] = str(tmp / "appdata")
@@ -55,8 +63,6 @@ from duplicate_finder.bootstrap import build_services  # noqa: E402
 SERVICES = build_services()
 history = SERVICES.history
 
-i18n.set_language(LANGUAGE)
-
 FIXED_DATE = datetime(2026, 1, 15, 12, 0, 0)
 
 
@@ -72,6 +78,9 @@ class _FixedNow(datetime):
 
 
 history_module.datetime = _FixedNow
+
+
+i18n.set_language(LANGUAGE)
 
 
 def photo(seed, size=(220, 150)):
@@ -99,39 +108,46 @@ def snap(widget, name):
 
 
 # ---- set up sample folders -----------------------------------
-base_dup = tmp / "Fotos"
-for rel in ("2023/verano/playa.png", "2023/verano/atardecer.png",
-            "Descargas/playa.png", "Descargas/atardecer (1).png",
-            "Escritorio/portada.png"):
+BEACH, SUNSET = T("playa.png", "beach.png"), T("atardecer.png", "sunset.png")
+SUMMER, DOWNLOADS = T("verano", "summer"), T("Descargas", "Downloads")
+SUNSET_COPY = T("atardecer (1).png", "sunset (1).png")
+base_dup = tmp / T("Fotos", "Photos")
+for rel in (f"2023/{SUMMER}/{BEACH}", f"2023/{SUMMER}/{SUNSET}",
+            f"{DOWNLOADS}/{BEACH}", f"{DOWNLOADS}/{SUNSET_COPY}",
+            f"{T('Escritorio', 'Desktop')}/{T('portada.png', 'cover.png')}"):
     p = base_dup / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     photo(zlib.crc32(rel.encode()) % 999).save(p)
 # EXACT duplicates
-b = (base_dup / "2023/verano/playa.png").read_bytes()
-(base_dup / "Descargas/playa.png").write_bytes(b)
-b2 = (base_dup / "2023/verano/atardecer.png").read_bytes()
-(base_dup / "Descargas/atardecer (1).png").write_bytes(b2)
+b = (base_dup / f"2023/{SUMMER}/{BEACH}").read_bytes()
+(base_dup / f"{DOWNLOADS}/{BEACH}").write_bytes(b)
+b2 = (base_dup / f"2023/{SUMMER}/{SUNSET}").read_bytes()
+(base_dup / f"{DOWNLOADS}/{SUNSET_COPY}").write_bytes(b2)
 
-gather_base = tmp / "Movil"
-for rel in ("WhatsApp/img1.jpg", "WhatsApp/img2.jpg", "Camara/DCIM/foto.jpg",
-            "Camara/DCIM/foto2.jpg", "Descargas/meme.png", "captura.png"):
+gather_base = tmp / T("Movil", "Phone")
+CAMERA = T("Camara", "Camera")
+PHOTO = T("foto", "photo")
+for rel in ("WhatsApp/img1.jpg", "WhatsApp/img2.jpg", f"{CAMERA}/DCIM/{PHOTO}.jpg",
+            f"{CAMERA}/DCIM/{PHOTO}2.jpg", f"{DOWNLOADS}/meme.png",
+            f"{T('captura', 'screenshot')}.png"):
     p = gather_base / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     photo(zlib.crc32(rel.encode()) % 999).save(p)
-(gather_base / "Camara/notas.txt").write_text("x")
-(gather_base / "Descargas/factura.pdf").write_bytes(b"%PDF")
+(gather_base / f"{CAMERA}/{T('notas', 'notes')}.txt").write_text("x")
+(gather_base / f"{DOWNLOADS}/{T('factura', 'invoice')}.pdf").write_bytes(b"%PDF")
 
 # Fixed modification dates (the preview shows them).
 for _f in tmp.rglob('*'):
     os.utime(_f, (FIXED_DATE.timestamp(), FIXED_DATE.timestamp()))
 
 # sample history
-history.record(KIND_QUARANTINE, "move", str(base_dup), str(tmp / "Cuarentena"),
-                    [(str(base_dup / "x"), str(tmp / "Cuarentena" / "x"))] * 4,
-                    "4 duplicados exactos")
+quarantine_folder = tmp / T("Cuarentena", "Quarantine")
+history.record(KIND_QUARANTINE, "move", str(base_dup), str(quarantine_folder),
+               [(str(base_dup / "x"), str(quarantine_folder / "x"))] * 4,
+               i18n.tr("history.description_exact", count=4))
 history.record(KIND_GATHER, "copy", str(gather_base), str(tmp / "Album"),
-                    [(str(gather_base / "y"), str(tmp / "Album" / "y"))] * 12,
-                    "12 imágenes")
+               [(str(gather_base / "y"), str(tmp / "Album" / "y"))] * 12,
+               i18n.tr("gather.description_files", count=12))
 
 styles.apply_theme(THEME)
 app = MainWindow(SERVICES)
@@ -164,11 +180,11 @@ def p_simple_scan():
 
 def p_simple_shot():
     for iid, meta in app.exact.table._meta.items():
-        if meta[0] == "file" and meta[2].endswith("playa.png"):
+        if meta[0] == "file" and meta[2].endswith(BEACH):
             app.exact.table.tree.selection_set(iid)
             app.exact.table.tree.see(iid)
             break
-    snap(app, "01_sencilla.png")
+    snap(app, "01_simple.png")
 
 
 # --- Advanced --------------------------------------------------
@@ -180,7 +196,7 @@ def p_advanced():
 
 
 def p_advanced_shot():
-    snap(app, "02_avanzada.png")
+    snap(app, "02_advanced.png")
 
 
 def p_options():
@@ -191,7 +207,7 @@ def p_options():
 
 
 def p_options_shot():
-    snap(app, "03_opciones.png")
+    snap(app, "03_options.png")
     app.exact.options.toggle()
 
 
@@ -204,19 +220,19 @@ def p_similar():
 
 
 def p_similar_shot():
-    snap(app, "04_parecidas.png")
+    snap(app, "04_similar.png")
 
 
 # --- Gather --------------------------------------------------
 def p_gather():
     app.show_tab("gather")
     app.gather.entry_folder.insert(0, str(gather_base))
-    app.gather.entry_destination.insert(0, str(tmp / "Todas mis fotos"))
+    app.gather.entry_destination.insert(0, str(tmp / T("Todas mis fotos", "All my photos")))
     app.gather._search()
 
 
 def p_gather_shot():
-    snap(app, "05_reunir.png")
+    snap(app, "05_gather.png")
 
 
 # --- Dialogs -----------------------------------------------
@@ -231,7 +247,7 @@ def p_kinds():
 
 
 def p_kinds_shot():
-    snap(app._dlg, "06_tipos.png")
+    snap(app._dlg, "06_types.png")
     app._dlg.destroy()
 
 
@@ -242,12 +258,12 @@ def p_history():
 
 
 def p_history_shot():
-    snap(app._hv, "07_historial.png")
+    snap(app._hv, "07_history.png")
     app._hv.destroy()
 
 
 def p_viewer():
-    img = tmp / "detalle.png"
+    img = tmp / T("detalle.png", "detail.png")
     Image.new("RGB", (1200, 820), (18, 22, 30))
     im = Image.new("RGB", (1200, 820), (18, 22, 30))
     d = ImageDraw.Draw(im)
@@ -265,7 +281,7 @@ def p_viewer():
 
 
 def p_viewer_shot():
-    snap(app._v, "08_visor.png")
+    snap(app._v, "08_viewer.png")
     app._v.destroy()
 
 
@@ -289,7 +305,7 @@ add(p_viewer_shot, 700)
 app.after(600, run)
 app.after(40000, app.destroy)
 app.mainloop()
-print("Capturas en", IMG)
+print("Screenshots in", IMG)
 
 # Cleanup: deletes only the sample folder created by this script.
 shutil.rmtree(tmp, ignore_errors=True)

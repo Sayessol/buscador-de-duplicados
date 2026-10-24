@@ -56,7 +56,7 @@ C += [p(
 
 # ======================================================================
 C += [h1("3. La pantalla principal")]
-C += image("01_sencilla.png", caption=(
+C += image("01_simple.png", caption=(
     "Modo Sencilla, pestaña «Duplicados exactos», después de un escaneo."))
 C += [p(
     "Arriba a la derecha hay dos ajustes:")]
@@ -108,12 +108,12 @@ C += [p(
     "con su nombre, ruta, tamaño, fecha y resolución. <b>Pulsa la vista "
     "previa</b> para abrir la imagen a pantalla casi completa, con zoom "
     "(rueda del ratón o botones) y desplazamiento arrastrando.")]
-C += image("08_visor.png", width_cm=13.5, caption=(
+C += image("08_viewer.png", width_cm=13.5, caption=(
     "El visor de imagen: rueda para el zoom, arrastrar para moverse, "
     "«Ajustar» para encajarla en la ventana."))
 
 C += [PageBreak(), h2("4.3. Opciones de escaneo (modo Avanzada)")]
-C += image("03_opciones.png", caption=(
+C += image("03_options.png", caption=(
     "El panel «Opciones de escaneo» desplegado, con «Imágenes» marcado."))
 C += [h3("Buscar solo estos tipos de archivo")]
 C += [p(
@@ -132,7 +132,7 @@ C += [p(
     "va más rápido.")]
 
 C += [h2("4.4. Elegir qué conservar (modo Avanzada)")]
-C += image("02_avanzada.png", caption=(
+C += image("02_advanced.png", caption=(
     "Modo Avanzada: reaparecen «Carpeta preferida», «Regla por carpeta», "
     "«Elegir la principal», «Ver tipos de archivo» y «Exportar CSV»."))
 C += [bullet_list([
@@ -153,7 +153,7 @@ C += [bullet_list([
 
 # ======================================================================
 C += [PageBreak(), h1("5. Pestaña «Fotos parecidas»")]
-C += image("04_parecidas.png", caption=(
+C += image("04_similar.png", caption=(
     "Cada grupo muestra las fotos parecidas con su miniatura, resolución, "
     "peso y porcentaje de parecido."))
 C += [bullet_list([
@@ -181,7 +181,7 @@ C += [table([
 
 # ======================================================================
 C += [PageBreak(), h1("6. Pestaña «Reunir imágenes»")]
-C += image("05_reunir.png", caption=(
+C += image("05_gather.png", caption=(
     "Lista de imágenes encontradas, con casilla para excluir alguna."))
 C += [bullet_list([
     "<b>1.</b> Elige la carpeta a revisar. El selector "
@@ -207,7 +207,7 @@ C += [h2("6.1. Archivos que no son imágenes")]
 C += [p(
     "Si en esas carpetas hay también documentos, música, etc., y usas la "
     "estrategia «Por archivos», aparece este diálogo:")]
-C += image("06_tipos.png", width_cm=12.5, caption=(
+C += image("06_types.png", width_cm=12.5, caption=(
     "Para cada tipo de archivo eliges qué hacer."))
 C += [bullet_list([
     "<b>Dejar</b>: no se mueve, se queda donde está.",
@@ -223,7 +223,7 @@ C += [PageBreak(), h1("7. Historial y deshacer")]
 C += [p(
     "En <b>modo Avanzada</b>, el botón <b>«Historial»</b> de la cabecera "
     "abre esta ventana desde cualquier pestaña:")]
-C += image("07_historial.png", width_cm=13.5, caption=(
+C += image("07_history.png", width_cm=13.5, caption=(
     "Cada operación de mover o copiar queda registrada, con su botón "
     "«Deshacer»."))
 C += [bullet_list([

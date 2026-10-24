@@ -180,8 +180,8 @@ def bullet_list(items):
         bulletType="bullet", start="•", leftIndent=10)
 
 
-def image(name, width_cm=15.5, caption=None):
-    path = IMG / name
+def image(name, width_cm=15.5, caption=None, lang="es"):
+    path = IMG / lang / name
     from reportlab.lib.utils import ImageReader
     iw, ih = ImageReader(str(path)).getSize()
     w = width_cm * cm
