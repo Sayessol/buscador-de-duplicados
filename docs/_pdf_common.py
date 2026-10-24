@@ -2,6 +2,9 @@
 
 Cover + index (table of contents with real page numbers) +
 content with header/footer and numbering. Only reportlab.
+
+Each document has one content module per language (`content/<document>_<lang>.py`); `generate`
+builds the PDFs from them: `python docs/gen_manual.py [es|en|all]`.
 """
 
 from datetime import date
@@ -18,7 +21,43 @@ from reportlab.platypus import (
 )
 from reportlab.platypus.tableofcontents import TableOfContents
 
-IMG = Path(__file__).resolve().parent / "img"
+HERE = Path(__file__).resolve().parent
+IMG = HERE / "img"
+
+# The language of the document being built; the helpers below read it.
+_language = "es"
+
+TEXTS = {
+    "es": {
+        "brand": "Buscador de duplicados",
+        "author": "Proyecto Buscador de duplicados",
+        "note": "Nota.",
+        "index": "Índice",
+        "cover_meta": "Aplicación de escritorio para Windows &nbsp;·&nbsp; "
+                      "Python + CustomTkinter<br/>Documento generado el {date}",
+        "date_format": "%d/%m/%Y",
+    },
+    "en": {
+        "brand": "Duplicate Finder",
+        "author": "Duplicate Finder project",
+        "note": "Note.",
+        "index": "Contents",
+        "cover_meta": "Desktop application for Windows &nbsp;·&nbsp; "
+                      "Python + CustomTkinter<br/>Document generated on {date}",
+        "date_format": "%Y-%m-%d",
+    },
+}
+
+
+def set_language(language):
+    global _language
+    assert language in TEXTS, language
+    _language = language
+
+
+def text(key):
+    return TEXTS[_language][key]
+
 
 BLUE = colors.HexColor("#1f6aa5")
 BLUE_DARK = colors.HexColor("#14375e")
@@ -93,7 +132,7 @@ class _Doc(BaseDocTemplate):
         super().__init__(str(path), pagesize=A4,
                          leftMargin=2.2 * cm, rightMargin=2.2 * cm,
                          topMargin=2.3 * cm, bottomMargin=2.0 * cm,
-                         title=short_title, author="Proyecto Buscador de duplicados")
+                         title=short_title, author=text("author"))
         self._short_title = short_title
         width = self.width
         height = self.height
@@ -122,8 +161,7 @@ class _Doc(BaseDocTemplate):
         canvas.setFont("Helvetica", 8)
         canvas.setFillColor(GRAY)
         canvas.drawString(self.leftMargin, A4[1] - 1.4 * cm, self._short_title)
-        canvas.drawRightString(A4[0] - self.rightMargin, A4[1] - 1.4 * cm,
-                               "Buscador de duplicados")
+        canvas.drawRightString(A4[0] - self.rightMargin, A4[1] - 1.4 * cm, text("brand"))
         canvas.setStrokeColor(GRAY_LIGHT)
         canvas.line(self.leftMargin, A4[1] - 1.6 * cm,
                     A4[0] - self.rightMargin, A4[1] - 1.6 * cm)
@@ -159,7 +197,7 @@ def p(t):
 
 
 def note(t):
-    return Paragraph("<b>Nota.</b> " + t, STYLES["nota"])
+    return Paragraph(f"<b>{text('note')}</b> " + t, STYLES["nota"])
 
 
 def code(t):
@@ -180,8 +218,9 @@ def bullet_list(items):
         bulletType="bullet", start="•", leftIndent=10)
 
 
-def image(name, width_cm=15.5, caption=None, lang="es"):
-    path = IMG / lang / name
+def image(name, width_cm=15.5, caption=None):
+    """A screenshot of the interface in the language of the document."""
+    path = IMG / _language / name
     from reportlab.lib.utils import ImageReader
     iw, ih = ImageReader(str(path)).getSize()
     w = width_cm * cm
@@ -234,16 +273,14 @@ def build(pdf_path, title, subtitle, short_title, body_flowables,
     if cover_summary:
         story.append(Paragraph(cover_summary, STYLES["meta_portada"]))
         story.append(Spacer(1, 1.0 * cm))
-    meta = (f"Aplicación de escritorio para Windows &nbsp;·&nbsp; "
-            f"Python + CustomTkinter<br/>"
-            f"Documento generado el {date.today().strftime('%d/%m/%Y')}")
-    story.append(Paragraph(meta, STYLES["meta_portada"]))
+    today = date.today().strftime(text("date_format"))
+    story.append(Paragraph(text("cover_meta").format(date=today), STYLES["meta_portada"]))
 
     story.append(NextPageTemplate("cuerpo"))
     story.append(PageBreak())
 
     # --- Index ---
-    story.append(Paragraph("Índice", STYLES["titulo_llano"]))
+    story.append(Paragraph(text("index"), STYLES["titulo_llano"]))
     toc = TableOfContents()
     toc.levelStyles = [STYLES["toc1"], STYLES["toc2"]]
     toc.dotsMinLevel = 0
@@ -254,4 +291,22 @@ def build(pdf_path, title, subtitle, short_title, body_flowables,
     story.extend(body_flowables)
 
     doc.multiBuild(story)
-    print("Generado:", pdf_path)
+    print("Generated:", pdf_path)
+
+
+def generate(versions, argv):
+    """Builds the PDFs of one document.
+
+    `versions` maps a language to (PDF file name, content module); each module has TITLE,
+    SUBTITLE, SHORT_TITLE, COVER_SUMMARY and a `body()` that returns the flowables. `argv` is
+    `sys.argv`: a language (es / en) or `all` (the default).
+    """
+    wanted = argv[1] if len(argv) > 1 else "all"
+    assert wanted == "all" or wanted in versions, f"usage: {argv[0]} [{'|'.join(versions)}|all]"
+    for language, (file_name, module) in versions.items():
+        if wanted not in ("all", language):
+            continue
+        set_language(language)
+        build(HERE / file_name, title=module.TITLE, subtitle=module.SUBTITLE,
+              short_title=module.SHORT_TITLE, cover_summary=module.COVER_SUMMARY,
+              body_flowables=module.body())

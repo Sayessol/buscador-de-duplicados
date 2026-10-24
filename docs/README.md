@@ -2,11 +2,11 @@
 
 **English** · [Español](README.es.md)
 
-Three PDFs, with cover, table of contents and content (currently in Spanish):
+Three PDFs, with cover, table of contents and content, each in English and in Spanish:
 
-- [`manual-de-usuario.pdf`](manual-de-usuario.pdf): for people who use the app.
-- [`proceso-de-creacion.pdf`](proceso-de-creacion.pdf): phases and decisions of the project.
-- [`guia-del-codigo.pdf`](guia-del-codigo.pdf): how the code works inside.
+- [`user-manual.pdf`](user-manual.pdf) / [`manual-de-usuario.pdf`](manual-de-usuario.pdf): for people who use the app.
+- [`creation-process.pdf`](creation-process.pdf) / [`proceso-de-creacion.pdf`](proceso-de-creacion.pdf): phases and decisions of the project.
+- [`code-guide.pdf`](code-guide.pdf) / [`guia-del-codigo.pdf`](guia-del-codigo.pdf): how the code works inside.
 
 `origin/` keeps the original console script (`buscar_duplicados.py`), the first step of the project.
 
@@ -22,11 +22,12 @@ python docs/capture.py dark en     # the same with the English interface (docs/i
 python docs/capture.py light en
 python docs/record_gif.py es       # the README GIF (docs/img/es/demo.gif); `en` for English
 python docs/gen_cover.py           # the social preview image (English; `es` for Spanish)
-python docs/gen_manual.py
+python docs/gen_manual.py          # both languages; `es` or `en` to build just one
 python docs/gen_process.py
 python docs/gen_code_guide.py
 ```
 
+- `content/`: the text of each PDF, one module per language (`manual_en.py`, `manual_es.py`...).
 - `_pdf_common.py`: cover, table of contents (with page numbers) and shared styles.
 - `capture.py`: opens the app, builds sample folders in `C:\Demo` (change it with the `CAPTURE_BASE` variable; the output folder with `CAPTURE_OUTPUT`) and takes the screenshots. The sample files have names in the language of the interface, and it uses a neutral path so your Windows user name does not show up.
 - `record_gif.py`: records `img/<language>/demo.gif` (scan → move → undo) on sample folders.
