@@ -19,10 +19,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
-from PIL import Image                                # noqa: E402
-from duplicate_finder.presentation import styles  # noqa: E402
-from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from PIL import Image
+
+from duplicate_finder.bootstrap import build_services
+from duplicate_finder.presentation import styles
+from duplicate_finder.presentation.main_window import MainWindow
 
 SERVICES = build_services()
 
@@ -38,12 +39,15 @@ def check(cond, msg):
 
 def _photo(seed):
     import random
+
     rnd = random.Random(seed)
     im = Image.new("RGB", (600, 400), (12, 12, 12))
     for _ in range(14):
         x, y = rnd.randint(0, 600), rnd.randint(0, 400)
-        im.paste((rnd.randint(0, 255), rnd.randint(0, 255), rnd.randint(0, 255)),
-                 (x, y, x + 110, y + 110))
+        im.paste(
+            (rnd.randint(0, 255), rnd.randint(0, 255), rnd.randint(0, 255)),
+            (x, y, x + 110, y + 110),
+        )
     return im
 
 
@@ -52,7 +56,7 @@ def build(root: Path):
     (root / "2024").mkdir(parents=True)
     (root / "unsorted").mkdir(parents=True)
     _photo(1).save(root / "2023" / "summer" / "beach.jpg", quality=92)
-    _photo(1).save(root / "2024" / "beach.jpg", quality=45)          # similar
+    _photo(1).save(root / "2024" / "beach.jpg", quality=45)  # similar
     _photo(1).save(root / "unsorted" / "beach (copy).jpg", quality=70)  # similar
     _photo(2).save(root / "2023" / "portrait.jpg", quality=92)
     _photo(2).save(root / "unsorted" / "portrait.jpg", quality=45)  # similar
@@ -70,7 +74,7 @@ def main():
     # Stub the dialogs.
     filedialog.askdirectory = lambda *a, **k: str(quarantine)
     messagebox.askyesno = lambda *a, **k: True
-    os.startfile = lambda *a, **k: None   # without this the real Explorer would open
+    os.startfile = lambda *a, **k: None  # without this the real Explorer would open
     messagebox.showinfo = lambda *a, **k: None
     messagebox.showwarning = lambda *a, **k: None
     messagebox.showerror = lambda *a, **k: print("   [showerror]", a)
@@ -82,10 +86,8 @@ def main():
     app.similar.entry_folder.insert(0, str(root))
     app.similar.sensitivity_slider.set(14)
 
-    folders_before = sorted(str(x.relative_to(root))
-                            for x in root.rglob("*") if x.is_dir())
-    files_before = sorted(str(x.relative_to(root))
-                            for x in root.rglob("*") if x.is_file())
+    folders_before = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_dir())
+    files_before = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_file())
 
     def when_ready():
         if app.similar._selection is None:
@@ -99,15 +101,16 @@ def main():
         app.after(1500, verify)
 
     def verify():
-        folders_after = sorted(str(x.relative_to(root))
-                                  for x in root.rglob("*") if x.is_dir())
-        files_after = sorted(str(x.relative_to(root))
-                                  for x in root.rglob("*") if x.is_file())
-        dirs_in_quarantine = sorted(str(x.relative_to(quarantine))
-                                    for x in quarantine.rglob("*") if x.is_dir())
+        folders_after = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_dir())
+        files_after = sorted(str(x.relative_to(root)) for x in root.rglob("*") if x.is_file())
+        dirs_in_quarantine = sorted(
+            str(x.relative_to(quarantine)) for x in quarantine.rglob("*") if x.is_dir()
+        )
         files_in_quarantine = sorted(
-            str(x.relative_to(quarantine)) for x in quarantine.rglob("*")
-            if x.is_file() and not x.name.endswith(".csv"))
+            str(x.relative_to(quarantine))
+            for x in quarantine.rglob("*")
+            if x.is_file() and not x.name.endswith(".csv")
+        )
 
         print("  source folders BEFORE: ", folders_before)
         print("  source folders AFTER:", folders_after)
@@ -115,14 +118,19 @@ def main():
         print("  folders created in the quarantine:", dirs_in_quarantine)
         print("  files moved to quarantine:", files_in_quarantine)
 
-        check(folders_before == folders_after,
-              "ALL the source subfolders are still there (they were not moved)")
-        check(len(files_after) + len(files_in_quarantine) == len(files_before),
-              "no file was lost")
-        check(len(files_in_quarantine) == R["to_move"] and R["to_move"] >= 2,
-              f"{R['to_move']} regular files were moved to the quarantine")
-        check(all("." in Path(f).name for f in files_in_quarantine),
-              "what is in the quarantine are files with an extension, not folders")
+        check(
+            folders_before == folders_after,
+            "ALL the source subfolders are still there (they were not moved)",
+        )
+        check(len(files_after) + len(files_in_quarantine) == len(files_before), "no file was lost")
+        check(
+            len(files_in_quarantine) == R["to_move"] and R["to_move"] >= 2,
+            f"{R['to_move']} regular files were moved to the quarantine",
+        )
+        check(
+            all("." in Path(f).name for f in files_in_quarantine),
+            "what is in the quarantine are files with an extension, not folders",
+        )
 
         app.after(200, app.destroy)
 

@@ -51,7 +51,8 @@ def _job(scheduler, events):
         on_done=lambda result: events.append(("done", result)),
         on_error=lambda error: events.append(("error", type(error).__name__)),
         on_cancelled=lambda: events.append(("cancelled", None)),
-        cancelled_exceptions=(Cancelled,))
+        cancelled_exceptions=(Cancelled,),
+    )
 
 
 def test_progress_arrives_in_order_and_then_the_result(scheduler, events):

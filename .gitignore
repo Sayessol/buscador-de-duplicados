@@ -30,3 +30,6 @@ htmlcov/
 
 # Parallel coverage data
 .coverage.*
+
+# Build metadata of `pip install -e .`
+*.egg-info/

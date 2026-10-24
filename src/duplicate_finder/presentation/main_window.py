@@ -19,6 +19,7 @@ exact_duplicates_tab.py:_scan_job.
 Interface in English or Spanish (texts in i18n/locales), light/dark theme, icons made of
 Unicode glyphs.
 """
+
 import logging
 from pathlib import Path
 from tkinter import TclError, messagebox
@@ -27,14 +28,14 @@ import customtkinter as ctk
 
 from duplicate_finder import __version__, i18n
 from duplicate_finder.application.services import Services
-from . import styles
-from . import icons
-from .history_window import HistoryWindow
+from duplicate_finder.i18n import tr
+
+from . import icons, styles
 from .exact_duplicates_tab import ExactDuplicatesTab
 from .gather_images_tab import GatherImagesTab
-from .widgets import KeyedOptionMenu, KeyedSegmentedButton
+from .history_window import HistoryWindow
 from .similar_photos_tab import SimilarPhotosTab
-from duplicate_finder.i18n import tr
+from .widgets import KeyedOptionMenu, KeyedSegmentedButton
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class MainWindow(ctk.CTk):
 
         self.services = services
         self._mode = services.settings.get_mode()  # "simple" | "advanced"
-        self._error_warned = False     # the unexpected-error warning appears only once
+        self._error_warned = False  # the unexpected-error warning appears only once
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -60,9 +61,9 @@ class MainWindow(ctk.CTk):
         self.tabs = ctk.CTkTabview(self, fg_color="transparent")
         self.tabs.grid(row=1, column=0, sticky="nsew", padx=10, pady=(2, 0))
         self._tab_titles = {
-            "exact": f"{icons.SEARCH}  {tr("main.tab_exact")}",
-            "similar": f"{icons.CAT_IMAGES}  {tr("main.tab_similar")}",
-            "gather": f"{icons.GATHER}  {tr("main.tab_gather")}",
+            "exact": f"{icons.SEARCH}  {tr('main.tab_exact')}",
+            "similar": f"{icons.CAT_IMAGES}  {tr('main.tab_similar')}",
+            "gather": f"{icons.GATHER}  {tr('main.tab_gather')}",
         }
         self.tab_exact = self.tabs.add(self._tab_titles["exact"])
         self.tab_similar = self.tabs.add(self._tab_titles["similar"])
@@ -87,11 +88,10 @@ class MainWindow(ctk.CTk):
             return
         self._error_warned = True
         path = self.services.log_file_path()
-        where = (tr("main.log_saved", path=path) if path
-                 else tr("main.log_failed"))
+        where = tr("main.log_saved", path=path) if path else tr("main.log_failed")
         messagebox.showerror(
-            tr("main.error_title"),
-            tr("main.error_msg", name=exc.__name__, val=val, where=where))
+            tr("main.error_title"), tr("main.error_msg", name=exc.__name__, val=val, where=where)
+        )
 
     def _set_window_icon(self):
         """Icon of the title bar / taskbar.
@@ -117,55 +117,88 @@ class MainWindow(ctk.CTk):
         header.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(header, text=icons.SEARCH, font=styles.base_font(24)).grid(
-            row=0, column=0, rowspan=2, padx=(18, 12), pady=12)
+            row=0, column=0, rowspan=2, padx=(18, 12), pady=12
+        )
         title = ctk.CTkFrame(header, fg_color="transparent")
         title.grid(row=0, column=1, sticky="sw", pady=(12, 0))
-        ctk.CTkLabel(title, text=tr("common.app_name"),
-                     font=styles.title_font(17)).pack(side="left")
-        ctk.CTkLabel(title, text=f"v{__version__}", font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT).pack(
-            side="left", padx=(8, 0), pady=(4, 0))
+        ctk.CTkLabel(title, text=tr("common.app_name"), font=styles.title_font(17)).pack(
+            side="left"
+        )
         ctk.CTkLabel(
-            header, text=tr("main.tagline"),
-            font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT).grid(
-            row=1, column=1, sticky="nw", pady=(0, 12))
+            title,
+            text=f"v{__version__}",
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).pack(side="left", padx=(8, 0), pady=(4, 0))
+        ctk.CTkLabel(
+            header,
+            text=tr("main.tagline"),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).grid(row=1, column=1, sticky="nw", pady=(0, 12))
 
         self.btn_history = ctk.CTkButton(
-            header, text=f"{icons.HISTORY}  {tr("main.history")}", width=115,
-            fg_color="transparent", border_width=1,
-            border_color=styles.COLOR_BORDER, text_color=styles.COLOR_TEXT,
-            hover_color=styles.COLOR_TILE, command=self._open_history)
+            header,
+            text=f"{icons.HISTORY}  {tr('main.history')}",
+            width=115,
+            fg_color="transparent",
+            border_width=1,
+            border_color=styles.COLOR_BORDER,
+            text_color=styles.COLOR_TEXT,
+            hover_color=styles.COLOR_TILE,
+            command=self._open_history,
+        )
         self.btn_history.grid(row=0, column=2, rowspan=2, padx=(8, 12), pady=12)
 
         # Right panel: theme selector (top) and view selector (bottom).
         right = ctk.CTkFrame(header, fg_color="transparent")
         right.grid(row=0, column=3, rowspan=2, padx=(0, 16), pady=10)
 
-        ctk.CTkLabel(right, text=tr("main.theme_label"), font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT).grid(
-            row=0, column=0, padx=(0, 6), pady=(0, 4), sticky="e")
+        ctk.CTkLabel(
+            right,
+            text=tr("main.theme_label"),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).grid(row=0, column=0, padx=(0, 6), pady=(0, 4), sticky="e")
         self.theme_selector = KeyedOptionMenu(
-            right, {"auto": tr("main.theme_auto"), "light": tr("main.theme_light"),
-                    "dark": tr("main.theme_dark")},
-            width=118, command=self._change_theme)
+            right,
+            {
+                "auto": tr("main.theme_auto"),
+                "light": tr("main.theme_light"),
+                "dark": tr("main.theme_dark"),
+            },
+            width=118,
+            command=self._change_theme,
+        )
         self.theme_selector.set_key(self.services.settings.get_theme())
         self.theme_selector.grid(row=0, column=1, pady=(0, 4), sticky="w")
 
-        ctk.CTkLabel(right, text=tr("main.view_label"), font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT).grid(
-            row=1, column=0, padx=(0, 6), sticky="e")
+        ctk.CTkLabel(
+            right,
+            text=tr("main.view_label"),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).grid(row=1, column=0, padx=(0, 6), sticky="e")
         self.mode_selector = KeyedSegmentedButton(
-            right, {"simple": tr("main.mode_simple"), "advanced": tr("main.mode_advanced")},
-            command=self._change_mode)
+            right,
+            {"simple": tr("main.mode_simple"), "advanced": tr("main.mode_advanced")},
+            command=self._change_mode,
+        )
         self.mode_selector.set_key(self._mode)
         self.mode_selector.grid(row=1, column=1, columnspan=3, sticky="w")
 
-        ctk.CTkLabel(right, text=tr("main.language_label"), font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT).grid(
-            row=0, column=2, padx=(16, 6), pady=(0, 4), sticky="e")
+        ctk.CTkLabel(
+            right,
+            text=tr("main.language_label"),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).grid(row=0, column=2, padx=(16, 6), pady=(0, 4), sticky="e")
         self.language_selector = ctk.CTkOptionMenu(
-            right, values=list(i18n.LANGUAGE_NAMES.values()), width=110,
-            command=self._change_language)
+            right,
+            values=list(i18n.LANGUAGE_NAMES.values()),
+            width=110,
+            command=self._change_language,
+        )
         self.language_selector.set(i18n.LANGUAGE_NAMES[i18n.get_language()])
         self.language_selector.grid(row=0, column=3, pady=(0, 4), sticky="w")
 
@@ -179,7 +212,7 @@ class MainWindow(ctk.CTk):
     def _change_theme(self, label):
         theme = self.theme_selector.key_of(label)
         self.services.settings.set_theme(theme)
-        styles.change_theme(theme)     # CustomTkinter repaints; ttk does it in _set_appearance_mode
+        styles.change_theme(theme)  # CustomTkinter repaints; ttk does it in _set_appearance_mode
 
     def _change_language(self, name):
         """Saves the language; the texts are drawn once, so it applies the next time."""
@@ -192,7 +225,7 @@ class MainWindow(ctk.CTk):
     def _change_mode(self, value):
         """Called by the switch in the header."""
         self._mode = self.mode_selector.get_key()
-        self.services.settings.set_mode(self._mode)          # remembered for next time
+        self.services.settings.set_mode(self._mode)  # remembered for next time
         self._apply_mode()
         if self._mode == "simple":
             self.exact.on_switch_to_simple()

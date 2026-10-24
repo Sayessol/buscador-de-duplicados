@@ -9,20 +9,30 @@ For each kind (extension) found, the user chooses:
 import customtkinter as ctk
 
 from duplicate_finder.domain.filters import NO_EXTENSION
-from duplicate_finder.domain.transfers import NonImageRules, LEAVE, GROUP
-from duplicate_finder.domain.transfers import MOVE
+from duplicate_finder.domain.transfers import GROUP, LEAVE, MOVE, NonImageRules
+from duplicate_finder.i18n import tr
+
 from . import styles
 from .widgets import KeyedSegmentedButton
-from duplicate_finder.i18n import tr
 
 # Default names of the folders where each kind is grouped (names inside the user's folders
 # are fixed English; the user can edit them in the dialog).
 _FOLDER_NAME = {
-    "pdf": "Documents", "doc": "Documents", "docx": "Documents",
-    "xls": "Documents", "xlsx": "Documents", "txt": "Documents",
-    "mp3": "Music", "wav": "Music", "flac": "Music",
-    "mp4": "Videos", "mkv": "Videos", "avi": "Videos",
-    "zip": "Archives", "rar": "Archives", "7z": "Archives",
+    "pdf": "Documents",
+    "doc": "Documents",
+    "docx": "Documents",
+    "xls": "Documents",
+    "xlsx": "Documents",
+    "txt": "Documents",
+    "mp3": "Music",
+    "wav": "Music",
+    "flac": "Music",
+    "mp4": "Videos",
+    "mkv": "Videos",
+    "avi": "Videos",
+    "zip": "Archives",
+    "rar": "Archives",
+    "7z": "Archives",
 }
 
 
@@ -36,16 +46,20 @@ class NonImageKindsWindow(ctk.CTkToplevel):
         self.transient(master)
         self.grab_set()
 
-        self.rules = None          # filled in when "Apply" is pressed
-        self._rows = {}            # ext -> (segmented, entry)
+        self.rules = None  # filled in when "Apply" is pressed
+        self._rows = {}  # ext -> (segmented, entry)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
         ctk.CTkLabel(
-            self, text=tr("kinds.intro"),
-            font=styles.base_font(12), wraplength=580, justify="left",
-            anchor="w").grid(row=0, column=0, padx=16, pady=(14, 8), sticky="w")
+            self,
+            text=tr("kinds.intro"),
+            font=styles.base_font(12),
+            wraplength=580,
+            justify="left",
+            anchor="w",
+        ).grid(row=0, column=0, padx=16, pady=(14, 8), sticky="w")
 
         items = ctk.CTkScrollableFrame(self, fg_color=styles.COLOR_TABLE_BACKGROUND)
         items.grid(row=1, column=0, sticky="nsew", padx=12, pady=6)
@@ -56,11 +70,18 @@ class NonImageKindsWindow(ctk.CTkToplevel):
 
         caption = ctk.CTkFrame(self, fg_color="transparent")
         caption.grid(row=2, column=0, sticky="ew", padx=12, pady=(4, 12))
-        ctk.CTkButton(caption, text=tr("common.cancel"), width=100, fg_color="transparent",
-                      border_width=1, text_color=styles.COLOR_TEXT,
-                      command=self._cancel).pack(side="right", padx=4)
-        ctk.CTkButton(caption, text=tr("kinds.apply"), width=110,
-                      command=self._apply).pack(side="right", padx=4)
+        ctk.CTkButton(
+            caption,
+            text=tr("common.cancel"),
+            width=100,
+            fg_color="transparent",
+            border_width=1,
+            text_color=styles.COLOR_TEXT,
+            command=self._cancel,
+        ).pack(side="right", padx=4)
+        ctk.CTkButton(caption, text=tr("kinds.apply"), width=110, command=self._apply).pack(
+            side="right", padx=4
+        )
 
         self.after(150, self.lift)
         self.protocol("WM_DELETE_WINDOW", self._cancel)
@@ -71,14 +92,19 @@ class NonImageKindsWindow(ctk.CTkToplevel):
         frame.grid_columnconfigure(1, weight=1)
 
         label = f".{ext}" if ext != NO_EXTENSION else tr("common.no_extension")
-        ctk.CTkLabel(frame, text=f"{label}   ({how_many})",
-                     font=styles.base_font(12, "bold"), width=110,
-                     anchor="w").grid(row=0, column=0, padx=(12, 8), pady=10,
-                                      sticky="w")
+        ctk.CTkLabel(
+            frame,
+            text=f"{label}   ({how_many})",
+            font=styles.base_font(12, "bold"),
+            width=110,
+            anchor="w",
+        ).grid(row=0, column=0, padx=(12, 8), pady=10, sticky="w")
 
         seg = KeyedSegmentedButton(
-            frame, {LEAVE: tr("kinds.leave"), MOVE: tr("kinds.move"), GROUP: tr("kinds.group")},
-            command=lambda _v, e=ext: self._toggle_entry(e))
+            frame,
+            {LEAVE: tr("kinds.leave"), MOVE: tr("kinds.move"), GROUP: tr("kinds.group")},
+            command=lambda _v, e=ext: self._toggle_entry(e),
+        )
         seg.set_key(LEAVE)
         seg.grid(row=0, column=1, padx=4, pady=10, sticky="w")
 
@@ -104,8 +130,7 @@ class NonImageKindsWindow(ctk.CTkToplevel):
                 folders[ext] = entry.get().strip() or ext
             else:
                 actions[ext] = LEAVE
-        self.rules = NonImageRules(action_by_ext=actions,
-                                     folder_by_ext=folders)
+        self.rules = NonImageRules(action_by_ext=actions, folder_by_ext=folders)
         self.grab_release()
         self.destroy()
 

@@ -25,10 +25,12 @@ FOLDER_NAME = "Buscador-de-duplicados"
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Builds the app for Windows.")
-    parser.add_argument("--folder", action="store_true",
-                        help="folder format (instead of a single .exe)")
-    parser.add_argument("--zip", action="store_true",
-                        help="with --folder: compress the result into a ZIP")
+    parser.add_argument(
+        "--folder", action="store_true", help="folder format (instead of a single .exe)"
+    )
+    parser.add_argument(
+        "--zip", action="store_true", help="with --folder: compress the result into a ZIP"
+    )
     return parser
 
 
@@ -44,8 +46,10 @@ def main():
     args = parse_args()
 
     if sys.platform != "win32":
-        print("WARNING: a Windows .exe can only be built on Windows "
-              "(or with Wine). You are on:", sys.platform)
+        print(
+            "WARNING: a Windows .exe can only be built on Windows (or with Wine). You are on:",
+            sys.platform,
+        )
 
     try:
         import PyInstaller  # noqa: F401
@@ -73,8 +77,16 @@ def main():
         environment["BUILD_FORMAT"] = "folder"
     else:
         environment.pop("BUILD_FORMAT", None)
-    cmd = [sys.executable, "-m", "PyInstaller", "build.spec", "--noconfirm",
-           "--clean", "--log-level", "WARN"]
+    cmd = [
+        sys.executable,
+        "-m",
+        "PyInstaller",
+        "build.spec",
+        "--noconfirm",
+        "--clean",
+        "--log-level",
+        "WARN",
+    ]
     result = subprocess.run(cmd, cwd=ROOT, env=environment, check=False)
     if result.returncode != 0:
         print("\nPyInstaller failed.")
@@ -96,8 +108,12 @@ def main():
         print(f"Done:   {destination}")
         print(f"Folder size: {mb:.1f} MB (the .exe is inside)")
         if args.zip:
-            zip_path = shutil.make_archive(str(ROOT / "dist" / FOLDER_NAME), "zip",
-                                           root_dir=ROOT / "dist", base_dir=FOLDER_NAME)
+            zip_path = shutil.make_archive(
+                str(ROOT / "dist" / FOLDER_NAME),
+                "zip",
+                root_dir=ROOT / "dist",
+                base_dir=FOLDER_NAME,
+            )
             print(f"ZIP:    {zip_path}  ({Path(zip_path).stat().st_size / (1024 * 1024):.1f} MB)")
     else:
         print(f"Done:   {exe}")

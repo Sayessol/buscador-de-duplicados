@@ -23,19 +23,22 @@ def path(*parts):
 
 @pytest.fixture
 def fs():
-    return FakeFileSystem({
-        path("a", "beach.jpg"): b"0123456789",
-        path("b", "beach copy.jpg"): b"0123456789",       # identical to the previous one
-        path("c", "tricky.jpg"): b"0123abcdef",           # same size and start, different end
-        path("d", "other.txt"): b"short",                 # unique size
-    })
+    return FakeFileSystem(
+        {
+            path("a", "beach.jpg"): b"0123456789",
+            path("b", "beach copy.jpg"): b"0123456789",  # identical to the previous one
+            path("c", "tricky.jpg"): b"0123abcdef",  # same size and start, different end
+            path("d", "other.txt"): b"short",  # unique size
+        }
+    )
 
 
 def test_scan_finds_the_identical_files_and_only_those(fs):
     result = ScanDuplicates(fs, FakeHasher(fs))(ROOT)
 
     assert [[f.path for f in g.files] for g in result.groups] == [
-        [path("a", "beach.jpg"), path("b", "beach copy.jpg")]]
+        [path("a", "beach.jpg"), path("b", "beach copy.jpg")]
+    ]
     assert result.total_files == 4 and result.errors == []
 
 
@@ -73,11 +76,11 @@ def test_quarantine_moves_the_copy_and_writes_the_log(fs, history):
     result = MoveToQuarantine(fs, history)(selection, ROOT, quarantine)
 
     assert len(result.moved) == 1 and not result.failed
-    assert fs.exists(path("a", "beach.jpg"))                       # the one to keep stays
+    assert fs.exists(path("a", "beach.jpg"))  # the one to keep stays
     assert not fs.exists(path("b", "beach copy.jpg"))
     assert fs.exists(os.path.join(quarantine, "b", "beach copy.jpg"))
     (log,) = fs.csv_files.values()
-    assert len(log) == 2 and "moved" in log[1]                      # header + one row
+    assert len(log) == 2 and "moved" in log[1]  # header + one row
 
 
 def test_quarantine_records_what_it_moved_in_the_history(fs, history):
@@ -88,8 +91,12 @@ def test_quarantine_records_what_it_moved_in_the_history(fs, history):
 
     (op,) = history.list_all()
     assert op["kind"] == KIND_QUARANTINE and op["action"] == MOVE
-    assert op["moves"] == [{"source": path("b", "beach copy.jpg"),
-                            "destination": os.path.join(quarantine, "b", "beach copy.jpg")}]
+    assert op["moves"] == [
+        {
+            "source": path("b", "beach copy.jpg"),
+            "destination": os.path.join(quarantine, "b", "beach copy.jpg"),
+        }
+    ]
     assert "1" in op["description"]
 
 
@@ -100,15 +107,15 @@ def test_quarantine_reports_a_failed_move_and_goes_on(fs, history):
     result = MoveToQuarantine(fs, history)(selection, ROOT, os.path.join("C:\\", "quarantine"))
 
     assert len(result.failed) == 1 and "locked" in result.failed[0].error
-    assert fs.exists(path("b", "beach copy.jpg"))                   # nothing was lost
-    assert history.list_all() == []                                  # and nothing to undo
+    assert fs.exists(path("b", "beach copy.jpg"))  # nothing was lost
+    assert history.list_all() == []  # and nothing to undo
 
 
 def test_quarantine_does_not_start_with_unresolved_groups(fs, history):
     result = ScanDuplicates(fs, FakeHasher(fs))(ROOT)
     selection = StartSelection(fs)(result)
     selection.mark(0, path("a", "beach.jpg"), "move")
-    selection.mark(0, path("b", "beach copy.jpg"), "move")           # nothing kept
+    selection.mark(0, path("b", "beach copy.jpg"), "move")  # nothing kept
 
     with pytest.raises(ValueError):
         MoveToQuarantine(fs, history)(selection, ROOT, os.path.join("C:\\", "quarantine"))
@@ -120,8 +127,9 @@ def test_history_records_and_undoes_a_move(fs):
     source, destination = path("b", "beach copy.jpg"), os.path.join("C:\\", "q", "beach copy.jpg")
     fs.move(source, destination)
 
-    op_id = history.record(KIND_QUARANTINE, MOVE, ROOT, os.path.dirname(destination),
-                           [(source, destination)])
+    op_id = history.record(
+        KIND_QUARANTINE, MOVE, ROOT, os.path.dirname(destination), [(source, destination)]
+    )
     result = history.undo(op_id)
 
     assert result["reverted"] == 1 and result["failures"] == []
@@ -147,8 +155,10 @@ def test_gather_plans_the_images_under_the_destination(fs, history):
     plan = gather.plan_by_files(images, others, ROOT, os.path.join("C:\\", "all"))
 
     assert sorted(os.path.relpath(t.destination, os.path.join("C:\\", "all")) for t in plan) == [
-        os.path.join("a", "beach.jpg"), os.path.join("b", "beach copy.jpg"),
-        os.path.join("c", "tricky.jpg")]
+        os.path.join("a", "beach.jpg"),
+        os.path.join("b", "beach copy.jpg"),
+        os.path.join("c", "tricky.jpg"),
+    ]
 
 
 def test_gather_moves_the_images_and_records_them_in_the_history(fs, history):

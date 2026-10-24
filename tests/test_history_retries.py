@@ -94,14 +94,19 @@ def test_undo_of_a_copy_survives_a_short_lock(isolated_appdata, monkeypatch, sle
     copy = isolated_appdata / "copy.txt"
     origin.write_text("original")
     copy.write_text("original")
-    op_id = history.record(KIND_GATHER, "copy", str(isolated_appdata),
-                                str(isolated_appdata), [(str(origin), str(copy))])
+    op_id = history.record(
+        KIND_GATHER,
+        "copy",
+        str(isolated_appdata),
+        str(isolated_appdata),
+        [(str(origin), str(copy))],
+    )
     _locked_for(monkeypatch, failures=2)
 
     result = history.undo(op_id)
 
     assert result["failures"] == []
-    assert not copy.exists() and origin.exists()     # the original is never touched
+    assert not copy.exists() and origin.exists()  # the original is never touched
     assert history.list_all()[0]["undone"] is True
 
 
@@ -110,12 +115,17 @@ def test_undo_of_a_copy_reports_a_lock_that_never_clears(isolated_appdata, monke
     copy = isolated_appdata / "copy.txt"
     origin.write_text("original")
     copy.write_text("original")
-    op_id = history.record(KIND_GATHER, "copy", str(isolated_appdata),
-                                str(isolated_appdata), [(str(origin), str(copy))])
+    op_id = history.record(
+        KIND_GATHER,
+        "copy",
+        str(isolated_appdata),
+        str(isolated_appdata),
+        [(str(origin), str(copy))],
+    )
     _locked_for(monkeypatch, failures=99)
 
     result = history.undo(op_id)
 
     assert len(result["failures"]) == 1
     assert copy.exists() and origin.exists()
-    assert history.list_all()[0]["undone"] is False   # it can be retried later
+    assert history.list_all()[0]["undone"] is False  # it can be retried later

@@ -16,10 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
-from tests.check_perceptual import build            # noqa: E402
-from duplicate_finder.presentation import styles, similar_photos_tab  # noqa: E402
-from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.bootstrap import build_services
+from duplicate_finder.presentation import similar_photos_tab, styles
+from duplicate_finder.presentation.main_window import MainWindow
+from tests.check_perceptual import build
 
 SERVICES = build_services()
 from duplicate_finder.domain.selection import KEEP  # noqa: E402
@@ -54,14 +54,13 @@ def main():
 
         # the "beach" group must have 5 photos and the best one marked to keep
         beach_gi = next(
-            i for i, g in enumerate(res.groups)
-            if any("beach_original" in a.path for a in g.files))
+            i for i, g in enumerate(res.groups) if any("beach_original" in a.path for a in g.files)
+        )
         g = res.groups[beach_gi]
         R["beach_5"] = g.count == 5
         R["best_is_png"] = g.files[0].path.endswith("beach_original.png")
         R["best_keep"] = sel.decision(beach_gi, g.files[0].path) == KEEP
-        R["rest_to_move"] = all(
-            sel.decision(beach_gi, a.path) != KEEP for a in g.files[1:])
+        R["rest_to_move"] = all(sel.decision(beach_gi, a.path) != KEEP for a in g.files[1:])
 
         # manual toggle: choose another one as the one to keep
         other = g.files[1].path
@@ -69,7 +68,8 @@ def main():
         R["toggle_ok"] = (
             sel.decision(beach_gi, other) == KEEP
             and sel.decision(beach_gi, g.files[0].path) != KEEP
-            and sel.group_state(beach_gi) == "ok")
+            and sel.group_state(beach_gi) == "ok"
+        )
         # put the best one back
         app.similar._choose_keep(beach_gi, g.files[0].path)
 
@@ -91,7 +91,7 @@ def main():
         app.update()
         R["pag2_tiles"] = {gi for gi, _ in p._tiles} == {1}
         R["page2_next_off"] = str(p.btn_page_next.cget("state")) == "disabled"
-        p._change_page(1)                       # it is already the last: it does nothing
+        p._change_page(1)  # it is already the last: it does nothing
         R["does_not_pass_the_last"] = p._page == 1
         R["selection_intact"] = sel.decision(beach_gi, g.files[0].path) == KEEP
         R["gallery_height_ok"] = p.gallery.winfo_reqheight() < 32767
@@ -118,7 +118,7 @@ def main():
 
     ok = (
         R.get("groups") == 2
-        and R.get("tiles") == 7          # 5 beach + 2 mountain
+        and R.get("tiles") == 7  # 5 beach + 2 mountain
         and R.get("errors") == 1
         and R.get("beach_5") is True
         and R.get("best_is_png") is True
@@ -127,11 +127,22 @@ def main():
         and R.get("toggle_ok") is True
         and R.get("all_ready") is True
         and R.get("quarantine_button") is True
-        and all(R.get(k) is True for k in (
-            "pages", "pager_visible", "pag1_tiles", "page1_previous_off",
-            "pag2_tiles", "page2_next_off", "does_not_pass_the_last",
-            "selection_intact", "gallery_height_ok", "one_page_no_pager"))
-        and R.get("moved_photos") == 5       # 4 extra beach + 1 mountain
+        and all(
+            R.get(k) is True
+            for k in (
+                "pages",
+                "pager_visible",
+                "pag1_tiles",
+                "page1_previous_off",
+                "pag2_tiles",
+                "page2_next_off",
+                "does_not_pass_the_last",
+                "selection_intact",
+                "gallery_height_ok",
+                "one_page_no_pager",
+            )
+        )
+        and R.get("moved_photos") == 5  # 4 extra beach + 1 mountain
         and R.get("moved_photos_ok") is True
         and R.get("best_intact") is True
         and R.get("log") is True

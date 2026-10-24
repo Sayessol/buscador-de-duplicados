@@ -9,7 +9,7 @@ from collections.abc import Iterable, Iterator, Sequence
 # Windows (antivirus, indexer) can lock a freshly created file for a moment, and
 # `os.remove` then fails with PermissionError: retry for a few tenths of a second.
 _REMOVE_ATTEMPTS = 5
-_REMOVE_DELAY = 0.1     # seconds, growing with each attempt (0.1 + 0.2 + 0.3 + 0.4)
+_REMOVE_DELAY = 0.1  # seconds, growing with each attempt (0.1 + 0.2 + 0.3 + 0.4)
 
 
 class LocalFileSystem:

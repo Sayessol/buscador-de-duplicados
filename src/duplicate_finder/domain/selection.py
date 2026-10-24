@@ -12,6 +12,7 @@ the app never "proposes to move" anything unless the user decides it, either
 by hand or by applying the preferred-folder rule.
 """
 
+import contextlib
 import os
 import re
 from collections.abc import Callable, Sequence
@@ -24,13 +25,13 @@ MOVE = "move"
 
 # Names that "smell" like a copy and not like the original.
 _LOOKS_LIKE_COPY = re.compile(
-    r"cop(?:y|ia)\b|duplicad|\bnew\b|\(\d+\)|[ _-]copy|[ _-]copia|[ _-]\d+$",
-    re.IGNORECASE)
+    r"cop(?:y|ia)\b|duplicad|\bnew\b|\(\d+\)|[ _-]copy|[ _-]copia|[ _-]\d+$", re.IGNORECASE
+)
 
 # Possible states of a group with respect to the "single copy" rule.
-GROUP_OK = "ok"                 # exactly one copy on KEEP
-GROUP_NOTHING_KEPT = "nothing_kept"   # no copy on KEEP
-GROUP_MULTIPLE = "multiple"     # two or more copies on KEEP (undecided)
+GROUP_OK = "ok"  # exactly one copy on KEEP
+GROUP_NOTHING_KEPT = "nothing_kept"  # no copy on KEEP
+GROUP_MULTIPLE = "multiple"  # two or more copies on KEEP (undecided)
 
 
 def _is_inside(path: str, folder: str) -> bool:
@@ -52,6 +53,15 @@ class GroupLike(Protocol):
     @property
     def files(self) -> list[DuplicateFile]: ...
 
+    @property
+    def count(self) -> int: ...
+
+    @property
+    def size(self) -> int: ...
+
+    @property
+    def reclaimable_space(self) -> int: ...
+
 
 class ResultLike(Protocol):
     """The minimum asked of a result: a list of groups."""
@@ -62,7 +72,9 @@ class ResultLike(Protocol):
 
 class DuplicateSelection:
     def __init__(
-        self, result: ResultLike, modified_time: Callable[[str], float] | None = None,
+        self,
+        result: ResultLike,
+        modified_time: Callable[[str], float] | None = None,
     ) -> None:
         """`modified_time(path)` (seconds, may raise OSError) lets "older is better" count when
         the primary copy is chosen; without it, only the name, the depth and the path decide."""
@@ -96,7 +108,8 @@ class DuplicateSelection:
         group = self.result.groups[group_index]
         for file in group.files:
             self.mark(
-                group_index, file.path,
+                group_index,
+                file.path,
                 KEEP if file.path == kept_path else MOVE,
             )
 
@@ -117,8 +130,11 @@ class DuplicateSelection:
         no_match = 0
 
         for gi, group in enumerate(self.result.groups):
-            inside = [a.path for a in group.files
-                      if preferred_folder and _is_inside(a.path, preferred_folder)]
+            inside = [
+                a.path
+                for a in group.files
+                if preferred_folder and _is_inside(a.path, preferred_folder)
+            ]
             if inside:
                 kept = min(inside, key=len)
                 self.keep_only(gi, kept)
@@ -135,8 +151,7 @@ class DuplicateSelection:
     # ------------------------------------------------------------------
     def _kept_in(self, group_index: int) -> list[DuplicateFile]:
         group = self.result.groups[group_index]
-        return [a for a in group.files
-                if self.decision(group_index, a.path) == KEEP]
+        return [a for a in group.files if self.decision(group_index, a.path) == KEEP]
 
     def group_state(self, group_index: int) -> str:
         n = len(self._kept_in(group_index))
@@ -147,8 +162,7 @@ class DuplicateSelection:
         return GROUP_MULTIPLE
 
     def pending_groups(self) -> list[int]:
-        return [gi for gi in range(len(self.result.groups))
-                if self.group_state(gi) != GROUP_OK]
+        return [gi for gi in range(len(self.result.groups)) if self.group_state(gi) != GROUP_OK]
 
     def all_ready(self) -> bool:
         return not self.pending_groups()
@@ -192,11 +206,9 @@ class DuplicateSelection:
         path = file.path
         name = os.path.basename(path)
         looks_like_copy = 1 if _LOOKS_LIKE_COPY.search(name) else 0  # 0 = does not look like a copy
-        depth = os.path.normpath(path).count(os.sep)        # less nested is better
+        depth = os.path.normpath(path).count(os.sep)  # less nested is better
         mtime = float("inf")
         if self._modified_time is not None:
-            try:
-                mtime = self._modified_time(path)                # older is better
-            except OSError:
-                pass
-        return (looks_like_copy, depth, mtime, len(path))      # shorter path breaks the tie
+            with contextlib.suppress(OSError):
+                mtime = self._modified_time(path)  # older is better
+        return (looks_like_copy, depth, mtime, len(path))  # shorter path breaks the tie

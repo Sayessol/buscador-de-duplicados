@@ -23,15 +23,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data: the history these scripts record is temporary.
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.bootstrap import build_services
 
 SERVICES = build_services()
 scan = SERVICES.scan_duplicates
-from duplicate_finder.domain.selection import DuplicateSelection  # noqa: E402
 from duplicate_finder.application.quarantine import (  # noqa: E402
-    validate_quarantine_folder,
     InvalidQuarantine,
+    validate_quarantine_folder,
 )
+from duplicate_finder.domain.selection import DuplicateSelection  # noqa: E402
 
 move_to_quarantine = SERVICES.move_to_quarantine
 
@@ -53,11 +53,11 @@ def build(base: Path):
     a = b"content A\n" * 30
     b = b"content B different\n" * 20
 
-    write("good/photo.jpg", a)          # keep
-    write("downloads/photo.jpg", a)      # move
+    write("good/photo.jpg", a)  # keep
+    write("downloads/photo.jpg", a)  # move
     write("downloads/sub/photo.jpg", a)  # move (its name collides with the previous one)
-    write("good/doc.txt", b)           # keep
-    write("old/doc.txt", b)           # move
+    write("good/doc.txt", b)  # keep
+    write("old/doc.txt", b)  # move
 
 
 def main():
@@ -97,8 +97,7 @@ def main():
         # --- really move ---------------------------------------
         res = move_to_quarantine(sel, str(base), str(quarantine))
 
-        check(len(res.moved) == expected_to_move,
-              f"{expected_to_move} files were moved")
+        check(len(res.moved) == expected_to_move, f"{expected_to_move} files were moved")
         check(len(res.failed) == 0, "no move failed")
         check(res.bytes_moved == bytes_expected, "the bytes moved are correct")
 
@@ -107,32 +106,43 @@ def main():
         check((base / "good" / "doc.txt").exists(), "the good copy of doc.txt is still there")
 
         # move: they are no longer in the source
-        check(not (base / "downloads" / "photo.jpg").exists(),
-              "downloads/photo.jpg left the source")
-        check(not (base / "old" / "doc.txt").exists(),
-              "old/doc.txt left the source")
+        check(
+            not (base / "downloads" / "photo.jpg").exists(), "downloads/photo.jpg left the source"
+        )
+        check(not (base / "old" / "doc.txt").exists(), "old/doc.txt left the source")
 
         # move: they are in the quarantine with the structure preserved
-        check((quarantine / "old" / "doc.txt").exists(),
-              "old/doc.txt is in the quarantine with its path")
-        check((quarantine / "downloads" / "sub" / "photo.jpg").exists(),
-              "downloads/sub/photo.jpg is in the quarantine with its path")
-        check((quarantine / "downloads" / "photo (1).jpg").exists(),
-              "the collision with an existing file was resolved as 'photo (1).jpg'")
-        check((quarantine / "downloads" / "photo.jpg").read_bytes() == b"otro file different",
-              "the file that was already in the quarantine was NOT overwritten")
+        check(
+            (quarantine / "old" / "doc.txt").exists(),
+            "old/doc.txt is in the quarantine with its path",
+        )
+        check(
+            (quarantine / "downloads" / "sub" / "photo.jpg").exists(),
+            "downloads/sub/photo.jpg is in the quarantine with its path",
+        )
+        check(
+            (quarantine / "downloads" / "photo (1).jpg").exists(),
+            "the collision with an existing file was resolved as 'photo (1).jpg'",
+        )
+        check(
+            (quarantine / "downloads" / "photo.jpg").read_bytes() == b"otro file different",
+            "the file that was already in the quarantine was NOT overwritten",
+        )
 
         # CSV log
         check(res.log_path and Path(res.log_path).exists(), "the log CSV was written")
         if res.log_path:
             content = Path(res.log_path).read_text(encoding="utf-8-sig")
-            check("moved" in content and "Source" in content,
-                  "the log CSV has a header and 'moved' rows")
+            check(
+                "moved" in content and "Source" in content,
+                "the log CSV has a header and 'moved' rows",
+            )
 
         # nothing was deleted: 2 remain in the source and 3 were moved (+ the earlier decoy)
         n_orig = sum(1 for _ in base.rglob("*") if _.is_file())
-        n_quar = sum(1 for _ in quarantine.rglob("*")
-                     if _.is_file() and not _.name.endswith(".csv"))
+        n_quar = sum(
+            1 for _ in quarantine.rglob("*") if _.is_file() and not _.name.endswith(".csv")
+        )
         check(n_orig == 2, "2 files are left in the scanned folder")
         check(n_quar == 4, "the quarantine has 4 files (1 earlier decoy + 3 moved)")
 

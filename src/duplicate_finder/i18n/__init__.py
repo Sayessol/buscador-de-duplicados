@@ -22,7 +22,7 @@ LANGUAGE_NAMES = {"en": "English", "es": "Español"}
 DEFAULT_LANGUAGE = "en"
 
 _CATALOGS: dict[str, dict[str, str]] = {"en": en.MESSAGES, "es": es.MESSAGES}
-_LANG_SPANISH = 0x0A      # primary language id of Spanish in Windows
+_LANG_SPANISH = 0x0A  # primary language id of Spanish in Windows
 
 _current = DEFAULT_LANGUAGE
 

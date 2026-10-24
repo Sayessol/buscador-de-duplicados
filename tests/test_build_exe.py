@@ -39,7 +39,7 @@ def test_the_old_spanish_flag_is_gone():
 def test_every_build_command_in_the_release_workflow_is_accepted():
     workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     commands = re.findall(r"run:\s*python build_exe\.py([^\n]*)", workflow)
-    assert len(commands) == 2                   # the single file and the folder + ZIP
+    assert len(commands) == 2  # the single file and the folder + ZIP
     for arguments in commands:
         build_exe.parse_args(shlex.split(arguments))
 

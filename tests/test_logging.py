@@ -72,7 +72,7 @@ def test_without_write_permission_the_app_carries_on(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(file))
     app_logging.stop()
     assert app_logging.start() is None
-    app_logging.log.error("this must not raise")     # keeps working, without a file
+    app_logging.log.error("this must not raise")  # keeps working, without a file
     assert app_logging.file_path() is None
 
 
@@ -91,13 +91,18 @@ def test_hooks_log_unhandled_errors(appdata, monkeypatch):
         raise KeyError("failure in another thread")
     except KeyError:
         kind, value, trace = sys.exc_info()
-        threading.excepthook(SimpleNamespace(
-            exc_type=kind, exc_value=value, exc_traceback=trace,
-            thread=SimpleNamespace(name="Test-thread")))
+        threading.excepthook(
+            SimpleNamespace(
+                exc_type=kind,
+                exc_value=value,
+                exc_traceback=trace,
+                thread=SimpleNamespace(name="Test-thread"),
+            )
+        )
     text = _read(app_logging.file_path())
     assert "failure in the main thread" in text
     assert "Test-thread" in text and "KeyError" in text
-    assert calls == ["principal", "hilo"]                 # the previous hook is also called
+    assert calls == ["principal", "hilo"]  # the previous hook is also called
     sys.excepthook, threading.excepthook = previous
 
 
@@ -109,14 +114,15 @@ def test_unexpected_ui_error_is_logged_and_warned_once(appdata, monkeypatch):
     warnings = []
     monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: warnings.append(a))
     app_logging.start()
-    window = SimpleNamespace(                              # the attributes it uses are enough
-        _error_warned=False, services=SimpleNamespace(log_file_path=app_logging.file_path))
-    for _ in range(3):                                       # the same failure, three times
+    window = SimpleNamespace(  # the attributes it uses are enough
+        _error_warned=False, services=SimpleNamespace(log_file_path=app_logging.file_path)
+    )
+    for _ in range(3):  # the same failure, three times
         try:
             _ = {}["does not exist"]
         except KeyError:
             MainWindow.report_callback_exception(window, *sys.exc_info())
     text = _read(app_logging.file_path())
-    assert text.count("Unexpected error in the interface") == 3   # all three are logged
-    assert len(warnings) == 1                                      # but warned only once
-    assert str(app_logging.file_path()) in warnings[0][1]     # and it says where the log is
+    assert text.count("Unexpected error in the interface") == 3  # all three are logged
+    assert len(warnings) == 1  # but warned only once
+    assert str(app_logging.file_path()) in warnings[0][1]  # and it says where the log is

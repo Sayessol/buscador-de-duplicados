@@ -17,13 +17,13 @@ from tkinter import messagebox
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 TMP = Path(tempfile.mkdtemp(prefix="dup_reg_"))
-os.environ["APPDATA"] = str(TMP / "appdata")          # does not touch the real log
+os.environ["APPDATA"] = str(TMP / "appdata")  # does not touch the real log
 
-from duplicate_finder.infrastructure import app_logging  # noqa: E402
+from duplicate_finder.bootstrap import build_services  # noqa: E402
 from duplicate_finder.domain.filters import ScanFilter  # noqa: E402
+from duplicate_finder.infrastructure import app_logging  # noqa: E402
 from duplicate_finder.presentation import styles  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
-from duplicate_finder.bootstrap import build_services  # noqa: E402
 
 SERVICES = build_services()
 
@@ -53,7 +53,7 @@ def main():
         app.exact._launch_scan(str(TMP / "does_not_exist"), ScanFilter.no_filter())
 
     app.after(200, ui_failure)
-    app.after(300, ui_failure)                 # repeated: it must warn only once
+    app.after(300, ui_failure)  # repeated: it must warn only once
     app.after(400, scan_failure)
     app.after(1800, app.destroy)
     app.mainloop()
@@ -62,14 +62,16 @@ def main():
         h.flush()
     text = log_path.read_text(encoding="utf-8")
     check("failure triggered in the interface" in text, "the interface error is in the log")
-    check(text.count("Unexpected error in the interface") == 2,
-          "both repeated failures are logged")
+    check(text.count("Unexpected error in the interface") == 2, "both repeated failures are logged")
     unexpected = [w for w in warnings if w[0] == "Unexpected error"]
     check(len(unexpected) == 1, "but the warning to the user appears only once")
-    check("Scan of" in text and "NotADirectoryError" in text,
-          "the scan thread error is in the log, with its traceback")
-    check(str(log_path) in warnings[0][1] if warnings else False,
-          "the warning says where the log is")
+    check(
+        "Scan of" in text and "NotADirectoryError" in text,
+        "the scan thread error is in the log, with its traceback",
+    )
+    check(
+        str(log_path) in warnings[0][1] if warnings else False, "the warning says where the log is"
+    )
 
     app_logging.stop()
     print()

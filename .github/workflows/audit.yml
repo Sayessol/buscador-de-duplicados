@@ -1,0 +1,26 @@
+name: Dependency audit
+
+# Looks for known vulnerabilities in the pinned dependencies (pip-audit). It also runs every
+# Monday: a new advisory can appear without any change in the repository.
+on:
+  push:
+    branches: [main, develop]
+    paths: [requirements.txt, pyproject.toml, .github/workflows/audit.yml]
+  pull_request:
+    paths: [requirements.txt, pyproject.toml, .github/workflows/audit.yml]
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Audit the pinned dependencies
+        run: pip-audit -r requirements.txt

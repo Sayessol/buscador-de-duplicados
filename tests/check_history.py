@@ -30,6 +30,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         import os
+
         os.environ["APPDATA"] = str(tmp / "appdata")
 
         # import AFTER setting APPDATA
@@ -39,7 +40,7 @@ def main():
         services = build_services()
         history = services.history
         execute = services.gather._transfers.execute
-        from duplicate_finder.domain.transfers import Transfer, MOVE, COPY
+        from duplicate_finder.domain.transfers import COPY, MOVE, Transfer
 
         # --- set up a case: move 2 files to a destination ----------
         source = tmp / "source" / "sub"
@@ -48,28 +49,38 @@ def main():
         (source / "a.txt").write_text("aaa")
         (source / "b.txt").write_text("bbb")
 
-        plan = [Transfer(str(source / "a.txt"), str(destination / "sub" / "a.txt")),
-                Transfer(str(source / "b.txt"), str(destination / "sub" / "b.txt"))]
+        plan = [
+            Transfer(str(source / "a.txt"), str(destination / "sub" / "a.txt")),
+            Transfer(str(source / "b.txt"), str(destination / "sub" / "b.txt")),
+        ]
         res = execute(plan, action=MOVE)
         op_id = history.record(
-            KIND_GATHER, "move", str(tmp / "source"), str(destination),
-            [(t.source, t.destination) for t in res.done], "2 test files")
+            KIND_GATHER,
+            "move",
+            str(tmp / "source"),
+            str(destination),
+            [(t.source, t.destination) for t in res.done],
+            "2 test files",
+        )
 
         ops = history.list_all()
         check(len(ops) == 1 and ops[0]["id"] == op_id, "the operation is recorded")
         check(ops[0]["undone"] is False, "it starts as not undone")
-        check(not (source / "a.txt").exists()
-              and (destination / "sub" / "a.txt").exists(),
-              "after the move: the files are in the destination")
+        check(
+            not (source / "a.txt").exists() and (destination / "sub" / "a.txt").exists(),
+            "after the move: the files are in the destination",
+        )
 
         # --- undo the MOVE ------------------------------------
         r = history.undo(op_id)
         check(r["reverted"] == 2 and not r["failures"], "undo move: 2 reverted")
-        check((source / "a.txt").exists() and (source / "b.txt").exists()
-              and not (destination / "sub" / "a.txt").exists(),
-              "the files are back in their original folder")
-        check(history.list_all()[0]["undone"] is True,
-              "the operation is marked as undone")
+        check(
+            (source / "a.txt").exists()
+            and (source / "b.txt").exists()
+            and not (destination / "sub" / "a.txt").exists(),
+            "the files are back in their original folder",
+        )
+        check(history.list_all()[0]["undone"] is True, "the operation is marked as undone")
 
         r2 = history.undo(op_id)
         check(r2["reverted"] == 0 and r2["failures"], "it cannot be undone twice")
@@ -78,28 +89,45 @@ def main():
         plan_c = [Transfer(str(source / "a.txt"), str(destination / "c" / "a.txt"))]
         rc = execute(plan_c, action=COPY)
         op_c = history.record(
-            KIND_GATHER, "copy", str(tmp / "source"), str(destination),
-            [(t.source, t.destination) for t in rc.done])
-        check((destination / "c" / "a.txt").exists() and (source / "a.txt").exists(),
-              "copy: original and copy both exist")
+            KIND_GATHER,
+            "copy",
+            str(tmp / "source"),
+            str(destination),
+            [(t.source, t.destination) for t in rc.done],
+        )
+        check(
+            (destination / "c" / "a.txt").exists() and (source / "a.txt").exists(),
+            "copy: original and copy both exist",
+        )
         rd = history.undo(op_c)
-        check(rd["reverted"] == 1 and not (destination / "c" / "a.txt").exists()
-              and (source / "a.txt").exists(),
-              "undo copy: the copy is deleted, the original stays")
+        check(
+            rd["reverted"] == 1
+            and not (destination / "c" / "a.txt").exists()
+            and (source / "a.txt").exists(),
+            "undo copy: the copy is deleted, the original stays",
+        )
 
         # --- undo with a conflict -----------------------------
         (source / "x.txt").write_text("x")
         plan_x = [Transfer(str(source / "x.txt"), str(destination / "x.txt"))]
         rx = execute(plan_x, action=MOVE)
         op_x = history.record(
-            KIND_GATHER, "move", str(tmp / "source"), str(destination),
-            [(t.source, t.destination) for t in rx.done])
+            KIND_GATHER,
+            "move",
+            str(tmp / "source"),
+            str(destination),
+            [(t.source, t.destination) for t in rx.done],
+        )
         (source / "x.txt").write_text("something else")  # we occupy the original path
         rr = history.undo(op_x)
-        check(rr["reverted"] == 0 and rr["failures"],
-              "undo with the original path taken -> reports a failure, does not overwrite")
-        check((source / "x.txt").read_text() == "something else",
-              "the file that occupied the original path was not touched")
+        check(
+            rr["reverted"] == 0 and rr["failures"],
+            "undo with the original path taken -> reports a failure, does not overwrite",
+        )
+        check(
+            (source / "x.txt").read_text() == "something else",
+            "the file that occupied the original path was not touched",
+        )
 
     print()
     if failures:

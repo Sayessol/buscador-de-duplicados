@@ -11,8 +11,9 @@ from pathlib import Path
 
 import pytest
 
-_REAL = (Path(os.environ.get("APPDATA") or Path.home() / ".buscador_duplicados")
-         / "BuscadorDuplicados")
+_REAL = (
+    Path(os.environ.get("APPDATA") or Path.home() / ".buscador_duplicados") / "BuscadorDuplicados"
+)
 _FILES = ("history.json", "historial.json", "config.json")
 
 # The whole session works on a temporary data folder: the use cases record their own history, so
@@ -35,4 +36,5 @@ def real_data_untouched():
     after = _fingerprint()
     assert before == after, (
         "Alguna prueba ha modificado los datos REALES de la app "
-        f"({_REAL}). Deben usar un APPDATA temporal.")
+        f"({_REAL}). Deben usar un APPDATA temporal."
+    )

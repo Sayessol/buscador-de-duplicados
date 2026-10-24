@@ -16,8 +16,19 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
-    BaseDocTemplate, Frame, Image, ListFlowable, ListItem, NextPageTemplate,
-    PageBreak, PageTemplate, Paragraph, Preformatted, Spacer, Table, TableStyle,
+    BaseDocTemplate,
+    Frame,
+    Image,
+    ListFlowable,
+    ListItem,
+    NextPageTemplate,
+    PageBreak,
+    PageTemplate,
+    Paragraph,
+    Preformatted,
+    Spacer,
+    Table,
+    TableStyle,
 )
 from reportlab.platypus.tableofcontents import TableOfContents
 
@@ -34,7 +45,7 @@ TEXTS = {
         "note": "Nota.",
         "index": "Índice",
         "cover_meta": "Aplicación de escritorio para Windows &nbsp;·&nbsp; "
-                      "Python + CustomTkinter<br/>Documento generado el {date}",
+        "Python + CustomTkinter<br/>Documento generado el {date}",
         "date_format": "%d/%m/%Y",
     },
     "en": {
@@ -43,7 +54,7 @@ TEXTS = {
         "note": "Note.",
         "index": "Contents",
         "cover_meta": "Desktop application for Windows &nbsp;·&nbsp; "
-                      "Python + CustomTkinter<br/>Document generated on {date}",
+        "Python + CustomTkinter<br/>Document generated on {date}",
         "date_format": "%Y-%m-%d",
     },
 }
@@ -71,79 +82,162 @@ _base = getSampleStyleSheet()
 
 STYLES = {
     "titulo_portada": ParagraphStyle(
-        "tp", parent=_base["Title"], fontName="Helvetica-Bold", fontSize=30,
-        leading=36, textColor=BLUE_DARK, alignment=TA_LEFT, spaceAfter=6),
+        "tp",
+        parent=_base["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=30,
+        leading=36,
+        textColor=BLUE_DARK,
+        alignment=TA_LEFT,
+        spaceAfter=6,
+    ),
     "subtitulo_portada": ParagraphStyle(
-        "sp", parent=_base["Normal"], fontSize=14, leading=20, textColor=GRAY,
-        alignment=TA_LEFT),
+        "sp", parent=_base["Normal"], fontSize=14, leading=20, textColor=GRAY, alignment=TA_LEFT
+    ),
     "meta_portada": ParagraphStyle(
-        "mp", parent=_base["Normal"], fontSize=10.5, leading=16, textColor=GRAY),
+        "mp", parent=_base["Normal"], fontSize=10.5, leading=16, textColor=GRAY
+    ),
     "h1": ParagraphStyle(
-        "H1", parent=_base["Heading1"], fontName="Helvetica-Bold", fontSize=18,
-        leading=23, textColor=BLUE_DARK, spaceBefore=20, spaceAfter=10,
-        keepWithNext=1),
+        "H1",
+        parent=_base["Heading1"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=23,
+        textColor=BLUE_DARK,
+        spaceBefore=20,
+        spaceAfter=10,
+        keepWithNext=1,
+    ),
     "h2": ParagraphStyle(
-        "H2", parent=_base["Heading2"], fontName="Helvetica-Bold", fontSize=13.5,
-        leading=18, textColor=BLUE, spaceBefore=14, spaceAfter=6,
-        keepWithNext=1),
+        "H2",
+        parent=_base["Heading2"],
+        fontName="Helvetica-Bold",
+        fontSize=13.5,
+        leading=18,
+        textColor=BLUE,
+        spaceBefore=14,
+        spaceAfter=6,
+        keepWithNext=1,
+    ),
     "h3": ParagraphStyle(
-        "H3", parent=_base["Heading3"], fontName="Helvetica-Bold", fontSize=11.5,
-        leading=15, textColor=TEXT, spaceBefore=10, spaceAfter=4,
-        keepWithNext=1),
+        "H3",
+        parent=_base["Heading3"],
+        fontName="Helvetica-Bold",
+        fontSize=11.5,
+        leading=15,
+        textColor=TEXT,
+        spaceBefore=10,
+        spaceAfter=4,
+        keepWithNext=1,
+    ),
     "cuerpo": ParagraphStyle(
-        "cuerpo", parent=_base["Normal"], fontSize=10.3, leading=15.5,
-        textColor=TEXT, alignment=TA_JUSTIFY, spaceAfter=7),
+        "cuerpo",
+        parent=_base["Normal"],
+        fontSize=10.3,
+        leading=15.5,
+        textColor=TEXT,
+        alignment=TA_JUSTIFY,
+        spaceAfter=7,
+    ),
     "bullet": ParagraphStyle(
-        "bullet", parent=_base["Normal"], fontSize=10.3, leading=15,
-        textColor=TEXT, spaceAfter=3),
+        "bullet", parent=_base["Normal"], fontSize=10.3, leading=15, textColor=TEXT, spaceAfter=3
+    ),
     "codigo": ParagraphStyle(
-        "codigo", parent=_base["Code"], fontSize=9, leading=12.5,
-        textColor=colors.HexColor("#0b3d5c"), backColor=GRAY_LIGHT,
-        borderPadding=6, spaceBefore=4, spaceAfter=8, leftIndent=4),
+        "codigo",
+        parent=_base["Code"],
+        fontSize=9,
+        leading=12.5,
+        textColor=colors.HexColor("#0b3d5c"),
+        backColor=GRAY_LIGHT,
+        borderPadding=6,
+        spaceBefore=4,
+        spaceAfter=8,
+        leftIndent=4,
+    ),
     "pre": ParagraphStyle(
-        "pre", parent=_base["Code"], fontName="Courier", fontSize=8.2,
-        leading=10.6, textColor=colors.HexColor("#10344a"),
-        backColor=colors.HexColor("#f2f5f8"), borderColor=colors.HexColor("#d5dde5"),
-        borderWidth=0.5, borderPadding=7, spaceBefore=4, spaceAfter=10),
+        "pre",
+        parent=_base["Code"],
+        fontName="Courier",
+        fontSize=8.2,
+        leading=10.6,
+        textColor=colors.HexColor("#10344a"),
+        backColor=colors.HexColor("#f2f5f8"),
+        borderColor=colors.HexColor("#d5dde5"),
+        borderWidth=0.5,
+        borderPadding=7,
+        spaceBefore=4,
+        spaceAfter=10,
+    ),
     "nota": ParagraphStyle(
-        "nota", parent=_base["Normal"], fontSize=9.7, leading=14,
-        textColor=TEXT, backColor=colors.HexColor("#eef4fb"),
-        borderColor=BLUE, borderWidth=0.6, borderPadding=8,
-        spaceBefore=4, spaceAfter=10),
+        "nota",
+        parent=_base["Normal"],
+        fontSize=9.7,
+        leading=14,
+        textColor=TEXT,
+        backColor=colors.HexColor("#eef4fb"),
+        borderColor=BLUE,
+        borderWidth=0.6,
+        borderPadding=8,
+        spaceBefore=4,
+        spaceAfter=10,
+    ),
     "pie_img": ParagraphStyle(
-        "pie", parent=_base["Normal"], fontSize=8.6, leading=11,
-        textColor=GRAY, alignment=TA_CENTER, spaceBefore=3, spaceAfter=12),
-    "toc1": ParagraphStyle("toc1", fontName="Helvetica-Bold", fontSize=11,
-                           leading=18, textColor=BLUE_DARK),
-    "toc2": ParagraphStyle("toc2", fontName="Helvetica", fontSize=10,
-                           leading=15, leftIndent=14, textColor=TEXT),
-    "th": ParagraphStyle("th", fontName="Helvetica-Bold", fontSize=9,
-                         leading=11, textColor=colors.white),
-    "td": ParagraphStyle("td", fontName="Helvetica", fontSize=9,
-                         leading=12, textColor=TEXT),
+        "pie",
+        parent=_base["Normal"],
+        fontSize=8.6,
+        leading=11,
+        textColor=GRAY,
+        alignment=TA_CENTER,
+        spaceBefore=3,
+        spaceAfter=12,
+    ),
+    "toc1": ParagraphStyle(
+        "toc1", fontName="Helvetica-Bold", fontSize=11, leading=18, textColor=BLUE_DARK
+    ),
+    "toc2": ParagraphStyle(
+        "toc2", fontName="Helvetica", fontSize=10, leading=15, leftIndent=14, textColor=TEXT
+    ),
+    "th": ParagraphStyle(
+        "th", fontName="Helvetica-Bold", fontSize=9, leading=11, textColor=colors.white
+    ),
+    "td": ParagraphStyle("td", fontName="Helvetica", fontSize=9, leading=12, textColor=TEXT),
     "titulo_llano": ParagraphStyle(
-        "titulo_llano", fontName="Helvetica-Bold", fontSize=18, leading=23,
-        textColor=BLUE_DARK, spaceBefore=6, spaceAfter=10),
+        "titulo_llano",
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=23,
+        textColor=BLUE_DARK,
+        spaceBefore=6,
+        spaceAfter=10,
+    ),
 }
 
 
 class _Doc(BaseDocTemplate):
     def __init__(self, path, short_title):
-        super().__init__(str(path), pagesize=A4,
-                         leftMargin=2.2 * cm, rightMargin=2.2 * cm,
-                         topMargin=2.3 * cm, bottomMargin=2.0 * cm,
-                         title=short_title, author=text("author"))
+        super().__init__(
+            str(path),
+            pagesize=A4,
+            leftMargin=2.2 * cm,
+            rightMargin=2.2 * cm,
+            topMargin=2.3 * cm,
+            bottomMargin=2.0 * cm,
+            title=short_title,
+            author=text("author"),
+        )
         self._short_title = short_title
         width = self.width
         height = self.height
         cover = PageTemplate(
             id="portada",
             frames=[Frame(self.leftMargin, self.bottomMargin, width, height, id="p")],
-            onPage=self._cover_background)
+            onPage=self._cover_background,
+        )
         body = PageTemplate(
             id="cuerpo",
             frames=[Frame(self.leftMargin, self.bottomMargin, width, height, id="c")],
-            onPage=self._header_footer)
+            onPage=self._header_footer,
+        )
         self.addPageTemplates([cover, body])
 
     def _cover_background(self, canvas, doc):
@@ -163,8 +257,7 @@ class _Doc(BaseDocTemplate):
         canvas.drawString(self.leftMargin, A4[1] - 1.4 * cm, self._short_title)
         canvas.drawRightString(A4[0] - self.rightMargin, A4[1] - 1.4 * cm, text("brand"))
         canvas.setStrokeColor(GRAY_LIGHT)
-        canvas.line(self.leftMargin, A4[1] - 1.6 * cm,
-                    A4[0] - self.rightMargin, A4[1] - 1.6 * cm)
+        canvas.line(self.leftMargin, A4[1] - 1.6 * cm, A4[0] - self.rightMargin, A4[1] - 1.6 * cm)
         canvas.drawCentredString(A4[0] / 2, 1.2 * cm, f"– {doc.page} –")
         canvas.restoreState()
 
@@ -201,8 +294,13 @@ def note(t):
 
 
 def code(t):
-    t = (t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-         .replace("\n", "<br/>").replace(" ", "&nbsp;"))
+    t = (
+        t.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\n", "<br/>")
+        .replace(" ", "&nbsp;")
+    )
     return Paragraph(t, STYLES["codigo"])
 
 
@@ -213,15 +311,18 @@ def pre(text):
 
 def bullet_list(items):
     return ListFlowable(
-        [ListItem(Paragraph(x, STYLES["bullet"]), leftIndent=12,
-                  value="•") for x in items],
-        bulletType="bullet", start="•", leftIndent=10)
+        [ListItem(Paragraph(x, STYLES["bullet"]), leftIndent=12, value="•") for x in items],
+        bulletType="bullet",
+        start="•",
+        leftIndent=10,
+    )
 
 
 def image(name, width_cm=15.5, caption=None):
     """A screenshot of the interface in the language of the document."""
     path = IMG / _language / name
     from reportlab.lib.utils import ImageReader
+
     iw, ih = ImageReader(str(path)).getSize()
     w = width_cm * cm
     h = w * ih / iw
@@ -234,23 +335,27 @@ def image(name, width_cm=15.5, caption=None):
 
 
 def table(rows, widths_cm=None):
-    styles = TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), BLUE_DARK),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-        ("TEXTCOLOR", (0, 1), (-1, -1), TEXT),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRAY_LIGHT]),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#c9d3dd")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ])
-    cells = [[Paragraph(str(c), STYLES["th" if i == 0 else "td"]) for c in row]
-              for i, row in enumerate(rows)]
+    styles = TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), BLUE_DARK),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("TEXTCOLOR", (0, 1), (-1, -1), TEXT),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRAY_LIGHT]),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#c9d3dd")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]
+    )
+    cells = [
+        [Paragraph(str(c), STYLES["th" if i == 0 else "td"]) for c in row]
+        for i, row in enumerate(rows)
+    ]
     kw = {}
     if widths_cm:
         kw["colWidths"] = [a * cm for a in widths_cm]
@@ -259,8 +364,7 @@ def table(rows, widths_cm=None):
     return t
 
 
-def build(pdf_path, title, subtitle, short_title, body_flowables,
-              cover_summary=None):
+def build(pdf_path, title, subtitle, short_title, body_flowables, cover_summary=None):
     doc = _Doc(pdf_path, short_title)
     story = []
 
@@ -307,6 +411,11 @@ def generate(versions, argv):
         if wanted not in ("all", language):
             continue
         set_language(language)
-        build(HERE / file_name, title=module.TITLE, subtitle=module.SUBTITLE,
-              short_title=module.SHORT_TITLE, cover_summary=module.COVER_SUMMARY,
-              body_flowables=module.body())
+        build(
+            HERE / file_name,
+            title=module.TITLE,
+            subtitle=module.SUBTITLE,
+            short_title=module.SHORT_TITLE,
+            cover_summary=module.COVER_SUMMARY,
+            body_flowables=module.body(),
+        )

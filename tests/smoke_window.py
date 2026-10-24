@@ -18,10 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 # It does not touch the user's real data (history, configuration):
 os.environ["APPDATA"] = tempfile.mkdtemp(prefix="dup_appdata_")
 
-from tests.compare_with_original import build_test_tree  # noqa: E402
-from duplicate_finder.presentation import styles  # noqa: E402
-from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.bootstrap import build_services
+from duplicate_finder.presentation import styles
+from duplicate_finder.presentation.main_window import MainWindow
+from tests.compare_with_original import build_test_tree
 
 SERVICES = build_services()
 from duplicate_finder.presentation.extension_breakdown_dialog import ExtensionBreakdownWindow  # noqa: E402
@@ -40,10 +40,10 @@ def main():
     quarantine = Path(tmp) / "QUARANTINE"
 
     app = MainWindow(SERVICES)
-    app._mode = "advanced"         # this test exercises the advanced flow
-    app._apply_mode()           # (without persisting to the real config)
+    app._mode = "advanced"  # this test exercises the advanced flow
+    app._apply_mode()  # (without persisting to the real config)
     app.exact.entry_folder.insert(0, str(base))
-    app.exact.options.clear()          # no exclusions -> 4 groups
+    app.exact.options.clear()  # no exclusions -> 4 groups
     preferred_folder = str(base / "originals")  # contains one copy of the doc.txt group
 
     def when_done():
@@ -84,7 +84,7 @@ def main():
         to_move_before = sel.count_to_move()
         res = SERVICES.move_to_quarantine(sel, app.exact._scanned_folder, str(quarantine))
         R["moved"] = len(res.moved)
-        R["moved_ok"] = (len(res.moved) == to_move_before and not res.failed)
+        R["moved_ok"] = len(res.moved) == to_move_before and not res.failed
         R["log_exists"] = bool(res.log_path) and Path(res.log_path).exists()
         R["kept_intact"] = (base / "originals" / "doc.txt").exists()
         R["moved_in_quarantine"] = any(quarantine.rglob("img.dat"))
@@ -111,7 +111,7 @@ def main():
         # Header selectors: each choice is saved (the language also warns that it applies later).
         shown = []
         messagebox.showinfo = lambda *a, **k: shown.append(a)
-        app._change_language("English")          # already the current one: nothing happens
+        app._change_language("English")  # already the current one: nothing happens
         R["language_same_is_silent"] = SERVICES.settings.get_language() == "auto" and not shown
         app._change_language("Español")
         R["language_saved"] = SERVICES.settings.get_language() == "es" and len(shown) == 1
@@ -138,13 +138,13 @@ def main():
     ok = (
         R.get("groups") == 4
         and R.get("table_nodes") == 4
-        and R.get("pending_at_start") == 4          # everything starts undecided
+        and R.get("pending_at_start") == 4  # everything starts undecided
         and R.get("quarantine_locked_at_start") is True
-        and R.get("resolved_by_rule") == 1            # only the group with a copy in /originales
+        and R.get("resolved_by_rule") == 1  # only the group with a copy in /originales
         and R.get("pending_after_rule") == 3
         and R.get("all_ready") is True
         and R.get("quarantine_enabled_at_end") is True
-        and R.get("to_move") == 5                    # 9 duplicates - 4 kept
+        and R.get("to_move") == 5  # 9 duplicates - 4 kept
         and R.get("csv_groups") == 4
         and csv_output.exists()
         and R.get("moved") == 5

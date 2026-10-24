@@ -13,4 +13,4 @@ def format_size(bytes_: float) -> str:
         if value < 1024:
             return f"{value:.1f} {unit}"
         value /= 1024
-    return f"{value:.1f} PB"        # just in case (petabytes)
+    return f"{value:.1f} PB"  # just in case (petabytes)

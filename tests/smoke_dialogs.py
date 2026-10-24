@@ -1,12 +1,12 @@
 """Smoke test of the auxiliary windows, with the real interface:
 
-  · the image viewer (zoom, fit, wheel, broken image, a file that is not an image),
-  · the history (undo a "move", undo a "copy", and an undo that fails),
-  · the dialog about what to do with files that are not images (apply and cancel),
-  · the breakdown by extension (excluding one),
-  · the CSV export and the thumbnails / image preview.
+· the image viewer (zoom, fit, wheel, broken image, a file that is not an image),
+· the history (undo a "move", undo a "copy", and an undo that fails),
+· the dialog about what to do with files that are not images (apply and cancel),
+· the breakdown by extension (excluding one),
+· the CSV export and the thumbnails / image preview.
 
-    python tests/smoke_dialogs.py
+  python tests/smoke_dialogs.py
 """
 
 import csv
@@ -22,26 +22,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 TMP = Path(tempfile.mkdtemp(prefix="dup_dlg_"))
 os.environ["APPDATA"] = str(TMP / "appdata")
 
-from PIL import Image                                   # noqa: E402
+from PIL import Image  # noqa: E402
 
-from duplicate_finder.domain.operations import KIND_GATHER, KIND_QUARANTINE  # noqa: E402
 from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_QUARANTINE  # noqa: E402
 
 SERVICES = build_services()
 history = SERVICES.history
-from duplicate_finder.domain.transfers import MOVE  # noqa: E402
-from duplicate_finder.domain.transfers import GROUP, LEAVE  # noqa: E402
+from duplicate_finder.domain.transfers import (  # noqa: E402
+    GROUP,
+    LEAVE,
+    MOVE,
+)
+
 scan = SERVICES.scan_duplicates
 from duplicate_finder.presentation import icons, styles, thumbnails  # noqa: E402
+from duplicate_finder.presentation.extension_breakdown_dialog import ExtensionBreakdownWindow  # noqa: E402
 from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
 from duplicate_finder.presentation.image_viewer import ImageViewer, open_viewer  # noqa: E402
 from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
 from duplicate_finder.presentation.non_image_kinds_dialog import NonImageKindsWindow  # noqa: E402
-from duplicate_finder.presentation.extension_breakdown_dialog import ExtensionBreakdownWindow  # noqa: E402
 
 failures = []
 warnings = {"questions": 0, "info": 0, "warning": 0, "error": 0}
-warning_texts = []       # to explain a failure if a check is not met
+warning_texts = []  # to explain a failure if a check is not met
 
 
 def check(cond, msg):
@@ -57,7 +61,9 @@ def stub_dialogs():
             if key in ("warning", "error"):
                 warning_texts.append(" ".join(str(x) for x in a[:2]))
             return returns
+
         return f
+
     messagebox.askyesno = count("questions", True)
     messagebox.showinfo = count("info")
     messagebox.showwarning = count("warning")
@@ -83,11 +89,12 @@ def main():
     viewer._zoom(1 / 1.25)
     viewer._fit()
     app.update()
-    check(0.05 <= viewer._scale <= 1.0, "\"Fit\" leaves the whole photo inside the window")
+    check(0.05 <= viewer._scale <= 1.0, '"Fit" leaves the whole photo inside the window')
     previous = viewer._scale
 
     class Event:
         delta = 120
+
     viewer._wheel(Event())
     check(viewer._scale > previous, "mouse wheel up zooms in")
     viewer._set_scale(99)
@@ -102,10 +109,12 @@ def main():
     check(broken_viewer._orig is None, "a broken image does not bring the viewer down")
     broken_viewer.destroy()
 
-    open_viewer(app, str(TMP / "notes.txt"))                      # not an image: it opens nothing
-    open_viewer(app, str(TMP / "no_existe.png"))                  # does not exist: neither
-    check(not any(isinstance(h, ImageViewer) for h in app.winfo_children()),
-          "it does not open the viewer for files that are not images or do not exist")
+    open_viewer(app, str(TMP / "notes.txt"))  # not an image: it opens nothing
+    open_viewer(app, str(TMP / "no_existe.png"))  # does not exist: neither
+    check(
+        not any(isinstance(h, ImageViewer) for h in app.winfo_children()),
+        "it does not open the viewer for files that are not images or do not exist",
+    )
 
     # ------------------------------------------------- thumbnails and preview
     print("Thumbnails")
@@ -115,15 +124,14 @@ def main():
     check(placeholder.size == (40, 40), "a broken image gives a box with the extension")
     large = thumbnails.large_preview(str(photo), 250)
     check(max(large.size) <= 250, "large preview fitted in the square")
-    check(thumbnails.large_preview(str(broken), 250).size[0] > 0,
-          "preview of a broken image: box")
+    check(thumbnails.large_preview(str(broken), 250).size[0] > 0, "preview of a broken image: box")
     check(icons.window_icon(32).width() == 32, "the window icon is drawn")
 
     # ------------------------------------------------------------------ history
     print("History")
     empty = HistoryWindow(app, history)
     app.update()
-    check(len(empty.items.winfo_children()) == 1, "no operations: the \"nothing yet\" notice")
+    check(len(empty.items.winfo_children()) == 1, 'no operations: the "nothing yet" notice')
     empty.destroy()
 
     source, destination = TMP / "source", TMP / "destination"
@@ -131,36 +139,60 @@ def main():
     destination.mkdir()
     moved = source / "movido.txt"
     moved.write_text("hello")
-    (destination / "movido.txt").write_text("hello")     # simulates the file already moved
+    (destination / "movido.txt").write_text("hello")  # simulates the file already moved
     moved.unlink()
     copied_source = source / "copiado.txt"
     copied_source.write_text("original")
     (destination / "copiado.txt").write_text("original")
-    history.record(KIND_QUARANTINE, "move", str(source), str(destination),
-                        [(str(moved), str(destination / "movido.txt"))], "1 duplicado")
-    history.record(KIND_GATHER, "copy", str(source), str(destination),
-                        [(str(copied_source), str(destination / "copiado.txt"))], "1 image")
+    history.record(
+        KIND_QUARANTINE,
+        "move",
+        str(source),
+        str(destination),
+        [(str(moved), str(destination / "movido.txt"))],
+        "1 duplicado",
+    )
+    history.record(
+        KIND_GATHER,
+        "copy",
+        str(source),
+        str(destination),
+        [(str(copied_source), str(destination / "copiado.txt"))],
+        "1 image",
+    )
     window = HistoryWindow(app, history)
     app.update()
     ops = history.list_all()
     check(len(ops) == 2, "the history lists the two operations")
-    op_copy, op_move = ops[0], ops[1]          # the most recent first
+    op_copy, op_move = ops[0], ops[1]  # the most recent first
     window._undo(op_move)
-    check(moved.exists() and not (destination / "movido.txt").exists(),
-          "undoing a \"move\" puts the file back in place")
+    check(
+        moved.exists() and not (destination / "movido.txt").exists(),
+        'undoing a "move" puts the file back in place',
+    )
     window._undo(op_copy)
-    check(copied_source.exists() and not (destination / "copiado.txt").exists(),
-          "undoing a \"copy\" deletes the copy and does NOT touch the original"
-          + (f"  [warnings: {warning_texts}]" if warning_texts else ""))
+    check(
+        copied_source.exists() and not (destination / "copiado.txt").exists(),
+        'undoing a "copy" deletes the copy and does NOT touch the original'
+        + (f"  [warnings: {warning_texts}]" if warning_texts else ""),
+    )
     check(all(o["undone"] for o in history.list_all()), "both are marked as undone")
 
     (destination / "otro.txt").write_text("x")
-    history.record(KIND_QUARANTINE, "move", str(source), str(destination),
-                        [(str(source / "otro.txt"), str(destination / "no_esta.txt"))], "falla")
+    history.record(
+        KIND_QUARANTINE,
+        "move",
+        str(source),
+        str(destination),
+        [(str(source / "otro.txt"), str(destination / "no_esta.txt"))],
+        "falla",
+    )
     warnings_before = warnings["warning"]
     window._undo(history.list_all()[0])
-    check(warnings["warning"] == warnings_before + 1,
-          "if it cannot be undone, the user is warned and the operation stays unmarked")
+    check(
+        warnings["warning"] == warnings_before + 1,
+        "if it cannot be undone, the user is warned and the operation stays unmarked",
+    )
     window.destroy()
 
     # --------------------------------------- what to do with files that are not images
@@ -178,11 +210,17 @@ def main():
     dlg._toggle_entry("txt")
     dlg._apply()
     rules = dlg.rules
-    check(rules is not None and rules.action("pdf") == GROUP
-          and rules.folder("pdf") == "My documents", "\"Group\" keeps the folder name")
-    check(rules is not None and rules.action("txt") == MOVE, "\"Move\" is picked up")
-    check(rules is not None and rules.action("mp3") == LEAVE,
-          "whatever is not touched stays on \"Leave\"")
+    check(
+        rules is not None
+        and rules.action("pdf") == GROUP
+        and rules.folder("pdf") == "My documents",
+        '"Group" keeps the folder name',
+    )
+    check(rules is not None and rules.action("txt") == MOVE, '"Move" is picked up')
+    check(
+        rules is not None and rules.action("mp3") == LEAVE,
+        'whatever is not touched stays on "Leave"',
+    )
     dlg2 = NonImageKindsWindow(app, kinds)
     app.update()
     dlg2._cancel()
@@ -201,7 +239,7 @@ def main():
     breakdown = ExtensionBreakdownWindow(app, result, excluded.append)
     app.update()
     breakdown._exclude("txt")
-    check(excluded == ["txt"], "\"Exclude\" warns about the chosen extension")
+    check(excluded == ["txt"], '"Exclude" warns about the chosen extension')
     check("txt" in breakdown.title(), "and says so in the window title")
     breakdown.destroy()
 
@@ -211,15 +249,19 @@ def main():
     filedialog.asksaveasfilename = lambda *a, **k: str(report)
     exact._export_csv()
     rows = list(csv.reader(report.open(encoding="utf-8-sig", newline="")))
-    check(len(rows) == 1 + 4 and rows[0][0] == "Duplicate_Group",
-          "the CSV has a header and the 4 duplicate files")
+    check(
+        len(rows) == 1 + 4 and rows[0][0] == "Duplicate_Group",
+        "the CSV has a header and the 4 duplicate files",
+    )
     filedialog.asksaveasfilename = lambda *a, **k: ""
-    exact._export_csv()                          # cancel: it does nothing and does not fail
+    exact._export_csv()  # cancel: it does nothing and does not fail
     filedialog.asksaveasfilename = lambda *a, **k: str(TMP / "no" / "existe" / "i.csv")
     errors_before = warnings["error"]
     exact._export_csv()
-    check(warnings["error"] == errors_before + 1,
-          "if it cannot be written, the user is warned instead of crashing")
+    check(
+        warnings["error"] == errors_before + 1,
+        "if it cannot be written, the user is warned instead of crashing",
+    )
 
     app.destroy()
     print()

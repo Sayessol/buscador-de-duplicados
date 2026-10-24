@@ -9,6 +9,7 @@ are simulated so the script runs on its own. It needs a Windows desktop.
 It uses a neutral path (C:/Demo) so that your user name does not show up.
 """
 
+import contextlib
 import os
 import random
 import shutil
@@ -23,17 +24,17 @@ LANGUAGE = sys.argv[1] if len(sys.argv) > 1 else "es"
 assert LANGUAGE in ("es", "en"), "usage: record_gif.py [es|en]"
 OUTPUT = Path(__file__).resolve().parent / "img" / LANGUAGE / "demo.gif"
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-GIF_WIDTH = 960                    # final width of the GIF (smaller = fewer MB)
-INTERVAL_MS = 90                  # how often a frame is captured
+GIF_WIDTH = 960  # final width of the GIF (smaller = fewer MB)
+INTERVAL_MS = 90  # how often a frame is captured
 
 BASE_DEMO = Path(os.environ.get("CAPTURE_BASE", "C:/Demo"))
 BASE_DEMO.mkdir(parents=True, exist_ok=True)
 tmp = Path(tempfile.mkdtemp(prefix="", dir=BASE_DEMO))
-os.environ["APPDATA"] = str(tmp / "appdata")        # does not touch your real configuration
+os.environ["APPDATA"] = str(tmp / "appdata")  # does not touch your real configuration
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-from PIL import Image, ImageChops, ImageDraw, ImageGrab     # noqa: E402
+from PIL import Image, ImageChops, ImageDraw, ImageGrab  # noqa: E402
 
 from duplicate_finder import i18n  # noqa: E402
 from duplicate_finder.bootstrap import build_services  # noqa: E402
@@ -54,7 +55,7 @@ def photo(seed, size=(240, 160)):
         x, y = rnd.randint(0, size[0]), rnd.randint(0, size[1])
         col = (rnd.randint(40, 235), rnd.randint(40, 235), rnd.randint(60, 235))
         box = [x, y, x + rnd.randint(30, 90), y + rnd.randint(30, 90)]
-        (d.ellipse if rnd.random() < .5 else d.rectangle)(box, fill=col)
+        (d.ellipse if rnd.random() < 0.5 else d.rectangle)(box, fill=col)
     return im
 
 
@@ -69,18 +70,24 @@ BIRTHDAY = T("cumple.png", "birthday.png")
 SUMMER, DOWNLOADS = T("verano", "summer"), T("Descargas", "Downloads")
 DESKTOP = T("Escritorio", "Desktop")
 base = tmp / T("Fotos", "Photos")
-names = {f"2023/{SUMMER}/{BEACH}": 1, f"2023/{SUMMER}/{SUNSET}": 2,
-         f"2023/{BIRTHDAY}": 3, f"{DOWNLOADS}/{T('montaña.png', 'mountain.png')}": 4,
-         f"{DESKTOP}/{T('portada.png', 'cover.png')}": 5}
+names = {
+    f"2023/{SUMMER}/{BEACH}": 1,
+    f"2023/{SUMMER}/{SUNSET}": 2,
+    f"2023/{BIRTHDAY}": 3,
+    f"{DOWNLOADS}/{T('montaña.png', 'mountain.png')}": 4,
+    f"{DESKTOP}/{T('portada.png', 'cover.png')}": 5,
+}
 for rel, seed in names.items():
     path = base / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     photo(seed).save(path)
 SUNSET_COPY = T("atardecer (1).png", "sunset (1).png")
 BIRTHDAY_COPY = T("cumple - copia.png", "birthday - copy.png")
-for source, copy in [(f"2023/{SUMMER}/{BEACH}", f"{DOWNLOADS}/{BEACH}"),
-                     (f"2023/{SUMMER}/{SUNSET}", f"{DOWNLOADS}/{SUNSET_COPY}"),
-                     (f"2023/{BIRTHDAY}", f"{DESKTOP}/{BIRTHDAY_COPY}")]:
+for source, copy in [
+    (f"2023/{SUMMER}/{BEACH}", f"{DOWNLOADS}/{BEACH}"),
+    (f"2023/{SUMMER}/{SUNSET}", f"{DOWNLOADS}/{SUNSET_COPY}"),
+    (f"2023/{BIRTHDAY}", f"{DESKTOP}/{BIRTHDAY_COPY}"),
+]:
     (base / copy).parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(base / source, base / copy)
 quarantine = tmp / T("Cuarentena", "Quarantine")
@@ -89,7 +96,7 @@ quarantine.mkdir()
 # ---- simulated dialogs -----------------------------------------------------
 filedialog.askdirectory = lambda *a, **k: str(quarantine)
 messagebox.askyesno = lambda *a, **k: True
-os.startfile = lambda *a, **k: None   # without this the real Explorer would open
+os.startfile = lambda *a, **k: None  # without this the real Explorer would open
 messagebox.showinfo = lambda *a, **k: None
 messagebox.showwarning = lambda *a, **k: None
 messagebox.showerror = lambda *a, **k: None
@@ -100,7 +107,7 @@ app._mode = "simple"
 app._apply_mode()
 app.geometry("1280x860+12+6")
 
-frames = []                    # (instant, image)
+frames = []  # (instant, image)
 
 
 def capture():
@@ -121,7 +128,7 @@ def write_path():
     if state["i"] < len(text_path):
         state["i"] += 3
         app.exact.entry_folder.delete(0, "end")
-        app.exact.entry_folder.insert(0, text_path[:state["i"]])
+        app.exact.entry_folder.insert(0, text_path[: state["i"]])
         app.after(45, write_path)
     else:
         app.after(500, scan)
@@ -187,24 +194,32 @@ app.mainloop()
 # ---- assemble the GIF ------------------------------------------------------------
 height = round(frames[0][1].height * GIF_WIDTH / frames[0][1].width)
 imgs, durations, previous = [], [], None
-for (t0, im), next in zip(frames, frames[1:] + [(frames[-1][0] + .6, None)]):
+for (t0, im), next in zip(frames, frames[1:] + [(frames[-1][0] + 0.6, None)]):
     dur = max(int((next[0] - t0) * 1000), 40)
     small = im.resize((GIF_WIDTH, height), Image.LANCZOS)
     if previous is not None and ImageChops.difference(small, previous).getbbox() is None:
-        durations[-1] += dur                     # same frame: the previous one is lengthened
+        durations[-1] += dur  # same frame: the previous one is lengthened
         continue
-    imgs.append(small.quantize(colors=128, method=Image.Quantize.MEDIANCUT,
-                               dither=Image.Dither.NONE))
+    imgs.append(
+        small.quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    )
     durations.append(dur)
     previous = small
-imgs[0].save(OUTPUT, save_all=True, append_images=imgs[1:], duration=durations,
-             loop=0, optimize=True, disposal=1)
-print(f"{OUTPUT.parent.name}/{OUTPUT.name}: {len(imgs)} frames, "
-      f"{OUTPUT.stat().st_size / 1e6:.1f} MB, {sum(durations) / 1000:.1f} s")
+imgs[0].save(
+    OUTPUT,
+    save_all=True,
+    append_images=imgs[1:],
+    duration=durations,
+    loop=0,
+    optimize=True,
+    disposal=1,
+)
+print(
+    f"{OUTPUT.parent.name}/{OUTPUT.name}: {len(imgs)} frames, "
+    f"{OUTPUT.stat().st_size / 1e6:.1f} MB, {sum(durations) / 1000:.1f} s"
+)
 
 # Cleanup: deletes only the sample folder created by this script.
 shutil.rmtree(tmp, ignore_errors=True)
-try:
+with contextlib.suppress(OSError):
     BASE_DEMO.rmdir()
-except OSError:
-    pass

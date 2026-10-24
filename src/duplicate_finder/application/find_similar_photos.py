@@ -18,8 +18,17 @@ log = logging.getLogger(__name__)
 
 # Extensions that Pillow opens without extra plugins.
 IMAGE_EXTENSIONS = {
-    "jpg", "jpeg", "jpe", "png", "gif", "bmp", "webp",
-    "tif", "tiff", "ppm", "pgm",
+    "jpg",
+    "jpeg",
+    "jpe",
+    "png",
+    "gif",
+    "bmp",
+    "webp",
+    "tif",
+    "tiff",
+    "ppm",
+    "pgm",
 }
 
 
@@ -105,5 +114,9 @@ class FindSimilarPhotos:
             raise NotADirectoryError(tr("common.not_a_folder", root_folder=root_folder))
         paths = self.list_images(root_folder, filter=filter)
         return self.group_similar(
-            paths, hamming_threshold=hamming_threshold, color_threshold=color_threshold,
-            progress=progress, cancelled=cancelled)
+            paths,
+            hamming_threshold=hamming_threshold,
+            color_threshold=color_threshold,
+            progress=progress,
+            cancelled=cancelled,
+        )

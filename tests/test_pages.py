@@ -7,11 +7,11 @@ past that it gets cut off and the scrollbar disappears.
 import pytest
 
 from duplicate_finder.presentation.similar_photos_tab import (
-    HEADER_HEIGHT,
-    ROW_HEIGHT,
-    PAGE_MAX_HEIGHT,
     COLUMNS,
+    HEADER_HEIGHT,
     MAX_GROUPS_PER_PAGE,
+    PAGE_MAX_HEIGHT,
+    ROW_HEIGHT,
     split_into_pages,
 )
 
@@ -30,12 +30,15 @@ def test_few_groups_fit_in_one_page():
     assert split_into_pages([3, 2, 5]) == [(0, 3)]
 
 
-@pytest.mark.parametrize("counts", [
-    [2] * 500,                  # many small groups
-    [12] * 200,                 # groups of several rows
-    [3, 40, 2, 90, 2, 2, 7],    # mix
-    [900, 2, 2],                # a huge group and others
-])
+@pytest.mark.parametrize(
+    "counts",
+    [
+        [2] * 500,  # many small groups
+        [12] * 200,  # groups of several rows
+        [3, 40, 2, 90, 2, 2, 7],  # mix
+        [900, 2, 2],  # a huge group and others
+    ],
+)
 def test_pages_cover_all_groups_without_gaps(counts):
     pages = split_into_pages(counts)
     assert pages[0][0] == 0 and pages[-1][1] == len(counts)

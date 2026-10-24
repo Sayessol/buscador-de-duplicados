@@ -1,6 +1,6 @@
 """Entry point of the duplicates app.
 
-    python app.py            (or  python -m duplicate_finder  with src/ on the path)
+python app.py            (or  python -m duplicate_finder  with src/ on the path)
 """
 
 import os

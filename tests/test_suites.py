@@ -24,24 +24,24 @@ import pytest
 FOLDER = Path(__file__).resolve().parent
 
 LOGIC = [
-    "compare_with_original",      # parity with the original script
-    "check_filters",             # exclusion filter + breakdown by extension
-    "check_selection",           # keep/move, folder rule, validation
-    "check_quarantine",          # really moves, CSV log, invalid cases
+    "compare_with_original",  # parity with the original script
+    "check_filters",  # exclusion filter + breakdown by extension
+    "check_selection",  # keep/move, folder rule, validation
+    "check_quarantine",  # really moves, CSV log, invalid cases
     "check_quarantine_folders",  # moves FILES, not folders
-    "check_perceptual",          # similar photos: grouping by perceptual hash
-    "check_gather",              # "Gather images": strategies and rules
-    "check_history",           # operation history + undo
+    "check_perceptual",  # similar photos: grouping by perceptual hash
+    "check_gather",  # "Gather images": strategies and rules
+    "check_history",  # operation history + undo
 ]
 
 WINDOW = [
-    "smoke_window",               # window from end to end (advanced flow)
-    "smoke_similar",             # "Similar photos" tab
-    "smoke_simple",              # Simple / Advanced mode
-    "smoke_quarantine_ui",         # quarantine from the UI: files, not folders
-    "smoke_gather_ui",             # "Gather images" tab + history + undo
-    "smoke_logging",              # unexpected errors end up in the log
-    "smoke_dialogs",              # viewer, history, dialogs, CSV and thumbnails
+    "smoke_window",  # window from end to end (advanced flow)
+    "smoke_similar",  # "Similar photos" tab
+    "smoke_simple",  # Simple / Advanced mode
+    "smoke_quarantine_ui",  # quarantine from the UI: files, not folders
+    "smoke_gather_ui",  # "Gather images" tab + history + undo
+    "smoke_logging",  # unexpected errors end up in the log
+    "smoke_dialogs",  # viewer, history, dialogs, CSV and thumbnails
 ]
 
 
@@ -71,7 +71,14 @@ def test_logic(name):
 def test_window(name, tmp_path):
     # Each suite runs with its own APPDATA: it never touches the real history or config.
     environment = {**os.environ, "APPDATA": str(tmp_path / "appdata")}
-    r = subprocess.run([sys.executable, str(FOLDER / f"{name}.py")],
-                       capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=300, check=False, env=environment)
+    r = subprocess.run(
+        [sys.executable, str(FOLDER / f"{name}.py")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=300,
+        check=False,
+        env=environment,
+    )
     assert r.returncode == 0, f"{name} failed:\n{r.stdout}\n{r.stderr}"

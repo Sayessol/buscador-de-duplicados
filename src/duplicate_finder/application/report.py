@@ -15,8 +15,16 @@ from duplicate_finder.i18n import tr
 
 def columns() -> list[str]:
     """The column names, in the language of the interface."""
-    return [tr(key) for key in (
-        "csv.duplicate_group", "csv.full_path", "csv.size", "csv.size_bytes", "csv.hash")]
+    return [
+        tr(key)
+        for key in (
+            "csv.duplicate_group",
+            "csv.full_path",
+            "csv.size",
+            "csv.size_bytes",
+            "csv.hash",
+        )
+    ]
 
 
 class ExportReport:
@@ -31,12 +39,14 @@ class ExportReport:
         rows: list[list[object]] = [list(columns())]
         for number, group in enumerate(result.groups, start=1):
             for file in group.files:
-                rows.append([
-                    tr("report.group_label", number=number),
-                    file.path,
-                    format_size(file.size),
-                    file.size,
-                    group.hash,
-                ])
+                rows.append(
+                    [
+                        tr("report.group_label", number=number),
+                        file.path,
+                        format_size(file.size),
+                        file.size,
+                        group.hash,
+                    ]
+                )
         self._fs.write_csv(os.fspath(csv_path), rows)
         return len(result.groups)

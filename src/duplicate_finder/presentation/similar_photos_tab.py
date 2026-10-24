@@ -1,4 +1,4 @@
-""""Similar photos" tab: groups the same photo saved at different quality.
+""" "Similar photos" tab: groups the same photo saved at different quality.
 
 It is a component with its OWN state (result, selection, queues, thread, thumbnails...):
 the main window only creates it and notifies it of the Simple / Advanced mode.
@@ -12,20 +12,21 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
+from duplicate_finder.application.services import Services
 from duplicate_finder.domain.formatting import format_size
 from duplicate_finder.domain.selection import KEEP as _KEEP
-from duplicate_finder.application.services import Services
 from duplicate_finder.domain.similarity import ComparisonCancelled
+from duplicate_finder.i18n import tr
+
+from . import icons, styles
 from .background_job import BackgroundJob
 from .dialogs import choose_quarantine_folder, offer_to_open_folder
-from . import styles
-from . import icons
 from .image_viewer import open_viewer
-from .widgets import SectionHeader, StatTile, EmptyState, make_card
 from .thumbnails import (
-    load_thumbnail, clear_cache,
+    clear_cache,
+    load_thumbnail,
 )
-from duplicate_finder.i18n import tr
+from .widgets import EmptyState, SectionHeader, StatTile, make_card
 
 log = logging.getLogger(__name__)
 
@@ -33,11 +34,11 @@ log = logging.getLogger(__name__)
 # Windows does not draw windows taller than 32,767 px: past that point the
 # gallery gets cut off and the scrollbar disappears. That is why the groups
 # are split into pages whose estimated height never gets close to that limit.
-COLUMNS = 5                  # photos per row inside a group
-HEADER_HEIGHT = 70            # px taken by the title of a group and its margins
-ROW_HEIGHT = 400               # px of a row of photos (an upper bound)
-PAGE_MAX_HEIGHT = 20000       # estimated px per page (real limit: 32,767)
-MAX_GROUPS_PER_PAGE = 40        # and never more than 40 groups: the page is drawn quickly
+COLUMNS = 5  # photos per row inside a group
+HEADER_HEIGHT = 70  # px taken by the title of a group and its margins
+ROW_HEIGHT = 400  # px of a row of photos (an upper bound)
+PAGE_MAX_HEIGHT = 20000  # estimated px per page (real limit: 32,767)
+MAX_GROUPS_PER_PAGE = 40  # and never more than 40 groups: the page is drawn quickly
 
 
 def split_into_pages(counts):
@@ -49,7 +50,7 @@ def split_into_pages(counts):
     start = 0
     height = 0
     for i, n in enumerate(counts):
-        h = HEADER_HEIGHT + ROW_HEIGHT * -(-n // COLUMNS)       # rows = n / 5 rounded up
+        h = HEADER_HEIGHT + ROW_HEIGHT * -(-n // COLUMNS)  # rows = n / 5 rounded up
         if i > start and (height + h > PAGE_MAX_HEIGHT or i - start >= MAX_GROUPS_PER_PAGE):
             pages.append((start, i))
             start, height = i, 0
@@ -64,7 +65,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         """`container` is the CTkTabview tab where this component is placed."""
         super().__init__(container, fg_color="transparent")
         self._services = services
-        container.grid_columnconfigure(0, weight=1)    # the component fills the whole tab
+        container.grid_columnconfigure(0, weight=1)  # the component fills the whole tab
         container.grid_rowconfigure(0, weight=1)
         self.grid(row=0, column=0, sticky="nsew")
         self.grid_columnconfigure(0, weight=1)
@@ -72,16 +73,21 @@ class SimilarPhotosTab(ctk.CTkFrame):
 
         self._cancel = threading.Event()
         self._job = BackgroundJob(
-            self.after, self._apply_progress, lambda result: self._finished(*result),
-            self._error, self._cancelled, cancelled_exceptions=(ComparisonCancelled,))
+            self.after,
+            self._apply_progress,
+            lambda result: self._finished(*result),
+            self._error,
+            self._cancelled,
+            cancelled_exceptions=(ComparisonCancelled,),
+        )
         self._result = None
         self._selection = None
         self._folder = None
-        self._thumbs = {}
-        self._img_cache = []  # references to CTkImage (otherwise they are garbage collected)
-        self._tiles = {}
-        self._buttons = {}
-        self._pages = []    # [(first group, last + 1)] of each page of the gallery
+        self._thumbs: dict = {}
+        self._img_cache: list = []  # references to CTkImage (otherwise they are garbage collected)
+        self._tiles: dict = {}
+        self._buttons: dict = {}
+        self._pages: list = []  # [(first group, last + 1)] of each page of the gallery
         self._page = 0
 
         self._build()
@@ -103,63 +109,94 @@ class SimilarPhotosTab(ctk.CTkFrame):
         t = self
 
         card = make_card(t, 0)
-        SectionHeader(
-            card, 1, tr("similar.header"),
-            icons.CAT_IMAGES).grid(row=0, column=0, sticky="w",
-                                     padx=16, pady=(14, 4))
+        SectionHeader(card, 1, tr("similar.header"), icons.CAT_IMAGES).grid(
+            row=0, column=0, sticky="w", padx=16, pady=(14, 4)
+        )
         ctk.CTkLabel(
-            card, text=tr("similar.intro"),
-            font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
-            wraplength=980, justify="left", anchor="w").grid(
-            row=1, column=0, sticky="w", padx=16, pady=(0, 8))
+            card,
+            text=tr("similar.intro"),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+            wraplength=980,
+            justify="left",
+            anchor="w",
+        ).grid(row=1, column=0, sticky="w", padx=16, pady=(0, 8))
 
         row = ctk.CTkFrame(card, fg_color="transparent")
         row.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 8))
         row.grid_columnconfigure(0, weight=1)
         self.entry_folder = ctk.CTkEntry(
-            row, height=36, placeholder_text=tr("similar.folder_placeholder"))
+            row, height=36, placeholder_text=tr("similar.folder_placeholder")
+        )
         self.entry_folder.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self.btn_choose = ctk.CTkButton(
-            row, text=f"{icons.FOLDER}  {tr("common.choose")}", width=110, height=36,
-            command=self._choose_folder)
+            row,
+            text=f"{icons.FOLDER}  {tr('common.choose')}",
+            width=110,
+            height=36,
+            command=self._choose_folder,
+        )
         self.btn_choose.grid(row=0, column=1, padx=4)
         self.btn_analyze = ctk.CTkButton(
-            row, text=f"{icons.CAT_IMAGES}  {tr("similar.analyze")}", width=130, height=36,
-            font=styles.base_font(13, "bold"), command=self._start)
+            row,
+            text=f"{icons.CAT_IMAGES}  {tr('similar.analyze')}",
+            width=130,
+            height=36,
+            font=styles.base_font(13, "bold"),
+            command=self._start,
+        )
         self.btn_analyze.grid(row=0, column=2, padx=(4, 0))
 
         sensitivity = ctk.CTkFrame(card, fg_color="transparent")
         self._sensitivity_row = sensitivity
         sensitivity.grid(row=3, column=0, sticky="ew", padx=16, pady=(0, 14))
-        ctk.CTkLabel(sensitivity, text=tr("similar.sensitivity"),
-                     font=styles.base_font(12)).pack(side="left", padx=(0, 8))
-        ctk.CTkLabel(sensitivity, text=tr("similar.strict"), font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT).pack(side="left")
+        ctk.CTkLabel(sensitivity, text=tr("similar.sensitivity"), font=styles.base_font(12)).pack(
+            side="left", padx=(0, 8)
+        )
+        ctk.CTkLabel(
+            sensitivity,
+            text=tr("similar.strict"),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).pack(side="left")
         self.sensitivity_slider = ctk.CTkSlider(
-            sensitivity, from_=4, to=18, number_of_steps=14, width=220,
-            command=self._sensitivity_changed)
+            sensitivity,
+            from_=4,
+            to=18,
+            number_of_steps=14,
+            width=220,
+            command=self._sensitivity_changed,
+        )
         self.sensitivity_slider.set(10)
         self.sensitivity_slider.pack(side="left", padx=8)
-        ctk.CTkLabel(sensitivity, text=tr("similar.tolerant"), font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT).pack(side="left")
-        self.lbl_sensitivity = ctk.CTkLabel(
-            sensitivity, text=tr("similar.sensitivity_label", label=tr("similar.normal")),
+        ctk.CTkLabel(
+            sensitivity,
+            text=tr("similar.tolerant"),
             font=styles.base_font(11),
-            text_color=styles.COLOR_MUTED_TEXT)
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).pack(side="left")
+        self.lbl_sensitivity = ctk.CTkLabel(
+            sensitivity,
+            text=tr("similar.sensitivity_label", label=tr("similar.normal")),
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+        )
         self.lbl_sensitivity.pack(side="left", padx=(6, 0))
 
         # Progress
         self.progress_area = ctk.CTkFrame(t, fg_color="transparent")
-        self.progress_area.grid(row=1, column=0, sticky="ew",
-                                    padx=16, pady=(8, 0))
+        self.progress_area.grid(row=1, column=0, sticky="ew", padx=16, pady=(8, 0))
         self.progress_area.grid_columnconfigure(0, weight=1)
-        self.progress_bar = ctk.CTkProgressBar(
-            self.progress_area, height=10)
+        self.progress_bar = ctk.CTkProgressBar(self.progress_area, height=10)
         self.progress_bar.grid(row=0, column=0, sticky="ew", pady=(4, 2))
         self.progress_bar.set(0)
         self.lbl_state = ctk.CTkLabel(
-            self.progress_area, text="", font=styles.base_font(12),
-            text_color=styles.COLOR_MUTED_TEXT, anchor="w")
+            self.progress_area,
+            text="",
+            font=styles.base_font(12),
+            text_color=styles.COLOR_MUTED_TEXT,
+            anchor="w",
+        )
         self.lbl_state.grid(row=1, column=0, sticky="ew")
 
         # Statistics
@@ -171,8 +208,9 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.stat_photos = StatTile(self.stats_row, tr("similar.tile_photos"))
         self.stat_move = StatTile(self.stats_row, tr("similar.tile_to_move"))
         self.stat_space = StatTile(self.stats_row, tr("common.tile_recoverable"))
-        for i, b in enumerate((self.stat_groups, self.stat_photos,
-                               self.stat_move, self.stat_space)):
+        for i, b in enumerate(
+            (self.stat_groups, self.stat_photos, self.stat_move, self.stat_space)
+        ):
             b.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 6, 0))
 
         # Results gallery
@@ -181,28 +219,37 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.gallery.grid_columnconfigure(0, weight=1)
 
         self.empty_state = EmptyState(
-            t, icons.CAT_IMAGES, tr("similar.not_analyzed_title"),
-            tr("similar.empty_detail"))
-        self.empty_state.grid(row=4, column=0, sticky="nsew", padx=6,
-                                   pady=(10, 0))
+            t, icons.CAT_IMAGES, tr("similar.not_analyzed_title"), tr("similar.empty_detail")
+        )
+        self.empty_state.grid(row=4, column=0, sticky="nsew", padx=6, pady=(10, 0))
 
         # Pager (only visible if the groups do not fit in one page)
         self.pager = ctk.CTkFrame(t, fg_color="transparent")
         self.pager.grid(row=5, column=0, sticky="ew", padx=6, pady=(8, 0))
         self.pager.grid_columnconfigure(1, weight=1)
         self.btn_page_prev = ctk.CTkButton(
-            self.pager, text=tr("similar.previous"), width=110, fg_color="transparent",
-            border_width=1, text_color=styles.COLOR_TEXT,
-            command=lambda: self._change_page(-1))
+            self.pager,
+            text=tr("similar.previous"),
+            width=110,
+            fg_color="transparent",
+            border_width=1,
+            text_color=styles.COLOR_TEXT,
+            command=lambda: self._change_page(-1),
+        )
         self.btn_page_prev.grid(row=0, column=0)
         self.lbl_page = ctk.CTkLabel(
-            self.pager, text="", font=styles.base_font(12),
-            text_color=styles.COLOR_MUTED_TEXT)
+            self.pager, text="", font=styles.base_font(12), text_color=styles.COLOR_MUTED_TEXT
+        )
         self.lbl_page.grid(row=0, column=1, padx=10)
         self.btn_page_next = ctk.CTkButton(
-            self.pager, text=tr("similar.next"), width=110, fg_color="transparent",
-            border_width=1, text_color=styles.COLOR_TEXT,
-            command=lambda: self._change_page(1))
+            self.pager,
+            text=tr("similar.next"),
+            width=110,
+            fg_color="transparent",
+            border_width=1,
+            text_color=styles.COLOR_TEXT,
+            command=lambda: self._change_page(1),
+        )
         self.btn_page_next.grid(row=0, column=2)
         self.pager.grid_remove()
 
@@ -211,14 +258,23 @@ class SimilarPhotosTab(ctk.CTkFrame):
         bar.grid(row=6, column=0, sticky="ew", padx=6, pady=(10, 6))
         bar.grid_columnconfigure(0, weight=1)
         self.lbl_totals = ctk.CTkLabel(
-            bar, text=tr("similar.not_analyzed"), font=styles.base_font(12),
-            text_color=styles.COLOR_MUTED_TEXT, anchor="w")
+            bar,
+            text=tr("similar.not_analyzed"),
+            font=styles.base_font(12),
+            text_color=styles.COLOR_MUTED_TEXT,
+            anchor="w",
+        )
         self.lbl_totals.grid(row=0, column=0, padx=16, pady=12, sticky="w")
         self.btn_quarantine = ctk.CTkButton(
-            bar, text=f"{icons.SHIELD}  {tr("common.move_quarantine")}", width=200,
-            height=36, font=styles.base_font(13, "bold"),
-            fg_color=styles.COLOR_OK_BUTTON, hover_color="#26734d",
-            command=self._move_to_quarantine)
+            bar,
+            text=f"{icons.SHIELD}  {tr('common.move_quarantine')}",
+            width=200,
+            height=36,
+            font=styles.base_font(13, "bold"),
+            fg_color=styles.COLOR_OK_BUTTON,
+            hover_color="#26734d",
+            command=self._move_to_quarantine,
+        )
         self.btn_quarantine.grid(row=0, column=1, padx=(4, 16), pady=12)
 
     # -- state --------------------------------------------------------
@@ -232,9 +288,17 @@ class SimilarPhotosTab(ctk.CTkFrame):
 
     def _sensitivity_changed(self, value):
         v = int(round(value))
-        label = tr("similar.very_strict" if v <= 5 else "similar.strict" if v <= 8
-                   else "similar.normal" if v <= 11 else "similar.tolerant" if v <= 15
-                   else "similar.very_tolerant")
+        label = tr(
+            "similar.very_strict"
+            if v <= 5
+            else "similar.strict"
+            if v <= 8
+            else "similar.normal"
+            if v <= 11
+            else "similar.tolerant"
+            if v <= 15
+            else "similar.very_tolerant"
+        )
         self.lbl_sensitivity.configure(text=tr("similar.sensitivity_label", label=label))
 
     def _set_analyzing(self, active):
@@ -242,14 +306,18 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.entry_folder.configure(state="disabled" if active else "normal")
         if active:
             self.btn_analyze.configure(
-                text=f"{icons.CROSS}  {tr("common.cancel")}", command=self._cancel_analysis,
-                state="normal", fg_color=styles.COLOR_DANGER_BUTTON,
-                hover_color=("#9c2f24", "#8f2b22"), text_color="#ffffff")
+                text=f"{icons.CROSS}  {tr('common.cancel')}",
+                command=self._cancel_analysis,
+                state="normal",
+                fg_color=styles.COLOR_DANGER_BUTTON,
+                hover_color=("#9c2f24", "#8f2b22"),
+                text_color="#ffffff",
+            )
         else:
             styles.activate_button(self.btn_analyze, True)
             self.btn_analyze.configure(
-                text=f"{icons.CAT_IMAGES}  {tr("similar.analyze")}",
-                command=self._start)
+                text=f"{icons.CAT_IMAGES}  {tr('similar.analyze')}", command=self._start
+            )
 
     # -- actions ---------------------------------------------------
     def _choose_folder(self):
@@ -262,8 +330,8 @@ class SimilarPhotosTab(ctk.CTkFrame):
         folder = self.entry_folder.get().strip()
         if not folder or not os.path.isdir(folder):
             messagebox.showwarning(
-                tr("common.invalid_folder_title"),
-                tr("similar.invalid_folder_msg"))
+                tr("common.invalid_folder_title"), tr("similar.invalid_folder_msg")
+            )
             return
 
         threshold = int(round(self.sensitivity_slider.get()))
@@ -283,13 +351,15 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.stats_row.grid_remove()
         styles.action_button(self.btn_quarantine, False)
         self.empty_state.configure(
-            title=tr("similar.analyzing"), detail=tr("similar.comparing_detail"))
+            title=tr("similar.analyzing"), detail=tr("similar.comparing_detail")
+        )
         self._show_gallery(False)
         self._set_analyzing(True)
 
         self._job.start(
             lambda report: self._analyze(folder, threshold, report),
-            what=f"Similar-photo analysis of {folder}")
+            what=f"Similar-photo analysis of {folder}",
+        )
 
     def _cancel_analysis(self):
         self._cancel.set()
@@ -299,9 +369,11 @@ class SimilarPhotosTab(ctk.CTkFrame):
     def _analyze(self, folder, threshold, report):
         """Runs in the background: finds the similar photos and makes their thumbnails."""
         res = self._services.find_similar_photos(
-            folder, hamming_threshold=threshold,
+            folder,
+            hamming_threshold=threshold,
             progress=lambda a, t, m: report((a, t, m)),
-            cancelled=self._cancel.is_set)
+            cancelled=self._cancel.is_set,
+        )
 
         thumbs = {}
         total = res.total_photos_in_groups
@@ -312,9 +384,17 @@ class SimilarPhotosTab(ctk.CTkFrame):
                     raise ComparisonCancelled()
                 processed_count += 1
                 if processed_count % 4 == 0 or processed_count == total:
-                    report((processed_count, total,
-                            tr("similar.loading_thumbnails", processed_count=processed_count,
-                               total=total)))
+                    report(
+                        (
+                            processed_count,
+                            total,
+                            tr(
+                                "similar.loading_thumbnails",
+                                processed_count=processed_count,
+                                total=total,
+                            ),
+                        )
+                    )
                 try:
                     thumbs[h.path] = load_thumbnail(h.path)
                 except Exception as e:  # a broken file must not stop the gallery
@@ -340,17 +420,18 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self._set_analyzing(False)
         self.btn_analyze.configure(state="normal")
 
-        extra = (tr("similar.unreadable_suffix", count=len(res.errors))
-                 if res.errors else "")
+        extra = tr("similar.unreadable_suffix", count=len(res.errors)) if res.errors else ""
 
         if res.total_groups == 0:
             self.stats_row.grid_remove()
             self.lbl_state.configure(text=tr("similar.none_found"))
             self.lbl_totals.configure(
-                text=tr("similar.totals_none", total_images=res.total_images, extra=extra))
+                text=tr("similar.totals_none", total_images=res.total_images, extra=extra)
+            )
             self.empty_state.configure(
                 title=tr("similar.none_found_title"),
-                detail=tr("similar.none_found_detail", total_images=res.total_images))
+                detail=tr("similar.none_found_detail", total_images=res.total_images),
+            )
             self._show_gallery(False)
             return
 
@@ -364,8 +445,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.stats_row.grid()
         self.stat_groups.set(res.total_groups)
         self.stat_photos.set(res.total_photos_in_groups)
-        self.lbl_state.configure(
-            text=tr("similar.finished", extra=extra))
+        self.lbl_state.configure(text=tr("similar.finished", extra=extra))
         self._build_gallery()
         self._show_gallery(True)
         self._on_selection_change()
@@ -379,8 +459,8 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self._set_analyzing(False)
         self.btn_analyze.configure(state="normal")
         self.empty_state.configure(
-            title=tr("similar.cancelled_title"),
-            detail=tr("similar.cancelled_detail"))
+            title=tr("similar.cancelled_title"), detail=tr("similar.cancelled_detail")
+        )
         self._show_gallery(False)
 
     def _error(self, e):
@@ -391,8 +471,9 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.lbl_totals.configure(text=tr("similar.failed"))
         self._set_analyzing(False)
         self.btn_analyze.configure(state="normal")
-        messagebox.showerror(tr("similar.error_title"),
-                             tr("similar.error_detail", name=type(e).__name__, e=e))
+        messagebox.showerror(
+            tr("similar.error_title"), tr("similar.error_detail", name=type(e).__name__, e=e)
+        )
 
     # -- gallery ---------------------------------------------------
     def _show_gallery(self, show):
@@ -408,16 +489,15 @@ class SimilarPhotosTab(ctk.CTkFrame):
         for child in self.gallery.winfo_children():
             child.destroy()
         self._img_cache.clear()
-        self._tiles = {}   # (gi, path) -> frame of the tile
-        self._buttons = {}      # (gi, path) -> keep/move button
+        self._tiles = {}  # (gi, path) -> frame of the tile
+        self._buttons = {}  # (gi, path) -> keep/move button
         self._pages = []
         self._page = 0
         self.pager.grid_remove()
 
     def _build_gallery(self):
         self._clear_gallery()
-        self._pages = split_into_pages(
-            [g.count for g in self._result.groups])
+        self._pages = split_into_pages([g.count for g in self._result.groups])
         self._show_page(0)
 
     def _change_page(self, step):
@@ -442,9 +522,16 @@ class SimilarPhotosTab(ctk.CTkFrame):
             card.grid_columnconfigure(0, weight=1)
 
             header = ctk.CTkLabel(
-                card, anchor="w", font=styles.base_font(12, "bold"),
-                text=tr("similar.group_title", number=gi + 1, count=g.count,
-                        size=format_size(g.reclaimable_space)))
+                card,
+                anchor="w",
+                font=styles.base_font(12, "bold"),
+                text=tr(
+                    "similar.group_title",
+                    number=gi + 1,
+                    count=g.count,
+                    size=format_size(g.reclaimable_space),
+                ),
+            )
             header.grid(row=0, column=0, sticky="w", padx=12, pady=(10, 6))
 
             strips = ctk.CTkFrame(card, fg_color="transparent")
@@ -458,53 +545,78 @@ class SimilarPhotosTab(ctk.CTkFrame):
         if len(self._pages) > 1:
             total = len(self._result.groups)
             self.lbl_page.configure(
-                text=tr("similar.page_label", page=page + 1, pages=len(self._pages),
-                        first=first + 1, end=end, total=total))
+                text=tr(
+                    "similar.page_label",
+                    page=page + 1,
+                    pages=len(self._pages),
+                    first=first + 1,
+                    end=end,
+                    total=total,
+                )
+            )
             styles.activate_button(self.btn_page_prev, page > 0, fg="transparent")
-            styles.activate_button(self.btn_page_next, page < len(self._pages) - 1,
-                                 fg="transparent")
+            styles.activate_button(
+                self.btn_page_next, page < len(self._pages) - 1, fg="transparent"
+            )
             self.pager.grid()
         else:
             self.pager.grid_remove()
 
     def _photo_tile(self, parent, gi, j, fingerprint, sim):
-        tile = ctk.CTkFrame(parent, fg_color=styles.COLOR_TILE, corner_radius=8,
-                            border_width=2)
+        tile = ctk.CTkFrame(parent, fg_color=styles.COLOR_TILE, corner_radius=8, border_width=2)
         tile.grid(row=j // COLUMNS, column=j % COLUMNS, padx=6, pady=4, sticky="n")
         self._tiles[(gi, fingerprint.path)] = tile
 
         pil = self._thumbs.get(fingerprint.path)
         if pil is not None:
-            img = ctk.CTkImage(light_image=pil, dark_image=pil,
-                               size=(pil.width, pil.height))
+            img = ctk.CTkImage(light_image=pil, dark_image=pil, size=(pil.width, pil.height))
             self._img_cache.append(img)
             lbl_img = ctk.CTkLabel(tile, image=img, text="")
         else:
-            lbl_img = ctk.CTkLabel(tile, text=tr("similar.no_preview"),
-                                   width=150, height=150,
-                                   text_color=styles.COLOR_MUTED_TEXT)
+            lbl_img = ctk.CTkLabel(
+                tile,
+                text=tr("similar.no_preview"),
+                width=150,
+                height=150,
+                text_color=styles.COLOR_MUTED_TEXT,
+            )
         lbl_img.grid(row=0, column=0, padx=6, pady=(6, 4))
         lbl_img.configure(cursor="hand2")
-        lbl_img.bind("<Button-1>", lambda _e, r=fingerprint.path:
-                     open_viewer(self.winfo_toplevel(), r))
+        lbl_img.bind(
+            "<Button-1>", lambda _e, r=fingerprint.path: open_viewer(self.winfo_toplevel(), r)
+        )
 
-        ctk.CTkLabel(tile, text=Path(fingerprint.path).name, font=styles.base_font(10),
-                     wraplength=150, justify="left", anchor="w").grid(
-            row=1, column=0, padx=6, sticky="w")
         ctk.CTkLabel(
-            tile, text=f"{fingerprint.width}×{fingerprint.height}  ·  "
-                       f"{format_size(fingerprint.size)}",
-            font=styles.base_font(10), text_color=styles.COLOR_MUTED_TEXT).grid(
-            row=2, column=0, padx=6, sticky="w")
-        similarity_label = tr("similar.best_quality") if j == 0 else tr("similar.similarity",
-                                                                        percent=sim * 100)
-        ctk.CTkLabel(tile, text=similarity_label, font=styles.base_font(10),
-                     text_color=styles.COLOR_MUTED_TEXT).grid(
-            row=3, column=0, padx=6, sticky="w")
+            tile,
+            text=Path(fingerprint.path).name,
+            font=styles.base_font(10),
+            wraplength=150,
+            justify="left",
+            anchor="w",
+        ).grid(row=1, column=0, padx=6, sticky="w")
+        ctk.CTkLabel(
+            tile,
+            text=f"{fingerprint.width}×{fingerprint.height}  ·  {format_size(fingerprint.size)}",
+            font=styles.base_font(10),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).grid(row=2, column=0, padx=6, sticky="w")
+        similarity_label = (
+            tr("similar.best_quality") if j == 0 else tr("similar.similarity", percent=sim * 100)
+        )
+        ctk.CTkLabel(
+            tile,
+            text=similarity_label,
+            font=styles.base_font(10),
+            text_color=styles.COLOR_MUTED_TEXT,
+        ).grid(row=3, column=0, padx=6, sticky="w")
 
         button = ctk.CTkButton(
-            tile, width=120, height=26, font=styles.base_font(11),
-            command=lambda g=gi, r=fingerprint.path: self._choose_keep(g, r))
+            tile,
+            width=120,
+            height=26,
+            font=styles.base_font(11),
+            command=lambda g=gi, r=fingerprint.path: self._choose_keep(g, r),
+        )
         button.grid(row=4, column=0, padx=6, pady=(4, 8))
         self._buttons[(gi, fingerprint.path)] = button
 
@@ -517,15 +629,22 @@ class SimilarPhotosTab(ctk.CTkFrame):
         if dec == _KEEP:
             # It is the one being kept: green button and no action (it already is).
             tile.configure(border_color=styles.COLOR_OK)
-            button.configure(text=f"{icons.OK}  {tr("similar.kept")}", state="disabled",
-                            fg_color=styles.COLOR_OK_BUTTON,
-                            text_color_disabled="#ffffff")  # readable, not "broken"
+            button.configure(
+                text=f"{icons.OK}  {tr('similar.kept')}",
+                state="disabled",
+                fg_color=styles.COLOR_OK_BUTTON,
+                text_color_disabled="#ffffff",
+            )  # readable, not "broken"
         else:
             tile.configure(border_color=styles.COLOR_WARNING)
-            button.configure(text=tr("similar.keep_this"), state="normal",
-                            fg_color="transparent", border_width=1,
-                            text_color=styles.COLOR_TEXT,
-                            hover_color=styles.COLOR_TILE)
+            button.configure(
+                text=tr("similar.keep_this"),
+                state="normal",
+                fg_color="transparent",
+                border_width=1,
+                text_color=styles.COLOR_TEXT,
+                hover_color=styles.COLOR_TILE,
+            )
 
     def _refresh_group(self, gi):
         for h in self._result.groups[gi].fingerprints:
@@ -548,16 +667,17 @@ class SimilarPhotosTab(ctk.CTkFrame):
         to_move = self._selection.count_to_move()
         free = self._selection.space_to_free()
         self.stat_move.set(to_move)
-        self.stat_space.set(format_size(free),
-                                  color=styles.COLOR_OK if free else None)
+        self.stat_space.set(format_size(free), color=styles.COLOR_OK if free else None)
 
         if pending:
             self.lbl_totals.configure(
-                text=f"{icons.WARNING}  {tr("similar.too_many_kept", count=len(pending))}")
+                text=f"{icons.WARNING}  {tr('similar.too_many_kept', count=len(pending))}"
+            )
             styles.action_button(self.btn_quarantine, False)
         else:
             self.lbl_totals.configure(
-                text=f"{icons.OK}  {tr("similar.ready", to_move=to_move, size=format_size(free))}")
+                text=f"{icons.OK}  {tr('similar.ready', to_move=to_move, size=format_size(free))}"
+            )
             styles.action_button(self.btn_quarantine, bool(to_move))
 
     def _move_to_quarantine(self):
@@ -574,17 +694,20 @@ class SimilarPhotosTab(ctk.CTkFrame):
         frees = format_size(self._selection.space_to_free())
         if not messagebox.askyesno(
             tr("common.confirm_title"),
-            tr("similar.confirm_msg", n=n, frees=frees, destination=destination)):
+            tr("similar.confirm_msg", n=n, frees=frees, destination=destination),
+        ):
             return
 
         try:
             res = self._services.move_to_quarantine(
-                self._selection, root, destination,
-                description_key="history.description_similar")
+                self._selection, root, destination, description_key="history.description_similar"
+            )
         except Exception as e:  # it is logged and shown to the user
             log.exception("Move of similar photos to quarantine failed")
-            messagebox.showerror(tr("common.move_error_title"), tr("similar.error_detail",
-                                                                   name=type(e).__name__, e=e))
+            messagebox.showerror(
+                tr("common.move_error_title"),
+                tr("similar.error_detail", name=type(e).__name__, e=e),
+            )
             return
 
         self._result = None
@@ -592,11 +715,10 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self._clear_gallery()
         self.stats_row.grid_remove()
         styles.action_button(self.btn_quarantine, False)
-        self.lbl_totals.configure(
-            text=tr("similar.moved_totals", count=len(res.moved)))
+        self.lbl_totals.configure(text=tr("similar.moved_totals", count=len(res.moved)))
         self.empty_state.configure(
-            title=tr("similar.moved_title"),
-            detail=tr("similar.moved_detail", count=len(res.moved)))
+            title=tr("similar.moved_title"), detail=tr("similar.moved_detail", count=len(res.moved))
+        )
         self._show_gallery(False)
         detail = tr("similar.moved_summary", count=len(res.moved))
         if res.log_path:
