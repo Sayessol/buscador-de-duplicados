@@ -13,8 +13,9 @@ labels: bug
 2.
 
 **Environment**
+- App version (shown in the window title):
 - Windows (version):
 - How you run it: `.exe` from Releases / from the source code
-- Theme: light / dark · Mode: Simple / Advanced
+- Language: English / Spanish · Theme: light / dark · View: Simple / Advanced
 
 > If the problem has to do with specific files, do not paste personal paths: replace your user name with `user`.

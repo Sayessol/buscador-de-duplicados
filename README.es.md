@@ -256,6 +256,10 @@ Lo construí **trabajando con [Claude](https://claude.com/claude-code) (Anthropi
 - Las fotos parecidas no detectan recortes ni rotaciones.
 - Solo Windows.
 
+## Contribuir
+
+En [CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) está cómo preparar el proyecto, las comprobaciones que debe pasar un cambio y las reglas de las capas. Para avisar de una vulnerabilidad, lee [SECURITY.md](SECURITY.md).
+
 ## Sugerencias
 
 No hay una hoja de ruta cerrada: iré mejorando la aplicación sobre la marcha, según vea con la práctica qué funciones le faltan. **Si tienes ideas para funcionalidades futuras, me encantará conocerlas**: abre una *issue* con la plantilla «Suggestion».
