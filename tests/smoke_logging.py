@@ -49,13 +49,13 @@ def main():
         raise RuntimeError("failure triggered in the interface")
 
     def scan_failure():
-        # The same method that runs in the scan thread; with a folder that does not exist.
-        app.exact._scan_job(str(TMP / "does_not_exist"), ScanFilter.no_filter())
+        # The scan in its background job, with a folder that does not exist.
+        app.exact._launch_scan(str(TMP / "does_not_exist"), ScanFilter.no_filter())
 
     app.after(200, ui_failure)
     app.after(300, ui_failure)                 # repeated: it must warn only once
     app.after(400, scan_failure)
-    app.after(1200, app.destroy)
+    app.after(1800, app.destroy)
     app.mainloop()
 
     for h in app_logging.log.handlers:
@@ -64,7 +64,8 @@ def main():
     check("failure triggered in the interface" in text, "the interface error is in the log")
     check(text.count("Unexpected error in the interface") == 2,
           "both repeated failures are logged")
-    check(len(warnings) == 1, "but the warning to the user appears only once")
+    unexpected = [w for w in warnings if w[0] == "Unexpected error"]
+    check(len(unexpected) == 1, "but the warning to the user appears only once")
     check("Scan of" in text and "NotADirectoryError" in text,
           "the scan thread error is in the log, with its traceback")
     check(str(log_path) in warnings[0][1] if warnings else False,

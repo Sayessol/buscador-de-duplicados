@@ -14,6 +14,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - The code lives in the package `src/duplicate_finder`, split into layers: `domain` (data and rules, no input or output), `application` (the use cases), `infrastructure` (disk, history, settings, logs, Pillow) and `presentation` (the interface), plus `i18n`. `python app.py` still starts the app, and so does `python -m duplicate_finder`. Nothing changes for the user.
 - The use cases reach the disk, the file hashes, the images, the history and the settings through ports (interfaces) that the infrastructure implements; `bootstrap.py` is the only place that wires them. The domain no longer reads the disk. Nothing changes for the user.
 - Moving to quarantine and gathering images now record their own history entry (the interface no longer does), and the three tabs that move files share their dialogs (choosing the quarantine folder, the warnings and the offer to open the folder). Nothing changes for the user.
+- The biggest tab (`exact_duplicates_tab.py`, 900 lines) is split into components: the scan options panel and the preview panel are their own classes, and a `BackgroundJob` helper replaces the thread, queue and polling code that the scan, the quarantine, the analysis and the gather each wrote by hand. Nothing changes for the user.
 - The folders suggested for grouping the files that are not images (`Documents`, `Music`, `Videos`, `Archives`, `Other`) are English, like the other names the app creates inside your folders; you can still type your own.
 
 ### Added

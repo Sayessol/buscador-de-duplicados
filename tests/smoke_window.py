@@ -43,7 +43,7 @@ def main():
     app._mode = "advanced"         # this test exercises the advanced flow
     app._apply_mode()           # (without persisting to the real config)
     app.exact.entry_folder.insert(0, str(base))
-    app.exact._empty_filters()          # no exclusions -> 4 groups
+    app.exact.options.clear()          # no exclusions -> 4 groups
     preferred_folder = str(base / "originals")  # contains one copy of the doc.txt group
 
     def when_done():
@@ -89,24 +89,24 @@ def main():
         R["kept_intact"] = (base / "originals" / "doc.txt").exists()
         R["moved_in_quarantine"] = any(quarantine.rglob("img.dat"))
 
-        app.exact._toggle_options()
+        app.exact.options.toggle()
 
         # Quick categories: ticking "Images" fills in the field and the filter
-        app.exact._empty_filters()
-        app.exact.chk_categories["images"].select()
-        app.exact._toggle_category("images")
-        incl = app.exact._current_filter().included_extensions
+        app.exact.options.clear()
+        app.exact.options.chk_categories["images"].select()
+        app.exact.options.toggle_category("images")
+        incl = app.exact.options.current_filter().included_extensions
         R["cat_images_jpg"] = "jpg" in incl and "png" in incl
         R["cat_images_no_mp3"] = "mp3" not in incl
-        app.exact.chk_categories["audio"].select()
-        app.exact._toggle_category("audio")
-        R["cat_combines_audio"] = "mp3" in app.exact._current_filter().included_extensions
-        app.exact.chk_categories["images"].deselect()
-        app.exact._toggle_category("images")
-        incl2 = app.exact._current_filter().included_extensions
+        app.exact.options.chk_categories["audio"].select()
+        app.exact.options.toggle_category("audio")
+        R["cat_combines_audio"] = "mp3" in app.exact.options.current_filter().included_extensions
+        app.exact.options.chk_categories["images"].deselect()
+        app.exact.options.toggle_category("images")
+        incl2 = app.exact.options.current_filter().included_extensions
         R["cat_unticks_images"] = "jpg" not in incl2 and "mp3" in incl2
-        app.exact._empty_filters()
-        R["cat_empty"] = app.exact._current_filter().included_extensions == set()
+        app.exact.options.clear()
+        R["cat_empty"] = app.exact.options.current_filter().included_extensions == set()
 
         # Header selectors: each choice is saved (the language also warns that it applies later).
         shown = []
@@ -122,7 +122,7 @@ def main():
         app._change_mode(app.mode_selector.get())
         R["mode_saved"] = SERVICES.settings.get_mode() == "simple"
 
-        top = ExtensionBreakdownWindow(app, sel.result, app.exact._add_extension_to_filter)
+        top = ExtensionBreakdownWindow(app, sel.result, app.exact.options.exclude_extension)
         R["extensions"] = len(sel.result.summary_by_extension())
         app.after(150, top.destroy)
         app.after(400, app.destroy)

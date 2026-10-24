@@ -17,6 +17,7 @@ from duplicate_finder.application.gather import non_image_kinds
 from duplicate_finder.application.services import Services
 from duplicate_finder.application.file_transfers import InvalidDestination, validate_destination
 from duplicate_finder.domain.transfers import COPY, LEAVE, MOVE, NonImageRules
+from .background_job import BackgroundJob
 from .dialogs import offer_to_open_folder, proceed_despite
 from . import styles
 from . import icons
@@ -46,10 +47,11 @@ class GatherImagesTab(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(4, weight=1)
 
-        self._queue = queue.Queue()            # messages from the thread that moves/copies
         self._thumbs_queue = queue.Queue()     # messages from the thread that creates thumbnails
-        self._thread = None
         self._cancel = threading.Event()
+        self._job = BackgroundJob(
+            self.after, self._apply_progress, self._finished, self._error)
+        self._pending = None                  # (action, destination) of the running operation
         self._images = []
         self._others = []
         self._folder = None
@@ -70,7 +72,7 @@ class GatherImagesTab(ctk.CTkFrame):
 
     def cancel_jobs(self):
         """Called by the window when it closes: if an operation is running, it is cancelled."""
-        if self._thread and self._thread.is_alive():
+        if self._job.running:
             self._cancel.set()
 
     def _build(self):
@@ -426,40 +428,19 @@ class GatherImagesTab(ctk.CTkFrame):
         styles.activate_button(self.btn_search, False)
         styles.activate_button(self.btn_choose, False)
 
-        def job():
-            try:
-                res = fn(
-                    lambda a, t, m: self._queue.put(("prog", (a, t, m))),
-                    self._cancel.is_set)
-                self._queue.put(("done", (res, action, destination)))
-            except Exception as e:  # it is logged and shown to the user
-                log.exception("Gather (%s) from %s to %s failed", action, self._folder, destination)
-                self._queue.put(("error", e))
+        self._pending = (action, destination)
+        self._job.start(
+            lambda report: fn(lambda a, t, m: report((a, t, m)), self._cancel.is_set),
+            what=f"Gather ({action}) from {self._folder} to {destination}")
 
-        self._thread = threading.Thread(target=job, daemon=True)
-        self._thread.start()
-        self.after(100, self._poll_queue)
+    def _apply_progress(self, progress):
+        current, total, message = progress
+        self.lbl_state.configure(text=message)
+        if total:
+            self.progress_bar.set(min(current / total, 1.0))
 
-    def _poll_queue(self):
-        try:
-            while True:
-                kind, datum = self._queue.get_nowait()
-                if kind == "prog":
-                    a, t, m = datum
-                    self.lbl_state.configure(text=m)
-                    if t:
-                        self.progress_bar.set(min(a / t, 1.0))
-                elif kind == "done":
-                    self._finished(*datum)
-                    return
-                elif kind == "error":
-                    self._error(datum)
-                    return
-        except queue.Empty:
-            pass
-        self.after(100, self._poll_queue)
-
-    def _finished(self, res, action, destination):
+    def _finished(self, res):
+        action, destination = self._pending
         styles.activate_button(self.btn_search, True)
         styles.activate_button(self.btn_choose, True)
         self.progress_bar.set(1.0)

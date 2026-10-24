@@ -5,9 +5,7 @@ the main window only creates it, notifies it of the Simple / Advanced mode and t
 """
 
 import logging
-import datetime
 import os
-import queue
 import threading
 from tkinter import filedialog, messagebox
 
@@ -16,25 +14,15 @@ import customtkinter as ctk
 from duplicate_finder.application.scan_duplicates import ScanCancelled
 from duplicate_finder.application.services import Services
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.domain.filters import (
-    ScanFilter,
-    parse_extensions,
-    parse_names,
-    set_to_text,
-    JUNK_EXTENSIONS,
-    JUNK_NAMES,
-    JUNK_FOLDERS,
-    CATEGORY_EXTENSIONS,
-)
 from .dialogs import choose_quarantine_folder, offer_to_open_folder
 from . import styles
 from . import icons
 from .widgets import SectionHeader, StatTile, EmptyState, make_card
+from .background_job import BackgroundJob
+from .preview_panel import PreviewPanel
 from .results_table import ResultsTable
-from .thumbnails import (
-    large_preview, clear_cache, IMAGE_EXT,
-)
-from .image_viewer import open_viewer, can_be_displayed
+from .scan_options_panel import ScanOptionsPanel
+from .thumbnails import clear_cache
 from .extension_breakdown_dialog import ExtensionBreakdownWindow
 from duplicate_finder.i18n import tr
 
@@ -54,14 +42,19 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.grid_rowconfigure(6, weight=1)
 
         self._advanced = advanced
-        self._queue = queue.Queue()            # messages from the thread that scans
-        self._thread = None
         self._cancel_event = threading.Event()
         self._result = None
         self._selection = None
         self._scanned_folder = None
-        self._quarantine_queue = queue.Queue()       # messages from the quarantine thread
+        self._quarantine_folder = None
         self._excl_text = ""
+
+        self._scan_job = BackgroundJob(
+            self.after, self._apply_progress, self._finish_scan, self._scan_failed,
+            self._scan_cancelled, cancelled_exceptions=(ScanCancelled,))
+        self._quarantine_job = BackgroundJob(
+            self.after, self._apply_quarantine_progress, self._quarantine_finished,
+            self._quarantine_failed)
 
         self._build_scan_card()
         self._build_scan_options()
@@ -81,11 +74,11 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._advanced = advanced
         # In Simple mode these are hidden: the options panel, the "preferred
         # folder" row, "View kinds" and "Export CSV".
-        for w in (self._options_container, self.decision_card_header,
+        for w in (self.options, self.decision_card_header,
                   self.decision_card_row, self.btn_kinds, self.btn_export):
             (w.grid if advanced else w.grid_remove)()
-        if not advanced and self._options_open.get():
-            self._toggle_options()       # collapse the panel if it was open
+        if not advanced:
+            self.options.collapse()      # collapse the panel if it was open
 
     def on_switch_to_simple(self):
         """If there are already results and the user goes back to Simple,
@@ -97,7 +90,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
     def cancel_jobs(self):
         """Called by the window when it closes: if a scan is running, it is cancelled."""
-        if self._thread and self._thread.is_alive():
+        if self._scan_job.running:
             self._cancel_event.set()
 
     def _build_scan_card(self):
@@ -123,95 +116,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.btn_scan.grid(row=0, column=2, padx=(4, 0))
 
     def _build_scan_options(self):
-        cont = ctk.CTkFrame(self, fg_color="transparent")
-        cont.grid(row=2, column=0, sticky="ew", padx=6, pady=(6, 0))
-        cont.grid_columnconfigure(0, weight=1)
-        self._options_container = cont
-
-        self._options_open = ctk.BooleanVar(value=False)
-        self.btn_toggle_options = ctk.CTkButton(
-            cont, text=f"{icons.TRI_RIGHT}  {icons.GEAR}  {tr("exact.options_toggle")}",
-            anchor="w", fg_color="transparent", hover=False,
-            text_color=styles.COLOR_MUTED_TEXT, command=self._toggle_options)
-        self.btn_toggle_options.grid(row=0, column=0, sticky="ew")
-
-        self.options_panel = ctk.CTkFrame(cont, fg_color=styles.COLOR_CARD)
-        self.options_panel.grid(row=1, column=0, sticky="ew", pady=(2, 0))
-        self.options_panel.grid_columnconfigure(1, weight=1)
-        self.options_panel.grid_remove()
-        p = self.options_panel
-
-        # --- Search only these kinds (whitelist) ------------------
-        ctk.CTkLabel(p, text=tr("exact.only_kinds"),
-                     font=styles.base_font(12, "bold")).grid(
-            row=0, column=0, columnspan=3, padx=16, pady=(12, 4), sticky="w")
-
-        chips = ctk.CTkFrame(p, fg_color="transparent")
-        chips.grid(row=1, column=0, columnspan=3, padx=14, pady=(0, 4), sticky="w")
-        self.chk_categories = {}
-        for name in CATEGORY_EXTENSIONS:
-            chk = ctk.CTkCheckBox(
-                chips, text=f"{icons.CATEGORY_ICON[name]}  {tr(f"category.{name}")}",
-                font=styles.base_font(12),
-                command=lambda n=name: self._toggle_category(n))
-            chk.pack(side="left", padx=(2, 12), pady=4)
-            self.chk_categories[name] = chk
-
-        ctk.CTkLabel(p, text=tr("exact.extensions"), font=styles.base_font(12)).grid(
-            row=2, column=0, padx=(16, 8), pady=4, sticky="w")
-        self.entry_include = ctk.CTkEntry(
-            p, height=32, placeholder_text=tr("exact.all_kinds_placeholder"))
-        self.entry_include.grid(row=2, column=1, columnspan=2, padx=(4, 16),
-                                pady=4, sticky="ew")
-        self.entry_include.bind("<KeyRelease>", self._sync_categories)
-
-        ctk.CTkLabel(
-            p, text=tr("exact.categories_hint"),
-            font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
-        ).grid(row=3, column=0, columnspan=3, padx=16, pady=(0, 10), sticky="w")
-
-        ctk.CTkFrame(p, height=1, fg_color=styles.COLOR_ALTERNATE_ROW).grid(
-            row=4, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 8))
-
-        # --- Ignore (blacklist) ------------------------------------
-        ctk.CTkLabel(p, text=tr("exact.ignore_also"),
-                     font=styles.base_font(12, "bold")).grid(
-            row=5, column=0, columnspan=3, padx=16, pady=(0, 4), sticky="w")
-
-        def field(row, label):
-            ctk.CTkLabel(p, text=label, font=styles.base_font(12)).grid(
-                row=row, column=0, padx=(16, 8), pady=4, sticky="w")
-            e = ctk.CTkEntry(p, height=32)
-            e.grid(row=row, column=1, columnspan=2, padx=(4, 16), pady=4,
-                   sticky="ew")
-            return e
-
-        self.entry_ext = field(6, tr("exact.extensions"))
-        self.entry_folders = field(7, tr("exact.folders"))
-        self.entry_names = field(8, tr("exact.names"))
-
-        self.chk_empty = ctk.CTkCheckBox(
-            p, text=tr("exact.ignore_empty"), font=styles.base_font(12))
-        self.chk_empty.grid(row=9, column=0, columnspan=2, padx=16,
-                             pady=(6, 4), sticky="w")
-
-        buttons = ctk.CTkFrame(p, fg_color="transparent")
-        buttons.grid(row=9, column=2, padx=12, pady=(6, 4), sticky="e")
-        ctk.CTkButton(buttons, text=tr("exact.defaults"), width=140,
-                      fg_color="transparent", border_width=1,
-                      text_color=styles.COLOR_TEXT,
-                      command=self._default_filters).pack(side="left", padx=4)
-        ctk.CTkButton(buttons, text=tr("exact.clear_all"), width=90,
-                      fg_color="transparent", border_width=1,
-                      text_color=styles.COLOR_TEXT,
-                      command=self._empty_filters).pack(side="left", padx=4)
-
-        ctk.CTkLabel(
-            p, text=tr("exact.separate_hint"),
-            font=styles.base_font(11), text_color=styles.COLOR_MUTED_TEXT,
-        ).grid(row=10, column=0, columnspan=3, padx=16, pady=(0, 12), sticky="w")
-
-        self._default_filters()
+        self.options = ScanOptionsPanel(self)
+        self.options.grid(row=2, column=0, sticky="ew", padx=6, pady=(6, 0))
 
     def _build_progress_area(self):
         self.progress_area = ctk.CTkFrame(self, fg_color="transparent")
@@ -294,7 +200,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         self.table = ResultsTable(
             self.table_area, on_change=self._on_selection_change,
-            on_selection=self._preview_file)
+            on_selection=lambda path: self.preview.show(path))
         self.table.grid(row=0, column=0, sticky="nsew")
 
         self.empty_state = EmptyState(
@@ -304,34 +210,8 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.empty_state.grid(row=0, column=0, sticky="nsew")
 
         # Preview panel on the right.
-        self.panel_preview = ctk.CTkFrame(
-            self.table_wrap, fg_color=styles.COLOR_CARD, width=290)
-        self.panel_preview.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
-        self.panel_preview.grid_propagate(False)
-        self.panel_preview.grid_columnconfigure(0, weight=1)
-        self.panel_preview.grid_rowconfigure(0, weight=1)
-
-        self._preview_path = None
-        self.preview_img = ctk.CTkLabel(
-            self.panel_preview,
-            text=tr("exact.preview_hint"),
-            font=styles.base_font(12), text_color=styles.COLOR_MUTED_TEXT)
-        self.preview_img.grid(row=0, column=0, padx=12, pady=12)
-        self.preview_img.bind("<Button-1>", lambda _e: self._open_viewer())
-        self.preview_name = ctk.CTkLabel(
-            self.panel_preview, text="", font=styles.base_font(12, "bold"),
-            wraplength=262, justify="left", anchor="w")
-        self.preview_name.grid(row=1, column=0, padx=12, pady=(0, 2), sticky="w")
-        self.preview_meta = ctk.CTkLabel(
-            self.panel_preview, text="", font=styles.base_font(11),
-            text_color=styles.COLOR_MUTED_TEXT, wraplength=262,
-            justify="left", anchor="w")
-        self.preview_meta.grid(row=2, column=0, padx=12, pady=(0, 4), sticky="w")
-        self.preview_zoom_in = ctk.CTkLabel(
-            self.panel_preview, text="", font=styles.base_font(11),
-            text_color=styles.COLOR_ACCENT, anchor="w")
-        self.preview_zoom_in.grid(row=3, column=0, padx=12, pady=(0, 12), sticky="w")
-        self.preview_zoom_in.bind("<Button-1>", lambda _e: self._open_viewer())
+        self.preview = PreviewPanel(self.table_wrap)
+        self.preview.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
 
     def _build_bottom_bar(self):
         bar = ctk.CTkFrame(self, fg_color=styles.COLOR_CARD)
@@ -360,77 +240,6 @@ class ExactDuplicatesTab(ctk.CTkFrame):
             fg_color=styles.COLOR_OK_BUTTON, hover_color="#26734d",
             command=self._move_to_quarantine)
         self.btn_quarantine.grid(row=0, column=3, padx=(4, 16), pady=12)
-
-    def _toggle_options(self):
-        open = not self._options_open.get()
-        self._options_open.set(open)
-        tri = icons.TRI_DOWN if open else icons.TRI_RIGHT
-        self.btn_toggle_options.configure(
-            text=f"{tri}  {icons.GEAR}  {tr("exact.options_toggle")}")
-        if open:
-            self.options_panel.grid()
-        else:
-            self.options_panel.grid_remove()
-
-    def _toggle_category(self, name):
-        """Ticks/unticks the extensions of a category in the field."""
-        current_set = parse_extensions(self.entry_include.get())
-        exts = CATEGORY_EXTENSIONS[name]
-        if self.chk_categories[name].get():
-            current_set |= exts
-        else:
-            current_set -= exts
-        self.entry_include.delete(0, "end")
-        self.entry_include.insert(0, set_to_text(current_set))
-
-    def _sync_categories(self, _event=None):
-        """After editing the field by hand, leaves ticked only the categories
-        whose extensions are all present."""
-        present = parse_extensions(self.entry_include.get())
-        for name, chk in self.chk_categories.items():
-            complete = CATEGORY_EXTENSIONS[name] <= present
-            if complete and not chk.get():
-                chk.select()
-            elif not complete and chk.get():
-                chk.deselect()
-
-    def _default_filters(self):
-        for entry, values in (
-            (self.entry_ext, JUNK_EXTENSIONS),
-            (self.entry_folders, JUNK_FOLDERS),
-            (self.entry_names, JUNK_NAMES),
-        ):
-            entry.delete(0, "end")
-            entry.insert(0, "  ".join(values))
-        self.chk_empty.select()
-        self.entry_include.delete(0, "end")
-        for chk in self.chk_categories.values():
-            chk.deselect()
-
-    def _empty_filters(self):
-        for entry in (self.entry_include, self.entry_ext,
-                      self.entry_folders, self.entry_names):
-            entry.delete(0, "end")
-        self.chk_empty.deselect()
-        for chk in self.chk_categories.values():
-            chk.deselect()
-
-    def _current_filter(self):
-        return ScanFilter(
-            included_extensions=parse_extensions(self.entry_include.get()),
-            excluded_extensions=parse_extensions(self.entry_ext.get()),
-            excluded_names=parse_names(self.entry_names.get()),
-            excluded_folders=parse_names(self.entry_folders.get()),
-            min_size=1 if self.chk_empty.get() else 0,
-        )
-
-    def _add_extension_to_filter(self, ext):
-        current_set = parse_extensions(self.entry_ext.get())
-        current_set.add(ext.lower().lstrip("."))
-        self.entry_ext.delete(0, "end")
-        self.entry_ext.insert(0, set_to_text(current_set))
-        if not self._options_open.get():
-            self._toggle_options()
 
     def _set_initial_state(self):
         self.progress_bar.set(0)
@@ -505,7 +314,7 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                 tr("exact.invalid_folder_msg", folder=folder))
             return
 
-        filter = self._current_filter()
+        filter = self.options.current_filter()
 
         self.table.clear()
         self._result = None
@@ -528,63 +337,21 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self._enable_decision(False)
         self._set_scanning(True)
 
-        # --- thread + queue + after() PATTERN (repeated throughout the app) ---
-        # Tkinter is not thread-safe: only the main thread can touch
-        # widgets. So:
-        # · the heavy work (scanning) runs in a separate thread,
-        # · that thread does NOT touch the interface: it only puts messages in a queue,
-        # · the interface calls _poll_queue() every 100 ms, takes out the
-        # messages and updates the widgets from the main thread.
-        # This way the window does not freeze and the scan can be cancelled halfway.
-        self._thread = threading.Thread(target=self._scan_job,
-                                      args=(folder, filter), daemon=True)
-        self._thread.start()
-        self.after(100, self._poll_queue)
+        self._launch_scan(folder, filter)
+
+    def _launch_scan(self, folder, filter):
+        """Starts the scan in the background (see BackgroundJob): the window stays alive and the
+        scan can be cancelled halfway."""
+        self._scan_job.start(
+            lambda report: self._services.scan_duplicates(
+                folder, progress=report, cancelled=self._cancel_event.is_set, filter=filter),
+            what=f"Scan of {folder}")
 
     def _cancel_scan(self):
         # The thread checks this event between one file and the next.
         self._cancel_event.set()
         self.lbl_state.configure(text=tr("common.cancelling"))
         self.btn_scan.configure(state="disabled")
-
-    def _scan_job(self, folder, filter):
-        """Runs in the SECONDARY THREAD. It does not touch a single widget: everything goes through
-        the queue as tuples (kind, data)."""
-        try:
-            result = self._services.scan_duplicates(
-                folder,
-                progress=lambda p: self._queue.put(("progress", p)),
-                cancelled=self._cancel_event.is_set,
-                filter=filter,
-            )
-            self._queue.put(("done", result))
-        except ScanCancelled:
-            self._queue.put(("cancelled", None))
-        except Exception as e:  # any failure is logged and shown
-            log.exception("Scan of %s failed", folder)
-            self._queue.put(("error", e))
-
-    def _poll_queue(self):
-        """Runs in the MAIN THREAD. Empties the queue and acts according to the type
-        of message. It reschedules itself until "done",
-        "cancelled" or "error" arrives."""
-        try:
-            while True:
-                kind, datum = self._queue.get_nowait()   # raises queue.Empty if there is none
-                if kind == "progress":
-                    self._apply_progress(datum)
-                elif kind == "done":
-                    self._finish_scan(datum)
-                    return
-                elif kind == "cancelled":
-                    self._scan_cancelled()
-                    return
-                elif kind == "error":
-                    self._scan_failed(datum)
-                    return
-        except queue.Empty:
-            pass
-        self.after(100, self._poll_queue)          # keep polling
 
     def _apply_progress(self, p):
         self.lbl_state.configure(text=p.message)
@@ -736,11 +503,13 @@ class ExactDuplicatesTab(ctk.CTkFrame):
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
 
-        thread = threading.Thread(
-            target=self._quarantine_job,
-            args=(self._selection, root, quarantine_folder), daemon=True)
-        thread.start()
-        self.after(100, self._poll_quarantine_queue)
+        self._quarantine_folder = quarantine_folder
+        selection = self._selection
+        self._quarantine_job.start(
+            lambda report: self._services.move_to_quarantine(
+                selection, root, quarantine_folder,
+                progress=lambda current, total, message: report((current, total, message))),
+            what=f"Move to quarantine from {root} to {quarantine_folder}")
 
     def _set_quarantine_busy(self, busy):
         active = not busy
@@ -752,41 +521,21 @@ class ExactDuplicatesTab(ctk.CTkFrame):
                                  hover=styles.COLOR_TILE)
         styles.action_button(self.btn_quarantine, active)
 
-    def _quarantine_job(self, selection, root, quarantine_folder):
-        try:
-            res = self._services.move_to_quarantine(
-                selection, root, quarantine_folder,
-                progress=lambda a, t, m: self._quarantine_queue.put(("progress", (a, t, m))))
-            self._quarantine_queue.put(("done", (res, quarantine_folder)))
-        except Exception as e:  # it is logged and shown to the user
-            log.exception("Move to quarantine failed (source %s, destination %s)",
-                          root, quarantine_folder)
-            self._quarantine_queue.put(("error", e))
+    def _apply_quarantine_progress(self, progress):
+        current, total, message = progress
+        self.lbl_state.configure(text=message)
+        if total:
+            self.progress_bar.set(min(current / total, 1.0))
 
-    def _poll_quarantine_queue(self):
-        try:
-            while True:
-                kind, datum = self._quarantine_queue.get_nowait()
-                if kind == "progress":
-                    current, total, msg = datum
-                    self.lbl_state.configure(text=msg)
-                    if total:
-                        self.progress_bar.set(min(current / total, 1.0))
-                elif kind == "done":
-                    self._quarantine_finished(*datum)
-                    return
-                elif kind == "error":
-                    self._set_quarantine_busy(False)
-                    self.lbl_state.configure(text=tr("exact.move_failed"))
-                    messagebox.showerror(
-                        tr("common.move_error_title"), tr("common.error_detail",
-                                                          name=type(datum).__name__, datum=datum))
-                    return
-        except queue.Empty:
-            pass
-        self.after(100, self._poll_quarantine_queue)
+    def _quarantine_failed(self, e):
+        self._set_quarantine_busy(False)
+        self.lbl_state.configure(text=tr("exact.move_failed"))
+        messagebox.showerror(
+            tr("common.move_error_title"),
+            tr("common.error_detail", name=type(e).__name__, datum=e))
 
-    def _quarantine_finished(self, res, quarantine_folder):
+    def _quarantine_finished(self, res):
+        quarantine_folder = self._quarantine_folder
         self._set_quarantine_busy(False)
         self.progress_bar.set(1.0)
         self.lbl_state.configure(text=tr("exact.move_done"))
@@ -815,75 +564,11 @@ class ExactDuplicatesTab(ctk.CTkFrame):
 
         offer_to_open_folder(detail + tr("exact.open_quarantine_question"), quarantine_folder)
 
-    def _open_viewer(self, path=None):
-        open_viewer(self.winfo_toplevel(), path or self._preview_path)
-
-    def _clear_preview_image(self):
-        """Clears the image of the preview panel.
-
-        CTkLabel.configure(image=None) does NOT remove the image that was already being
-        shown (a known CustomTkinter 5.2.2 bug), so the tkinter
-        Label inside is cleared instead.
-        """
-        self.preview_img.configure(image=None)
-        self.preview_img._label.configure(image="")
-        self._preview_ctkimg = None
-
-    def _preview_file(self, path):
-        """Shows the large preview of the file selected in the table."""
-        self._preview_path = path
-        if not path:
-            self._clear_preview_image()
-            self.preview_img.configure(
-                text=tr("exact.preview_hint"))
-            self.preview_name.configure(text="")
-            self.preview_meta.configure(text="")
-            self.preview_zoom_in.configure(text="")
-            return
-
-        try:
-            pil = large_preview(path)
-        except Exception:  # no preview; it is logged so it can be investigated
-            log.warning("Could not show the preview of %s", path, exc_info=True)
-            pil = None
-        if pil is not None:
-            img = ctk.CTkImage(light_image=pil, dark_image=pil,
-                               size=(pil.width, pil.height))
-            self._preview_ctkimg = img  # keep the reference
-            self.preview_img.configure(image=img, text="")
-        else:
-            self._clear_preview_image()
-            self.preview_img.configure(text=tr("exact.no_preview"))
-
-        self.preview_name.configure(text=os.path.basename(path))
-        parts = [os.path.dirname(path)]
-        data = []
-        ext = os.path.splitext(path)[1].lower().lstrip(".")
-        if ext in IMAGE_EXT:
-            try:
-                from PIL import Image
-                with Image.open(path) as im:
-                    data.append(f"{im.width}×{im.height}")
-            except (OSError, ValueError):  # if it cannot be read, the resolution is omitted
-                pass
-        try:
-            st = os.stat(path)
-            data.append(format_size(st.st_size))
-            data.append(datetime.datetime.fromtimestamp(
-                st.st_mtime).strftime(tr("common.date_format")))
-        except OSError:
-            pass
-        if data:
-            parts.append("   ·   ".join(data))
-        self.preview_meta.configure(text="\n".join(parts))
-        self.preview_zoom_in.configure(
-            text=f"{icons.SEARCH}  {tr("exact.click_to_enlarge")}"
-            if can_be_displayed(path) else "")
-
     def _show_kinds(self):
         if not self._result or self._result.total_groups == 0:
             return
-        ExtensionBreakdownWindow(self.winfo_toplevel(), self._result, self._add_extension_to_filter)
+        ExtensionBreakdownWindow(
+            self.winfo_toplevel(), self._result, self.options.exclude_extension)
 
     def _export_csv(self):
         if not self._result or self._result.total_groups == 0:

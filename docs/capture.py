@@ -184,15 +184,15 @@ def p_advanced_shot():
 
 
 def p_options():
-    app.exact._toggle_options()
-    app.exact._default_filters()
-    app.exact.chk_categories["images"].select()
-    app.exact._toggle_category("images")
+    app.exact.options.toggle()
+    app.exact.options.reset_to_defaults()
+    app.exact.options.chk_categories["images"].select()
+    app.exact.options.toggle_category("images")
 
 
 def p_options_shot():
     snap(app, "03_opciones.png")
-    app.exact._toggle_options()
+    app.exact.options.toggle()
 
 
 # --- Similar ------------------------------------------------
