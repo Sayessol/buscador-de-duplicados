@@ -21,10 +21,10 @@ jobs:
       - name: Check that the tag matches the version in the code
         shell: pwsh
         run: |
-          $inCode = python -c "from core import __version__; print(__version__)"
+          $inCode = python -c "import sys; sys.path.insert(0, 'src'); from duplicate_finder import __version__; print(__version__)"
           $tag = "${{ github.ref_name }}".TrimStart("v")
           if ($inCode -ne $tag) {
-            Write-Error "The tag ($tag) does not match core.__version__ ($inCode)"
+            Write-Error "The tag ($tag) does not match duplicate_finder.__version__ ($inCode)"
             exit 1
           }
       - name: Build the single-file .exe

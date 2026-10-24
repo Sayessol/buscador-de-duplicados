@@ -7,11 +7,14 @@ would have noticed. These tests keep the flags, the workflow and build.spec in s
 
 import re
 import shlex
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 import build_exe
+import duplicate_finder
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -56,3 +59,20 @@ def test_the_icon_the_spec_asks_for_exists():
     spec = (ROOT / "build.spec").read_text(encoding="utf-8")
     (icon,) = re.findall(r'icon="([^"]+)"', spec)
     assert (ROOT / icon).is_file()
+
+
+def test_the_version_command_of_the_release_workflow_works():
+    """The workflow compares the tag with the version in the code; a stale import (it once said
+    `from core import ...`) would only fail on a real release."""
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    (command,) = re.findall(r'\$inCode = python -c "([^\n]+)"', workflow)
+    result = subprocess.run(
+        [sys.executable, "-c", command], cwd=ROOT, capture_output=True, text=True, check=True
+    )
+    assert result.stdout.strip() == duplicate_finder.__version__
+
+
+def test_the_changelog_has_a_section_for_the_current_version():
+    """The release notes are taken from that section of CHANGELOG.md."""
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert f"## [{duplicate_finder.__version__}]" in changelog
