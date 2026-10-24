@@ -50,7 +50,7 @@ def main():
     app.exact.entry_folder.insert(0, str(base))
     app.update()
 
-    R["options_hidden"] = not app.exact._options_container.winfo_ismapped()
+    R["options_hidden"] = not app.exact.options.winfo_ismapped()
     R["decision_row_hidden"] = not app.exact.decision_card_row.winfo_ismapped()
     R["kinds_button_hidden"] = not app.exact.btn_kinds.winfo_ismapped()
 
@@ -77,7 +77,7 @@ def main():
         app._mode = "advanced"
         app._apply_mode()
         app.update()
-        R["options_visible_advanced"] = app.exact._options_container.winfo_ismapped() == 1
+        R["options_visible_advanced"] = app.exact.options.winfo_ismapped() == 1
         R["decision_visible_advanced"] = app.exact.decision_card_row.winfo_ismapped() == 1
 
         app.after(300, app.destroy)

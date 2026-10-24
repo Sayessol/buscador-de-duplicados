@@ -6,7 +6,6 @@ the main window only creates it and notifies it of the Simple / Advanced mode.
 
 import logging
 import os
-import queue
 import threading
 from pathlib import Path
 from tkinter import filedialog, messagebox
@@ -17,6 +16,7 @@ from duplicate_finder.domain.formatting import format_size
 from duplicate_finder.domain.selection import KEEP as _KEEP
 from duplicate_finder.application.services import Services
 from duplicate_finder.domain.similarity import ComparisonCancelled
+from .background_job import BackgroundJob
 from .dialogs import choose_quarantine_folder, offer_to_open_folder
 from . import styles
 from . import icons
@@ -70,9 +70,10 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(4, weight=1)
 
-        self._queue = queue.Queue()
-        self._thread = None
         self._cancel = threading.Event()
+        self._job = BackgroundJob(
+            self.after, self._apply_progress, lambda result: self._finished(*result),
+            self._error, self._cancelled, cancelled_exceptions=(ComparisonCancelled,))
         self._result = None
         self._selection = None
         self._folder = None
@@ -95,7 +96,7 @@ class SimilarPhotosTab(ctk.CTkFrame):
 
     def cancel_jobs(self):
         """Called by the window when it closes: if an analysis is running, it is cancelled."""
-        if self._thread and self._thread.is_alive():
+        if self._job.running:
             self._cancel.set()
 
     def _build(self):
@@ -286,72 +287,49 @@ class SimilarPhotosTab(ctk.CTkFrame):
         self._show_gallery(False)
         self._set_analyzing(True)
 
-        self._thread = threading.Thread(
-            target=self._job, args=(folder, threshold), daemon=True)
-        self._thread.start()
-        self.after(100, self._poll_queue)
+        self._job.start(
+            lambda report: self._analyze(folder, threshold, report),
+            what=f"Similar-photo analysis of {folder}")
 
     def _cancel_analysis(self):
         self._cancel.set()
         self.lbl_state.configure(text=tr("common.cancelling"))
         self.btn_analyze.configure(state="disabled")
 
-    def _job(self, folder, threshold):
-        try:
-            res = self._services.find_similar_photos(
-                folder, hamming_threshold=threshold,
-                progress=lambda a, t, m: self._queue.put(("progress", (a, t, m))),
-                cancelled=self._cancel.is_set)
+    def _analyze(self, folder, threshold, report):
+        """Runs in the background: finds the similar photos and makes their thumbnails."""
+        res = self._services.find_similar_photos(
+            folder, hamming_threshold=threshold,
+            progress=lambda a, t, m: report((a, t, m)),
+            cancelled=self._cancel.is_set)
 
-            thumbs = {}
-            total = res.total_photos_in_groups
-            processed_count = 0
-            for g in res.groups:
-                for h in g.fingerprints:
-                    if self._cancel.is_set():
-                        raise ComparisonCancelled()
-                    processed_count += 1
-                    if processed_count % 4 == 0 or processed_count == total:
-                        self._queue.put(("progress", (
-                            processed_count, total,
+        thumbs = {}
+        total = res.total_photos_in_groups
+        processed_count = 0
+        for g in res.groups:
+            for h in g.fingerprints:
+                if self._cancel.is_set():
+                    raise ComparisonCancelled()
+                processed_count += 1
+                if processed_count % 4 == 0 or processed_count == total:
+                    report((processed_count, total,
                             tr("similar.loading_thumbnails", processed_count=processed_count,
-                               total=total))))
-                    try:
-                        thumbs[h.path] = load_thumbnail(h.path)
-                    except Exception as e:  # a broken file must not stop the gallery
-                        log.info("Could not create the thumbnail of %s: %s", h.path, e)
-                        thumbs[h.path] = None
-            self._queue.put(("done", (res, thumbs)))
-        except ComparisonCancelled:
-            self._queue.put(("cancelled", None))
-        except Exception as e:  # it is logged and shown to the user
-            log.exception("Similar-photo analysis of %s failed", folder)
-            self._queue.put(("error", e))
+                               total=total)))
+                try:
+                    thumbs[h.path] = load_thumbnail(h.path)
+                except Exception as e:  # a broken file must not stop the gallery
+                    log.info("Could not create the thumbnail of %s: %s", h.path, e)
+                    thumbs[h.path] = None
+        return res, thumbs
 
-    def _poll_queue(self):
-        try:
-            while True:
-                kind, datum = self._queue.get_nowait()
-                if kind == "progress":
-                    a, t, m = datum
-                    self.lbl_state.configure(text=m)
-                    if t:
-                        if self.progress_bar.cget("mode") != "determinate":
-                            self.progress_bar.stop()
-                            self.progress_bar.configure(mode="determinate")
-                        self.progress_bar.set(min(a / t, 1.0))
-                elif kind == "done":
-                    self._finished(*datum)
-                    return
-                elif kind == "cancelled":
-                    self._cancelled()
-                    return
-                elif kind == "error":
-                    self._error(datum)
-                    return
-        except queue.Empty:
-            pass
-        self.after(100, self._poll_queue)
+    def _apply_progress(self, progress):
+        current, total, message = progress
+        self.lbl_state.configure(text=message)
+        if total:
+            if self.progress_bar.cget("mode") != "determinate":
+                self.progress_bar.stop()
+                self.progress_bar.configure(mode="determinate")
+            self.progress_bar.set(min(current / total, 1.0))
 
     def _finished(self, res, thumbs):
         self._result = res
