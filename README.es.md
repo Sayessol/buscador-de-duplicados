@@ -192,11 +192,11 @@ python -m mypy            # tipos de las capas de lógica
 
 ## Documentación
 
-Tres PDF con portada e índice, en [`docs/`](docs/) (por ahora en español):
+Tres PDF con portada e índice, en [`docs/`](docs/), en español y en inglés:
 
-- [Manual de usuario](docs/manual-de-usuario.pdf)
-- [Guía del código](docs/guia-del-codigo.pdf): cómo está construida, pensada para quien quiere aprender.
-- [Proceso de creación](docs/proceso-de-creacion.pdf): fases y decisiones.
+- Manual de usuario: [Español](docs/manual-de-usuario.pdf) · [English](docs/user-manual.pdf)
+- Guía del código, cómo está construida, pensada para quien quiere aprender: [Español](docs/guia-del-codigo.pdf) · [English](docs/code-guide.pdf)
+- Proceso de creación, fases y decisiones: [Español](docs/proceso-de-creacion.pdf) · [English](docs/creation-process.pdf)
 
 El [CHANGELOG](CHANGELOG.md) (en inglés) recoge lo que cambia en cada versión.
 

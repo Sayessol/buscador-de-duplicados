@@ -192,11 +192,11 @@ python -m mypy            # type check of the logic layers
 
 ## Documentation
 
-Three PDFs with cover and table of contents, in [`docs/`](docs/) (currently in Spanish):
+Three PDFs with cover and table of contents, in [`docs/`](docs/), in English and in Spanish:
 
-- [User manual](docs/manual-de-usuario.pdf)
-- [Code guide](docs/guia-del-codigo.pdf): how it is built, written for anyone who wants to learn from it.
-- [Build process](docs/proceso-de-creacion.pdf): phases and decisions.
+- User manual: [English](docs/user-manual.pdf) · [Español](docs/manual-de-usuario.pdf)
+- Code guide, how it is built, written for anyone who wants to learn from it: [English](docs/code-guide.pdf) · [Español](docs/guia-del-codigo.pdf)
+- Creation process, phases and decisions: [English](docs/creation-process.pdf) · [Español](docs/proceso-de-creacion.pdf)
 
 The [CHANGELOG](CHANGELOG.md) lists what changed in every version.
 
@@ -245,7 +245,7 @@ I tested the app myself, with my own files, and these are the problems I found t
 I built it **working with [Claude](https://claude.com/claude-code) (Anthropic) as a programming copilot**, and I want that to be clear:
 
 - **I (Sayessol)** decided what to build and in which order, tested the app by hand, raised the doubts and problems I found along the way (for example, whether it moved folders instead of photos) and approved each step as we went.
-- **Claude** wrote the code, tests and documentation, proposed alternatives and explained its decisions, always within the project's rules (such as never deleting the originals). The [code guide](docs/guia-del-codigo.pdf) is written precisely so one can learn from that code.
+- **Claude** wrote the code, tests and documentation, proposed alternatives and explained its decisions, always within the project's rules (such as never deleting the originals). The [code guide](docs/code-guide.pdf) is written precisely so one can learn from that code.
 - **That is why I do not present this code as written by me alone.** What is mine is the goal, what was decided to build, and the learning I am after.
 - **The tests are the safety net**: no change counts as done without the whole suite passing, and CI runs it again on every push and pull request.
 - Commits carry a `Co-Authored-By: Claude` line so the shared authorship is visible in the history.
