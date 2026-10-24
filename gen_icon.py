@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ui.icons import window_icon  # noqa: E402
+from ui.icons import window_icon
 
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 OUTPUT = Path(__file__).resolve().parent / "icon.ico"
@@ -46,9 +46,14 @@ def build_ico(frames):
         side = size if size < 256 else 0  # 0 means 256 in ICO format
         entries += struct.pack(
             "<BBBBHHII",
-            side, side, 0, 0,      # width, height, palette, reserved
-            1, 32,                  # planes, bits per pixel
-            len(data), offset,
+            side,
+            side,
+            0,
+            0,  # width, height, palette, reserved
+            1,
+            32,  # planes, bits per pixel
+            len(data),
+            offset,
         )
         offset += len(data)
 

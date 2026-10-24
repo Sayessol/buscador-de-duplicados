@@ -1,13 +1,15 @@
 """Reads an image with Pillow and computes its fingerprint (dHash + colour)."""
 
+import contextlib
 import os
 from typing import cast
+
 from PIL import Image, ImageOps
+
 from duplicate_finder.domain.similarity import ImageFingerprint
 
-
-_DHASH_SIDE = 8            # -> hash of 8*8 = 64 bits
-_COLOR_SIDE = 4            # -> signature of 4*4 RGB cells
+_DHASH_SIDE = 8  # -> hash of 8*8 = 64 bits
+_COLOR_SIDE = 4  # -> signature of 4*4 RGB cells
 
 
 # ----------------------------------------------------------------------
@@ -18,18 +20,14 @@ def _load_thumbnails(
 ) -> tuple[list[int], list[tuple[int, int, int]], tuple[int, int]]:
     """Opens the image once and returns (gray_9x8, rgb_4x4, (w, h))."""
     with Image.open(path) as im:
-        width, height = im.size          # real size, before touching anything
+        width, height = im.size  # real size, before touching anything
         # draft speeds up the decoding of large JPEGs a lot (but changes
         # im.size, which is why it is read beforehand).
-        try:
+        with contextlib.suppress(ValueError, OSError):  # draft is optional: else decode in full
             im.draft("L", (64, 64))
-        except (ValueError, OSError):  # draft is optional: if unavailable, decode in full
-            pass
-        upright = ImageOps.exif_transpose(im)     # respects the EXIF orientation
-        gray = upright.convert("L").resize(
-            (_DHASH_SIDE + 1, _DHASH_SIDE), Image.Resampling.BOX)
-        rgb = upright.convert("RGB").resize(
-            (_COLOR_SIDE, _COLOR_SIDE), Image.Resampling.BOX)
+        upright = ImageOps.exif_transpose(im)  # respects the EXIF orientation
+        gray = upright.convert("L").resize((_DHASH_SIDE + 1, _DHASH_SIDE), Image.Resampling.BOX)
+        rgb = upright.convert("RGB").resize((_COLOR_SIDE, _COLOR_SIDE), Image.Resampling.BOX)
     # Pillow returns a wide type (depending on the image mode); here we know
     # that "L" gives integers and "RGB" gives (r, g, b) tuples.
     gray_data = cast(tuple[int, ...], gray.get_flattened_data())
@@ -46,10 +44,10 @@ def compute_fingerprint(path: str) -> ImageFingerprint:
     # "goes down". 8 comparisons per row x 8 rows = 64 bits. What it measures
     # is the shape of the image, not the colours, which is why it withstands
     # recompression and filters well.
-    width_g = _DHASH_SIDE + 1        # the thumbnail has 1 extra column
+    width_g = _DHASH_SIDE + 1  # the thumbnail has 1 extra column
     bits = 0
     for row in range(_DHASH_SIDE):
-        base = row * width_g       # first pixel of this row in the flat list
+        base = row * width_g  # first pixel of this row in the flat list
         for col in range(_DHASH_SIDE):
             left = gray[base + col]
             right = gray[base + col + 1]
@@ -62,8 +60,12 @@ def compute_fingerprint(path: str) -> ImageFingerprint:
         size = 0
 
     return ImageFingerprint(
-        path=path, size=size, width=width, height=height,
-        dhash=bits, color=tuple(rgb),
+        path=path,
+        size=size,
+        width=width,
+        height=height,
+        dhash=bits,
+        color=tuple(rgb),
     )
 
 

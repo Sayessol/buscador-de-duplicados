@@ -68,15 +68,15 @@ def _destination_for(source: str, root_folder: str, quarantine_folder: str) -> s
 
 
 def plan_moves(
-    selection: DuplicateSelection, root_folder: str, quarantine_folder: str,
+    selection: DuplicateSelection,
+    root_folder: str,
+    quarantine_folder: str,
 ) -> list[Move]:
     """List of Move (not executed) for the files marked as MOVE."""
     plan: list[Move] = []
     for gi, file in selection.files_to_move():
         destination = _destination_for(file.path, root_folder, quarantine_folder)
-        plan.append(Move(
-            group=gi + 1, source=file.path, destination=destination,
-            size=file.size))
+        plan.append(Move(group=gi + 1, source=file.path, destination=destination, size=file.size))
     return plan
 
 
@@ -117,8 +117,11 @@ class MoveToQuarantine:
         for i, move in enumerate(plan, start=1):
             if cancelled():
                 break
-            progress(i, total, tr("quarantine.progress", i=i, total=total,
-                                  basename=os.path.basename(move.source)))
+            progress(
+                i,
+                total,
+                tr("quarantine.progress", i=i, total=total, basename=os.path.basename(move.source)),
+            )
             try:
                 if not self._fs.exists(move.source):
                     raise FileNotFoundError(tr("common.file_gone"))
@@ -134,9 +137,13 @@ class MoveToQuarantine:
         result.log_path = self._write_log(plan, quarantine_folder, root_folder)
         if result.moved:
             self._history.record(
-                KIND_QUARANTINE, MOVE, root_folder, quarantine_folder,
+                KIND_QUARANTINE,
+                MOVE,
+                root_folder,
+                quarantine_folder,
                 [(m.source, m.destination) for m in result.moved],
-                tr(description_key, count=len(result.moved)))
+                tr(description_key, count=len(result.moved)),
+            )
         progress(total, total, tr("common.done"))
         return result
 
@@ -145,11 +152,34 @@ class MoveToQuarantine:
         log_path = os.path.join(quarantine_folder, f"_log_quarantine_{stamp}.csv")
         status_moved, status_error = tr("csv.status_moved"), tr("csv.status_error")
         now = datetime.now().isoformat(timespec="seconds")
-        rows: list[list[object]] = [[tr(key) for key in (
-            "csv.date", "csv.scanned_folder", "csv.group", "csv.source",
-            "csv.destination", "csv.size_bytes", "csv.status", "csv.error")]]
-        rows += [[now, root_folder, m.group, m.source, m.destination, m.size,
-                  status_moved if m.ok else status_error, m.error] for m in moves]
+        rows: list[list[object]] = [
+            [
+                tr(key)
+                for key in (
+                    "csv.date",
+                    "csv.scanned_folder",
+                    "csv.group",
+                    "csv.source",
+                    "csv.destination",
+                    "csv.size_bytes",
+                    "csv.status",
+                    "csv.error",
+                )
+            ]
+        ]
+        rows += [
+            [
+                now,
+                root_folder,
+                m.group,
+                m.source,
+                m.destination,
+                m.size,
+                status_moved if m.ok else status_error,
+                m.error,
+            ]
+            for m in moves
+        ]
         try:
             self._fs.make_dirs(quarantine_folder)
             self._fs.write_csv(log_path, rows)

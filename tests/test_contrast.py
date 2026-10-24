@@ -15,7 +15,7 @@ import pytest
 from duplicate_finder.presentation import styles
 
 THEMES = {"light": 0, "dark": 1}
-AA_TEXT = 4.5           # WCAG AA, normal text
+AA_TEXT = 4.5  # WCAG AA, normal text
 WHITE = "#ffffff"
 
 
@@ -24,7 +24,7 @@ def _luminance(hex_):
     hex_ = hex_.lstrip("#")
     channels = []
     for i in (0, 2, 4):
-        c = int(hex_[i:i + 2], 16) / 255
+        c = int(hex_[i : i + 2], 16) / 255
         channels.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
     r, g, b = channels
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -40,13 +40,30 @@ def contrast(a, b):
 TEXT_ON_BACKGROUND = [
     (text, background)
     for text, backgrounds in {
-        "COLOR_TEXT": ["COLOR_BACKGROUND", "COLOR_HEADER", "COLOR_CARD", "COLOR_TILE",
-                        "COLOR_TABLE_BACKGROUND", "COLOR_ALTERNATE_ROW", "COLOR_PENDING_GROUP"],
-        "COLOR_MUTED_TEXT": ["COLOR_BACKGROUND", "COLOR_HEADER", "COLOR_CARD", "COLOR_TILE",
-                              "COLOR_TABLE_BACKGROUND", "COLOR_ALTERNATE_ROW"],
+        "COLOR_TEXT": [
+            "COLOR_BACKGROUND",
+            "COLOR_HEADER",
+            "COLOR_CARD",
+            "COLOR_TILE",
+            "COLOR_TABLE_BACKGROUND",
+            "COLOR_ALTERNATE_ROW",
+            "COLOR_PENDING_GROUP",
+        ],
+        "COLOR_MUTED_TEXT": [
+            "COLOR_BACKGROUND",
+            "COLOR_HEADER",
+            "COLOR_CARD",
+            "COLOR_TILE",
+            "COLOR_TABLE_BACKGROUND",
+            "COLOR_ALTERNATE_ROW",
+        ],
         "COLOR_OK": ["COLOR_CARD", "COLOR_TILE", "COLOR_TABLE_BACKGROUND", "COLOR_ALTERNATE_ROW"],
-        "COLOR_WARNING": ["COLOR_CARD", "COLOR_TILE", "COLOR_TABLE_BACKGROUND",
-                              "COLOR_ALTERNATE_ROW"],
+        "COLOR_WARNING": [
+            "COLOR_CARD",
+            "COLOR_TILE",
+            "COLOR_TABLE_BACKGROUND",
+            "COLOR_ALTERNATE_ROW",
+        ],
         "COLOR_DANGER": ["COLOR_BACKGROUND", "COLOR_CARD"],
         "COLOR_ACCENT": ["COLOR_BACKGROUND", "COLOR_HEADER", "COLOR_CARD"],
     }.items()
@@ -98,5 +115,5 @@ def test_contrast_meter_is_correct():
     """Check of the meter itself, with WCAG reference values."""
     assert contrast("#000000", "#ffffff") == pytest.approx(21.0)
     assert contrast("#ffffff", "#ffffff") == pytest.approx(1.0)
-    assert contrast("#767676", "#ffffff") == pytest.approx(4.54, abs=0.01)   # lightest AA grey
-    assert contrast("#777777", "#ffffff") < AA_TEXT                          # no longer enough
+    assert contrast("#767676", "#ffffff") == pytest.approx(4.54, abs=0.01)  # lightest AA grey
+    assert contrast("#777777", "#ffffff") < AA_TEXT  # no longer enough

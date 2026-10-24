@@ -53,7 +53,10 @@ def non_image_kinds(others: list[str]) -> dict[str, list[str]]:
 
 class GatherImages:
     def __init__(
-        self, fs: FileSystem, transfers: FileTransfers, history: OperationHistory,
+        self,
+        fs: FileSystem,
+        transfers: FileTransfers,
+        history: OperationHistory,
     ) -> None:
         self._fs = fs
         self._transfers = transfers
@@ -89,16 +92,15 @@ class GatherImages:
 
         # Images: always to destination/<same subpath they had in the source>.
         for path in images:
-            rel = os.path.relpath(path, root_folder)   # e.g. "holidays/beach.jpg"
-            plan.append(Transfer(path, os.path.join(destination, rel),
-                                 self._transfers.size(path)))
+            rel = os.path.relpath(path, root_folder)  # e.g. "holidays/beach.jpg"
+            plan.append(Transfer(path, os.path.join(destination, rel), self._transfers.size(path)))
 
         # Non-images: according to what the user chose for each kind.
         for path in others:
             ext = _ext(path) or NO_EXTENSION
             acc = rules.action(ext)
             if acc == LEAVE:
-                continue                                # left alone
+                continue  # left alone
             rel = os.path.relpath(path, root_folder)
             if acc == GROUP:
                 # destination/<folder named by the user>/<subpath>
@@ -131,8 +133,12 @@ class GatherImages:
         return res
 
     def gather_whole_folder(
-        self, root_folder: str, destination: str, action: str = MOVE,
-        progress: ProgressCallback | None = None, description: str = "",
+        self,
+        root_folder: str,
+        destination: str,
+        action: str = MOVE,
+        progress: ProgressCallback | None = None,
+        description: str = "",
     ) -> TransferResult:
         """Moves/copies the whole folder to analyze into the destination and records it."""
         validate_destination(destination, root_folder)
@@ -156,17 +162,28 @@ class GatherImages:
 
         progress(1, 1, tr("common.done"))
         res = TransferResult(transfers=[t], action=action)
-        res.log_path = self._transfers.write_log([t], destination, "gather_folder", root_folder,
-                                                 action)
+        res.log_path = self._transfers.write_log(
+            [t], destination, "gather_folder", root_folder, action
+        )
         self._record(KIND_GATHER_FOLDER, res, action, root_folder, destination, description)
         return res
 
     def _record(
-        self, kind: str, res: TransferResult, action: str, root_folder: str, destination: str,
+        self,
+        kind: str,
+        res: TransferResult,
+        action: str,
+        root_folder: str,
+        destination: str,
         description: str,
     ) -> None:
         """What was really done goes to the history, so it can be undone."""
         if res.done:
             self._history.record(
-                kind, action, root_folder, destination,
-                [(t.source, t.destination) for t in res.done], description)
+                kind,
+                action,
+                root_folder,
+                destination,
+                [(t.source, t.destination) for t in res.done],
+                description,
+            )

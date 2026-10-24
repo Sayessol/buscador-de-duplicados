@@ -97,7 +97,8 @@ class ScanDuplicates:
 
         # Pass 1: group by size. Only the sizes shared by 2+ files continue.
         by_size, total_files, total_excluded = self._size_pass(
-            root_folder, filter, progress, cancelled, errors)
+            root_folder, filter, progress, cancelled, errors
+        )
         candidates_by_size = {t: paths for t, paths in by_size.items() if len(paths) > 1}
 
         # Pass 2: hash of the first 64 KB. Only the ones that also match continue.
@@ -113,10 +114,14 @@ class ScanDuplicates:
         groups.sort(key=lambda g: (-g.reclaimable_space, g.files[0].path))
 
         total_finalists = sum(len(r) for r in finalists.values())
-        progress(Progress(
-            "full_hash", max(total_finalists, 1), max(total_finalists, 1),
-            tr("scan.finished"),
-        ))
+        progress(
+            Progress(
+                "full_hash",
+                max(total_finalists, 1),
+                max(total_finalists, 1),
+                tr("scan.finished"),
+            )
+        )
 
         return ScanResult(
             groups=groups,
@@ -172,10 +177,14 @@ class ScanDuplicates:
                 by_size[size].append(path)
 
                 if total_files % 200 == 0:
-                    progress(Progress(
-                        "sizes", total_files, 0,
-                        tr("scan.step_sizes", total_files=total_files),
-                    ))
+                    progress(
+                        Progress(
+                            "sizes",
+                            total_files,
+                            0,
+                            tr("scan.step_sizes", total_files=total_files),
+                        )
+                    )
 
         return by_size, total_files, total_excluded
 
@@ -210,11 +219,18 @@ class ScanDuplicates:
                 by_partial[(size, hp)].append(path)
 
                 if processed % 50 == 0:
-                    progress(Progress(
-                        "partial_hash", processed, total_candidates,
-                        tr("scan.step_hashes", processed=processed,
-                           total_candidates=total_candidates),
-                    ))
+                    progress(
+                        Progress(
+                            "partial_hash",
+                            processed,
+                            total_candidates,
+                            tr(
+                                "scan.step_hashes",
+                                processed=processed,
+                                total_candidates=total_candidates,
+                            ),
+                        )
+                    )
 
         return {key: paths for key, paths in by_partial.items() if len(paths) > 1}
 
@@ -238,11 +254,13 @@ class ScanDuplicates:
         for (size, hp), paths in finalists.items():
             if size <= self._hasher.partial_size:
                 # The partial hash already covered the whole file: they are identical.
-                groups.append(DuplicateGroup(
-                    hash=hp,
-                    size=size,
-                    files=[DuplicateFile(r, size) for r in paths],
-                ))
+                groups.append(
+                    DuplicateGroup(
+                        hash=hp,
+                        size=size,
+                        files=[DuplicateFile(r, size) for r in paths],
+                    )
+                )
                 continue
 
             by_full: defaultdict[str, list[str]] = defaultdict(list)
@@ -258,18 +276,27 @@ class ScanDuplicates:
                 by_full[hc].append(path)
 
                 if full_processed % 50 == 0:
-                    progress(Progress(
-                        "full_hash", full_processed, total_finalists,
-                        tr("scan.step_verifying", full_processed=full_processed,
-                           total_finalists=total_finalists),
-                    ))
+                    progress(
+                        Progress(
+                            "full_hash",
+                            full_processed,
+                            total_finalists,
+                            tr(
+                                "scan.step_verifying",
+                                full_processed=full_processed,
+                                total_finalists=total_finalists,
+                            ),
+                        )
+                    )
 
             for hc, equal_paths in by_full.items():
                 if len(equal_paths) > 1:
-                    groups.append(DuplicateGroup(
-                        hash=hc,
-                        size=size,
-                        files=[DuplicateFile(r, size) for r in equal_paths],
-                    ))
+                    groups.append(
+                        DuplicateGroup(
+                            hash=hc,
+                            size=size,
+                            files=[DuplicateFile(r, size) for r in equal_paths],
+                        )
+                    )
 
         return groups

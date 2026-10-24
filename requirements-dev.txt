@@ -1,6 +1,8 @@
-# For development: linter and tests (the app does not need them)
+# For development: linter, types, tests and audit (the app does not need them)
 -r requirements.txt
 pytest
 pytest-cov
 ruff
 mypy
+pre-commit
+pip-audit

@@ -33,10 +33,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.application.scan_duplicates import ScanDuplicates  # noqa: E402
-from duplicate_finder.infrastructure.local_file_system import LocalFileSystem  # noqa: E402
+from duplicate_finder.application.scan_duplicates import ScanDuplicates
 from duplicate_finder.domain.formatting import format_size
-from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE, Blake2Hasher  # noqa: E402
+from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE, Blake2Hasher
+from duplicate_finder.infrastructure.local_file_system import LocalFileSystem
 
 SEED = 2026
 REPETITIONS = 3
@@ -49,7 +49,7 @@ def create_data(base: Path, n: int) -> int:
     for c in folders:
         c.mkdir(parents=True)
 
-    paths = []                      # (path, size) of the originals already created
+    paths = []  # (path, size) of the originals already created
     total = 0
 
     def write(name, data):
@@ -59,24 +59,24 @@ def create_data(base: Path, n: int) -> int:
         total += len(data)
         return path
 
-    n_copies, n_same_size, n_same_start = int(n * .10), int(n * .05), int(n * .03)
+    n_copies, n_same_size, n_same_start = int(n * 0.10), int(n * 0.05), int(n * 0.03)
     n_unique = n - n_copies - n_same_size - n_same_start
 
     for i in range(n_unique):
-        size = int(8_192 * (128 ** rnd.random()))          # 8 KB .. 1 MB, more small than large
+        size = int(8_192 * (128 ** rnd.random()))  # 8 KB .. 1 MB, more small than large
         data = rnd.randbytes(size)
         paths.append((write(f"f{i:05d}.bin", data), data))
 
-    for i in range(n_copies):                               # exact copies
+    for i in range(n_copies):  # exact copies
         _, data = rnd.choice(paths)
         write(f"copy{i:05d}.bin", data)
 
-    for i in range(n_same_size):                            # same size, other content
+    for i in range(n_same_size):  # same size, other content
         _, data = rnd.choice(paths)
         write(f"mismotam{i:05d}.bin", rnd.randbytes(len(data)))
 
     large = [d for _, d in paths if len(d) > PARTIAL_HASH_SIZE * 2]
-    for i in range(n_same_start):                            # same start, other end
+    for i in range(n_same_start):  # same start, other end
         data = rnd.choice(large)
         queue = bytearray(data[PARTIAL_HASH_SIZE:])
         queue[0] ^= 0xFF
@@ -124,7 +124,7 @@ def three_pass_method(base: Path):
 
 def main():
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")   # the Windows console is usually cp1252
+        sys.stdout.reconfigure(encoding="utf-8")  # the Windows console is usually cp1252
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 4000
     tmp = Path(tempfile.mkdtemp(prefix="bench_"))
     try:
@@ -148,14 +148,22 @@ def main():
         equal = g_naive == g_app
         print(f"{'Method':<28}{'Time':>10}{'Bytes read':>16}{'% of total':>13}")
         print("-" * 67)
-        print(f"{'Hash everything (naive)':<28}{t_naive:>9.2f}s{format_size(b_naive):>16}"
-              f"{100 * b_naive / total:>12.1f}%")
-        print(f"{'3 passes (this app)':<28}{t_app:>9.2f}s{format_size(b_app):>16}"
-              f"{100 * b_app / total:>12.1f}%")
-        print(f"\nDuplicate groups: {len(g_app)}  ·  same groups as the naive method: "
-              f"{'YES' if equal else 'NO'}")
-        print(f"Read savings: {100 * (1 - b_app / b_naive):.0f} %  ·  "
-              f"time {t_naive / t_app:.1f}x faster (best of {REPETITIONS})")
+        print(
+            f"{'Hash everything (naive)':<28}{t_naive:>9.2f}s{format_size(b_naive):>16}"
+            f"{100 * b_naive / total:>12.1f}%"
+        )
+        print(
+            f"{'3 passes (this app)':<28}{t_app:>9.2f}s{format_size(b_app):>16}"
+            f"{100 * b_app / total:>12.1f}%"
+        )
+        print(
+            f"\nDuplicate groups: {len(g_app)}  ·  same groups as the naive method: "
+            f"{'YES' if equal else 'NO'}"
+        )
+        print(
+            f"Read savings: {100 * (1 - b_app / b_naive):.0f} %  ·  "
+            f"time {t_naive / t_app:.1f}x faster (best of {REPETITIONS})"
+        )
         if not equal:
             sys.exit(1)
     finally:

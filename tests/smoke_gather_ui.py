@@ -24,10 +24,10 @@ def check(cond, msg):
 
 def build(root: Path):
     from PIL import Image
+
     (root / "2023").mkdir(parents=True)
     (root / "2024" / "wedding").mkdir(parents=True)
-    for rel in ("cover.png", "2023/beach.jpg", "2024/portrait.jpg",
-                "2024/wedding/group.jpeg"):
+    for rel in ("cover.png", "2023/beach.jpg", "2024/portrait.jpg", "2024/wedding/group.jpeg"):
         Image.new("RGB", (64, 48), (90, 90, 90)).save(root / rel)
     (root / "notes.txt").write_text("hello")
     (root / "2023" / "info.pdf").write_bytes(b"%PDF")
@@ -38,14 +38,15 @@ def main():
     tmp = Path(tempfile.mkdtemp(prefix="dup_reunir_"))
     os.environ["APPDATA"] = str(tmp / "appdata")
 
-    from duplicate_finder.presentation import styles  # noqa: E402
-    from duplicate_finder.presentation import main_window as MW  # noqa: E402
-    from duplicate_finder.bootstrap import build_services  # noqa: E402
+    from duplicate_finder.bootstrap import build_services
+    from duplicate_finder.presentation import main_window as MW
+    from duplicate_finder.presentation import styles
 
     SERVICES = build_services()
     history = SERVICES.history
-    from duplicate_finder.domain.transfers import NonImageRules  # noqa: E402
     import customtkinter as ctk
+
+    from duplicate_finder.domain.transfers import NonImageRules
 
     styles.apply_theme()
 
@@ -56,7 +57,7 @@ def main():
     # Stubbed dialogs
     filedialog.askdirectory = lambda *a, **k: str(destination)
     messagebox.askyesno = lambda *a, **k: True
-    os.startfile = lambda *a, **k: None   # without this the real Explorer would open
+    os.startfile = lambda *a, **k: None  # without this the real Explorer would open
     messagebox.showinfo = lambda *a, **k: None
     messagebox.showwarning = lambda *a, **k: None
     messagebox.showerror = lambda *a, **k: print("   [showerror]", a)
@@ -66,11 +67,13 @@ def main():
             super().__init__(master)
             self.withdraw()
             self.rules = NonImageRules(
-                action_by_ext={"pdf": "group", "txt": "leave"},
-                folder_by_ext={"pdf": "Documents"})
+                action_by_ext={"pdf": "group", "txt": "leave"}, folder_by_ext={"pdf": "Documents"}
+            )
             self.after(10, self.destroy)
-    from duplicate_finder.presentation import gather_images_tab as TR  # noqa: E402
-    TR.NonImageKindsWindow = FakeKinds   # the dialog is used from the Gather tab
+
+    from duplicate_finder.presentation import gather_images_tab as TR
+
+    TR.NonImageKindsWindow = FakeKinds  # the dialog is used from the Gather tab
 
     app = MW.MainWindow(SERVICES)
     app._mode = "advanced"
@@ -81,9 +84,11 @@ def main():
     app.gather.seg_action.set_key("move")
     app.gather.seg_strategy.set_key("files")
 
-    imgs_before = sorted(str(p.relative_to(root)).replace("\\", "/")
-                        for p in root.rglob("*") if p.suffix.lower() in
-                        (".png", ".jpg", ".jpeg"))
+    imgs_before = sorted(
+        str(p.relative_to(root)).replace("\\", "/")
+        for p in root.rglob("*")
+        if p.suffix.lower() in (".png", ".jpg", ".jpeg")
+    )
 
     def search_step():
         app.gather._search()
@@ -97,17 +102,22 @@ def main():
         app.after(1800, verify)
 
     def verify():
-        moved = sorted(str(p.relative_to(destination)).replace("\\", "/")
-                         for p in destination.rglob("*")
-                         if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
+        moved = sorted(
+            str(p.relative_to(destination)).replace("\\", "/")
+            for p in destination.rglob("*")
+            if p.suffix.lower() in (".png", ".jpg", ".jpeg")
+        )
         R["img_in_destination"] = moved
         R["left_in_source_img"] = [
-            str(p.relative_to(root)) for p in root.rglob("*")
-            if p.suffix.lower() in (".png", ".jpg", ".jpeg")]
+            str(p.relative_to(root))
+            for p in root.rglob("*")
+            if p.suffix.lower() in (".png", ".jpg", ".jpeg")
+        ]
         R["txt_stays"] = (root / "notes.txt").exists()
         R["pdf_grouped"] = (destination / "Documents" / "2023" / "info.pdf").exists()
         R["source_subfolders"] = sorted(
-            str(p.relative_to(root)) for p in root.rglob("*") if p.is_dir())
+            str(p.relative_to(root)) for p in root.rglob("*") if p.is_dir()
+        )
 
         ops = history.list_all()
         R["history_n"] = len(ops)
@@ -119,8 +129,8 @@ def main():
         R["undo_failures"] = len(res["failures"])
         R["img_back"] = (root / "2023" / "beach.jpg").exists()
         R["destination_empty_img"] = not any(
-            p.suffix.lower() in (".png", ".jpg", ".jpeg")
-            for p in destination.rglob("*"))
+            p.suffix.lower() in (".png", ".jpg", ".jpeg") for p in destination.rglob("*")
+        )
 
         app.after(200, app.destroy)
 
@@ -142,7 +152,7 @@ def main():
         and set(R.get("source_subfolders", [])) >= {"2023", "2024", "2024\\wedding"}
         and R.get("history_n") == 1
         and R.get("op_kind") == "gather"
-        and R.get("undo_ok") == 6   # 4 images + 2 pdf grouped
+        and R.get("undo_ok") == 6  # 4 images + 2 pdf grouped
         and R.get("undo_failures") == 0
         and R.get("img_back") is True
         and R.get("destination_empty_img") is True

@@ -14,6 +14,7 @@ fixed dates. Two runs in a row give pixel-identical images, and that is useful
 to check that an internal change to the app has not altered its appearance.
 """
 
+import contextlib
 import os
 import shutil
 import sys
@@ -26,8 +27,9 @@ APP = ROOT
 THEME = sys.argv[1] if len(sys.argv) > 1 else "dark"
 SUFFIX = "" if THEME == "dark" else "_light"
 LANGUAGE = sys.argv[2] if len(sys.argv) > 2 else "es"
-assert THEME in ("dark", "light") and LANGUAGE in ("es", "en"), \
+assert THEME in ("dark", "light") and LANGUAGE in ("es", "en"), (
     "usage: capture.py [dark|light] [es|en]"
+)
 IMG = Path(os.environ.get("CAPTURE_OUTPUT") or Path(__file__).resolve().parent / "img") / LANGUAGE
 IMG.mkdir(parents=True, exist_ok=True)
 
@@ -37,28 +39,28 @@ def T(es, en):
     return es if LANGUAGE == "es" else en
 
 
-
 # Sample folder with a neutral path, so that the Windows user name
 # does not appear in the screenshots (as it would with the temporary folder).
 BASE_DEMO = Path(os.environ.get("CAPTURE_BASE", "C:/Demo"))
 BASE_DEMO.mkdir(parents=True, exist_ok=True)
 tmp = BASE_DEMO / T("muestra", "sample")
-shutil.rmtree(tmp, ignore_errors=True)       # only this script's sample folder
+shutil.rmtree(tmp, ignore_errors=True)  # only this script's sample folder
 tmp.mkdir()
 os.environ["APPDATA"] = str(tmp / "appdata")
 sys.path.insert(0, str(APP))
 sys.path.insert(0, str(APP / "src"))
 
-from PIL import Image, ImageDraw, ImageGrab            # noqa: E402
-from duplicate_finder.presentation import styles  # noqa: E402
-from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
-from duplicate_finder.presentation.image_viewer import ImageViewer  # noqa: E402
-from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
-from duplicate_finder.presentation.non_image_kinds_dialog import NonImageKindsWindow  # noqa: E402
+from PIL import Image, ImageDraw, ImageGrab  # noqa: E402
+
 from duplicate_finder import i18n  # noqa: E402
 from duplicate_finder.application import history as history_module  # noqa: E402
-from duplicate_finder.domain.operations import KIND_GATHER, KIND_QUARANTINE  # noqa: E402
 from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.domain.operations import KIND_GATHER, KIND_QUARANTINE  # noqa: E402
+from duplicate_finder.presentation import styles  # noqa: E402
+from duplicate_finder.presentation.history_window import HistoryWindow  # noqa: E402
+from duplicate_finder.presentation.image_viewer import ImageViewer  # noqa: E402
+from duplicate_finder.presentation.main_window import MainWindow  # noqa: E402
+from duplicate_finder.presentation.non_image_kinds_dialog import NonImageKindsWindow  # noqa: E402
 
 SERVICES = build_services()
 history = SERVICES.history
@@ -112,9 +114,13 @@ BEACH, SUNSET = T("playa.png", "beach.png"), T("atardecer.png", "sunset.png")
 SUMMER, DOWNLOADS = T("verano", "summer"), T("Descargas", "Downloads")
 SUNSET_COPY = T("atardecer (1).png", "sunset (1).png")
 base_dup = tmp / T("Fotos", "Photos")
-for rel in (f"2023/{SUMMER}/{BEACH}", f"2023/{SUMMER}/{SUNSET}",
-            f"{DOWNLOADS}/{BEACH}", f"{DOWNLOADS}/{SUNSET_COPY}",
-            f"{T('Escritorio', 'Desktop')}/{T('portada.png', 'cover.png')}"):
+for rel in (
+    f"2023/{SUMMER}/{BEACH}",
+    f"2023/{SUMMER}/{SUNSET}",
+    f"{DOWNLOADS}/{BEACH}",
+    f"{DOWNLOADS}/{SUNSET_COPY}",
+    f"{T('Escritorio', 'Desktop')}/{T('portada.png', 'cover.png')}",
+):
     p = base_dup / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     photo(zlib.crc32(rel.encode()) % 999).save(p)
@@ -127,9 +133,14 @@ b2 = (base_dup / f"2023/{SUMMER}/{SUNSET}").read_bytes()
 gather_base = tmp / T("Movil", "Phone")
 CAMERA = T("Camara", "Camera")
 PHOTO = T("foto", "photo")
-for rel in ("WhatsApp/img1.jpg", "WhatsApp/img2.jpg", f"{CAMERA}/DCIM/{PHOTO}.jpg",
-            f"{CAMERA}/DCIM/{PHOTO}2.jpg", f"{DOWNLOADS}/meme.png",
-            f"{T('captura', 'screenshot')}.png"):
+for rel in (
+    "WhatsApp/img1.jpg",
+    "WhatsApp/img2.jpg",
+    f"{CAMERA}/DCIM/{PHOTO}.jpg",
+    f"{CAMERA}/DCIM/{PHOTO}2.jpg",
+    f"{DOWNLOADS}/meme.png",
+    f"{T('captura', 'screenshot')}.png",
+):
     p = gather_base / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     photo(zlib.crc32(rel.encode()) % 999).save(p)
@@ -137,17 +148,27 @@ for rel in ("WhatsApp/img1.jpg", "WhatsApp/img2.jpg", f"{CAMERA}/DCIM/{PHOTO}.jp
 (gather_base / f"{DOWNLOADS}/{T('factura', 'invoice')}.pdf").write_bytes(b"%PDF")
 
 # Fixed modification dates (the preview shows them).
-for _f in tmp.rglob('*'):
+for _f in tmp.rglob("*"):
     os.utime(_f, (FIXED_DATE.timestamp(), FIXED_DATE.timestamp()))
 
 # sample history
 quarantine_folder = tmp / T("Cuarentena", "Quarantine")
-history.record(KIND_QUARANTINE, "move", str(base_dup), str(quarantine_folder),
-               [(str(base_dup / "x"), str(quarantine_folder / "x"))] * 4,
-               i18n.tr("history.description_exact", count=4))
-history.record(KIND_GATHER, "copy", str(gather_base), str(tmp / "Album"),
-               [(str(gather_base / "y"), str(tmp / "Album" / "y"))] * 12,
-               i18n.tr("gather.description_files", count=12))
+history.record(
+    KIND_QUARANTINE,
+    "move",
+    str(base_dup),
+    str(quarantine_folder),
+    [(str(base_dup / "x"), str(quarantine_folder / "x"))] * 4,
+    i18n.tr("history.description_exact", count=4),
+)
+history.record(
+    KIND_GATHER,
+    "copy",
+    str(gather_base),
+    str(tmp / "Album"),
+    [(str(gather_base / "y"), str(tmp / "Album" / "y"))] * 12,
+    i18n.tr("gather.description_files", count=12),
+)
 
 styles.apply_theme(THEME)
 app = MainWindow(SERVICES)
@@ -309,7 +330,5 @@ print("Screenshots in", IMG)
 
 # Cleanup: deletes only the sample folder created by this script.
 shutil.rmtree(tmp, ignore_errors=True)
-try:
-    BASE_DEMO.rmdir()          # only if it has been left empty
-except OSError:
-    pass
+with contextlib.suppress(OSError):
+    BASE_DEMO.rmdir()  # only if it has been left empty

@@ -9,6 +9,7 @@ interface thread.
                    and a colour according to the category.
 """
 
+import contextlib
 import logging
 import os
 import threading
@@ -21,8 +22,8 @@ from duplicate_finder.i18n import tr
 log = logging.getLogger(__name__)
 
 THUMBNAIL_SIDE = 150
-ROW_THUMBNAIL_SIDE = 40          # small thumbnail for each row of the table
-PREVIEW_SIDE = 250        # large preview panel
+ROW_THUMBNAIL_SIDE = 40  # small thumbnail for each row of the table
+PREVIEW_SIDE = 250  # large preview panel
 
 # Background colour of the placeholder according to the category of the file.
 _COLOR_CATEGORY = {
@@ -38,7 +39,7 @@ _COLOR_TEXT = "#eaeef4"
 IMAGE_EXT = CATEGORY_EXTENSIONS["images"] | {"jpe", "ppm", "pgm"}
 
 # In-memory cache: (path, side) -> PIL.Image. Cleared on rescan.
-_cache = {}
+_cache: dict[tuple[str, int], Image.Image] = {}
 _cache_lock = threading.Lock()
 
 
@@ -72,8 +73,12 @@ def placeholder_extension(path, side=THUMBNAIL_SIDE):
     text = f".{ext}" if ext else tr("thumbs.no_extension")
     font = _font(max(10, int(side * (0.30 if len(text) <= 4 else 0.20))))
     left, up, right, down = d.textbbox((0, 0), text, font=font)
-    d.text(((side - (right - left)) / 2 - left, (side - (down - up)) / 2 - up),
-           text, fill=_COLOR_TEXT, font=font)
+    d.text(
+        ((side - (right - left)) / 2 - left, (side - (down - up)) / 2 - up),
+        text,
+        fill=_COLOR_TEXT,
+        font=font,
+    )
     return im
 
 
@@ -83,10 +88,8 @@ def load_thumbnail(path, side=THUMBNAIL_SIDE):
     Raises if the file cannot be opened as an image.
     """
     with Image.open(path) as im:
-        try:
+        with contextlib.suppress(ValueError, OSError):  # draft is optional
             im.draft("RGB", (side * 2, side * 2))
-        except (ValueError, OSError):  # draft is optional
-            pass
         im = ImageOps.exif_transpose(im).convert("RGB")
         return ImageOps.fit(im, (side, side), Image.BOX)
 
@@ -121,10 +124,8 @@ def large_preview(path, side=PREVIEW_SIDE):
     if ext in IMAGE_EXT:
         try:
             with Image.open(path) as im:
-                try:
+                with contextlib.suppress(ValueError, OSError):  # draft is optional
                     im.draft("RGB", (side * 2, side * 2))
-                except (ValueError, OSError):  # draft is optional
-                    pass
                 im = ImageOps.exif_transpose(im).convert("RGB")
                 im = im.copy()
             im.thumbnail((side, side), Image.LANCZOS)

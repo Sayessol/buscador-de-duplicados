@@ -41,8 +41,9 @@ def build_services() -> Services:
 
 def main() -> None:
     """Starts the app: logging first, then the window."""
-    app_logging.start()               # logging to %APPDATA%\\BuscadorDuplicados\\logs
-    app_logging.install_hooks()       # and also log the errors nobody has caught
+    app_logging.start()  # logging to %APPDATA%\\BuscadorDuplicados\\logs
+    app_logging.install_hooks()  # and also log the errors nobody has caught
 
     from duplicate_finder.presentation.main_window import launch
+
     launch(build_services())

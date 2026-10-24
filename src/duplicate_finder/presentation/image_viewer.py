@@ -14,10 +14,10 @@ import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageOps, ImageTk
 
+from duplicate_finder.i18n import tr
 
 from . import styles
 from .thumbnails import IMAGE_EXT
-from duplicate_finder.i18n import tr
 
 log = logging.getLogger(__name__)
 
@@ -54,33 +54,42 @@ class ImageViewer(ctk.CTkToplevel):
 
         bar = ctk.CTkFrame(self)
         bar.pack(fill="x", padx=8, pady=8)
-        ctk.CTkButton(bar, text="−", width=40,
-                      command=lambda: self._zoom(1 / 1.25)).pack(side="left", padx=2)
-        ctk.CTkButton(bar, text=tr("viewer.fit"), width=90,
-                      command=self._fit).pack(side="left", padx=2)
-        ctk.CTkButton(bar, text="100 %", width=60,
-                      command=lambda: self._set_scale(1.0)).pack(side="left", padx=2)
-        ctk.CTkButton(bar, text="+", width=40,
-                      command=lambda: self._zoom(1.25)).pack(side="left", padx=2)
+        ctk.CTkButton(bar, text="−", width=40, command=lambda: self._zoom(1 / 1.25)).pack(
+            side="left", padx=2
+        )
+        ctk.CTkButton(bar, text=tr("viewer.fit"), width=90, command=self._fit).pack(
+            side="left", padx=2
+        )
+        ctk.CTkButton(bar, text="100 %", width=60, command=lambda: self._set_scale(1.0)).pack(
+            side="left", padx=2
+        )
+        ctk.CTkButton(bar, text="+", width=40, command=lambda: self._zoom(1.25)).pack(
+            side="left", padx=2
+        )
         self._lbl_info = ctk.CTkLabel(
-            bar, text="", font=styles.base_font(12),
-            text_color=styles.COLOR_MUTED_TEXT)
+            bar, text="", font=styles.base_font(12), text_color=styles.COLOR_MUTED_TEXT
+        )
         self._lbl_info.pack(side="left", padx=14)
-        ctk.CTkButton(bar, text=tr("common.close"), width=80,
-                      command=self.destroy).pack(side="right", padx=2)
+        ctk.CTkButton(bar, text=tr("common.close"), width=80, command=self.destroy).pack(
+            side="right", padx=2
+        )
 
-        ctk.CTkLabel(self, text=path, font=styles.base_font(11),
-                     text_color=styles.COLOR_MUTED_TEXT, anchor="w").pack(
-            fill="x", padx=14, pady=(0, 4))
+        ctk.CTkLabel(
+            self,
+            text=path,
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+            anchor="w",
+        ).pack(fill="x", padx=14, pady=(0, 4))
 
         cont = ctk.CTkFrame(self, fg_color=styles.COLOR_TABLE_BACKGROUND)
         cont.pack(fill="both", expand=True, padx=8, pady=(0, 8))
         # tk.Canvas is not a CustomTkinter widget: its colour is resolved by hand.
-        self.canvas = tk.Canvas(cont, bg=styles.col(styles.COLOR_TABLE_BACKGROUND),
-                                highlightthickness=0)
+        self.canvas = tk.Canvas(
+            cont, bg=styles.col(styles.COLOR_TABLE_BACKGROUND), highlightthickness=0
+        )
         vsb = ctk.CTkScrollbar(cont, command=self.canvas.yview)
-        hsb = ctk.CTkScrollbar(cont, orientation="horizontal",
-                               command=self.canvas.xview)
+        hsb = ctk.CTkScrollbar(cont, orientation="horizontal", command=self.canvas.xview)
         self.canvas.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         vsb.pack(side="right", fill="y")
         hsb.pack(side="bottom", fill="x")
@@ -89,10 +98,8 @@ class ImageViewer(ctk.CTkToplevel):
         self._scale = 1.0
         self._tkimg = None
 
-        self.canvas.bind("<ButtonPress-1>",
-                         lambda e: self.canvas.scan_mark(e.x, e.y))
-        self.canvas.bind("<B1-Motion>",
-                         lambda e: self.canvas.scan_dragto(e.x, e.y, gain=1))
+        self.canvas.bind("<ButtonPress-1>", lambda e: self.canvas.scan_mark(e.x, e.y))
+        self.canvas.bind("<B1-Motion>", lambda e: self.canvas.scan_dragto(e.x, e.y, gain=1))
         self.canvas.bind("<MouseWheel>", self._wheel)
         self.bind("<Escape>", lambda _e: self.destroy())
 
@@ -114,8 +121,12 @@ class ImageViewer(ctk.CTkToplevel):
         self.canvas.delete("all")
         if self._orig is None:
             self.canvas.create_text(
-                20, 20, anchor="nw", fill=styles.col(styles.COLOR_TEXT),
-                text=tr("viewer.cannot_show"))
+                20,
+                20,
+                anchor="nw",
+                fill=styles.col(styles.COLOR_TEXT),
+                text=tr("viewer.cannot_show"),
+            )
             self._lbl_info.configure(text="")
             return
         w = max(1, int(self._orig.width * self._scale))
@@ -125,8 +136,8 @@ class ImageViewer(ctk.CTkToplevel):
         self.canvas.create_image(0, 0, anchor="nw", image=self._tkimg)
         self.canvas.configure(scrollregion=(0, 0, w, h))
         self._lbl_info.configure(
-            text=f"{self._orig.width}×{self._orig.height} px   ·   "
-                 f"{int(self._scale * 100)} %")
+            text=f"{self._orig.width}×{self._orig.height} px   ·   {int(self._scale * 100)} %"
+        )
 
     def _set_scale(self, scale):
         self._scale = max(0.05, min(scale, 8.0))

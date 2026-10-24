@@ -9,13 +9,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.domain.duplicates import DuplicateFile, DuplicateGroup, ScanResult  # noqa: E402
+from duplicate_finder.domain.duplicates import DuplicateFile, DuplicateGroup, ScanResult
 from duplicate_finder.domain.selection import (
-    DuplicateSelection,
+    GROUP_MULTIPLE,
+    GROUP_OK,
     KEEP,
     MOVE,
-    GROUP_OK,
-    GROUP_MULTIPLE,
+    DuplicateSelection,
 )
 
 failures = []
@@ -28,19 +28,31 @@ def check(cond, msg):
 
 
 def test_result():
-    g1 = DuplicateGroup(hash="h1", size=100, files=[
-        DuplicateFile(r"D:\Photos\Organized\trip\a.jpg", 100),
-        DuplicateFile(r"D:\Downloads\a.jpg", 100),
-        DuplicateFile(r"E:\Backup\a.jpg", 100),
-    ])
-    g2 = DuplicateGroup(hash="h2", size=50, files=[
-        DuplicateFile(r"D:\Downloads\b.txt", 50),
-        DuplicateFile(r"D:\Desktop\b.txt", 50),
-    ])
-    g3 = DuplicateGroup(hash="h3", size=200, files=[
-        DuplicateFile(r"D:\Photos\Organized\c.png", 200),
-        DuplicateFile(r"D:\Photos\Organized\copy\c.png", 200),
-    ])
+    g1 = DuplicateGroup(
+        hash="h1",
+        size=100,
+        files=[
+            DuplicateFile(r"D:\Photos\Organized\trip\a.jpg", 100),
+            DuplicateFile(r"D:\Downloads\a.jpg", 100),
+            DuplicateFile(r"E:\Backup\a.jpg", 100),
+        ],
+    )
+    g2 = DuplicateGroup(
+        hash="h2",
+        size=50,
+        files=[
+            DuplicateFile(r"D:\Downloads\b.txt", 50),
+            DuplicateFile(r"D:\Desktop\b.txt", 50),
+        ],
+    )
+    g3 = DuplicateGroup(
+        hash="h3",
+        size=200,
+        files=[
+            DuplicateFile(r"D:\Photos\Organized\c.png", 200),
+            DuplicateFile(r"D:\Photos\Organized\copy\c.png", 200),
+        ],
+    )
     return ScanResult(groups=[g1, g2, g3], total_files=7)
 
 
@@ -49,9 +61,10 @@ def main():
     sel = DuplicateSelection(r)
 
     print("\n--- Initial state ---")
-    check(all(sel.decision(gi, a.path) == KEEP
-              for gi, g in enumerate(r.groups) for a in g.files),
-          "everything starts as KEEP")
+    check(
+        all(sel.decision(gi, a.path) == KEEP for gi, g in enumerate(r.groups) for a in g.files),
+        "everything starts as KEEP",
+    )
     check(sel.group_state(0) == GROUP_MULTIPLE, "group with 3 kept -> MULTIPLE")
     check(not sel.all_ready(), "nothing ready at the start")
     check(sel.count_to_move() == 0, "nothing would be moved at the start")
@@ -63,16 +76,19 @@ def main():
     check(no_match == 1, "g2 has no copy in the preferred folder")
 
     # g1: keeps the one in Organizado, moves the other two
-    check(sel.decision(0, r"D:\Photos\Organized\trip\a.jpg") == KEEP,
-          "g1 keeps the copy inside the preferred folder")
+    check(
+        sel.decision(0, r"D:\Photos\Organized\trip\a.jpg") == KEEP,
+        "g1 keeps the copy inside the preferred folder",
+    )
     check(sel.decision(0, r"D:\Downloads\a.jpg") == MOVE, "g1 moves the one from Downloads")
     check(sel.group_state(0) == GROUP_OK, "g1 ends up OK")
 
     # g3: two copies inside the preferred folder -> keeps the one with the shortest path
-    check(sel.decision(2, r"D:\Photos\Organized\c.png") == KEEP,
-          "g3 keeps the shortest-path copy inside the folder")
-    check(sel.decision(2, r"D:\Photos\Organized\copy\c.png") == MOVE,
-          "g3 moves the nested copy")
+    check(
+        sel.decision(2, r"D:\Photos\Organized\c.png") == KEEP,
+        "g3 keeps the shortest-path copy inside the folder",
+    )
+    check(sel.decision(2, r"D:\Photos\Organized\copy\c.png") == MOVE, "g3 moves the nested copy")
     check(sel.group_state(2) == GROUP_OK, "g3 ends up OK")
 
     # g2: no match -> everything stays on KEEP -> pending
@@ -102,6 +118,7 @@ def main():
 
     print("\n--- preselect_primary() (Simple view) ---")
     import tempfile
+
     from duplicate_finder.bootstrap import build_services
 
     scan = build_services().scan_duplicates
@@ -110,19 +127,19 @@ def main():
         data = b"content identico\n" * 40
         (root / "Photos").mkdir()
         (root / "Photos" / "Backup").mkdir()
-        (root / "Photos" / "holidays.jpg").write_bytes(data)          # primary
-        (root / "Photos" / "holidays (1).jpg").write_bytes(data)      # looks like a copy
+        (root / "Photos" / "holidays.jpg").write_bytes(data)  # primary
+        (root / "Photos" / "holidays (1).jpg").write_bytes(data)  # looks like a copy
         (root / "Photos" / "Backup" / "holidays.jpg").write_bytes(data)  # more nested
         r = scan(str(root))
         s = DuplicateSelection(r)
         s.preselect_primary()
         check(s.all_ready(), "after preselecting, every group is OK")
-        kept = [a for a in r.groups[0].files
-                      if s.decision(0, a.path) == KEEP][0]
-        check(Path(kept.path).name == "holidays.jpg"
-              and "Backup" not in kept.path,
-              "keeps 'holidays.jpg' from the least nested folder, "
-              "not the '(1)' one nor the Backup one")
+        kept = [a for a in r.groups[0].files if s.decision(0, a.path) == KEEP][0]
+        check(
+            Path(kept.path).name == "holidays.jpg" and "Backup" not in kept.path,
+            "keeps 'holidays.jpg' from the least nested folder, "
+            "not the '(1)' one nor the Backup one",
+        )
         check(s.count_to_move() == 2, "marks the other 2 copies to move")
 
     print()

@@ -3,12 +3,12 @@
 from duplicate_finder import i18n
 from duplicate_finder.application.ports import SettingsStore
 
-LANGUAGE_AUTO = "auto"    # nothing chosen yet: follow the language of the system
+LANGUAGE_AUTO = "auto"  # nothing chosen yet: follow the language of the system
 
 MODES = ("simple", "advanced")
 DEFAULT_MODE = "simple"
 
-THEMES = ("auto", "light", "dark")   # auto = follow the system
+THEMES = ("auto", "light", "dark")  # auto = follow the system
 DEFAULT_THEME = "auto"
 
 

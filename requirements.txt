@@ -1,13 +1,12 @@
-# --- Core (core/) -----------------------------------------------------
-# Exact deduplication (hashing, scanner, filters, selection, quarantine)
-# uses only the standard library.
-#
-# The "similar photos" module (core/perceptual.py) and the thumbnails of the
-# interface need Pillow:
+# Versions the app is built and tested with (the .exe is built from these exact ones).
+# The package metadata in pyproject.toml has the allowed ranges.
+
+# Photos: fingerprints of similar photos (infrastructure/image_fingerprints.py) and the
+# thumbnails of the interface (presentation/thumbnails.py).
 pillow==13.0.0
 
-# --- Graphical interface (ui/) ---------------------------------------
+# Graphical interface (presentation/)
 customtkinter==5.2.2
 
-# --- Packaging as an .exe (development only) -----------------------
+# Packaging as an .exe (development only)
 pyinstaller==6.11.1

@@ -23,9 +23,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from PIL import Image, ImageDraw, ImageEnhance   # noqa: E402
+from PIL import Image, ImageDraw, ImageEnhance
 
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.bootstrap import build_services
 
 SERVICES = build_services()
 analyze_folder = SERVICES.find_similar_photos
@@ -98,8 +98,10 @@ def main():
         build(base)
 
         r = analyze_folder(str(base), hamming_threshold=12)
-        print(f"\n  {r.total_images} images analyzed, {r.total_groups} groups, "
-              f"{len(r.errors)} unreadable\n")
+        print(
+            f"\n  {r.total_images} images analyzed, {r.total_groups} groups, "
+            f"{len(r.errors)} unreadable\n"
+        )
         for i, g in enumerate(r.groups, 1):
             best = g.fingerprints[0]
             print(f"  Group {i}  (best: {Path(g.files[0].path).name}, {best.width}x{best.height}):")
@@ -108,38 +110,56 @@ def main():
 
         groups_by_name = {tuple(names(g)) for g in r.groups}
 
-        beach = {"beach_original.png", "beach_calidad_baja.jpg",
-                 "beach_pequena.jpg", "beach_con_filtro.jpg",
-                 "beach_marca_agua.jpg"}
+        beach = {
+            "beach_original.png",
+            "beach_calidad_baja.jpg",
+            "beach_pequena.jpg",
+            "beach_con_filtro.jpg",
+            "beach_marca_agua.jpg",
+        }
         mountain = {"mountain_original.png", "mountain_recomprimida.jpg"}
 
         beach_group = next((g for g in groups_by_name if "beach_original.png" in g), None)
         mountain_group = next((g for g in groups_by_name if "mountain_original.png" in g), None)
 
-        check(beach_group is not None and beach.issubset(set(beach_group)),
-              "the 5 versions of the photo 'beach' fall in the same group")
-        check(mountain_group is not None and set(mountain_group) == mountain,
-              "the 2 versions of 'mountain' form their own group")
-        check(all(not any(n.startswith("loose_") for n in g)
-                  for g in groups_by_name),
-              "no loose photo slipped into a group")
-        check(len(r.errors) == 1 and "rota.jpg" in r.errors[0][0],
-              "the corrupt image is reported as an error, it does not break the analysis")
+        check(
+            beach_group is not None and beach.issubset(set(beach_group)),
+            "the 5 versions of the photo 'beach' fall in the same group",
+        )
+        check(
+            mountain_group is not None and set(mountain_group) == mountain,
+            "the 2 versions of 'mountain' form their own group",
+        )
+        check(
+            all(not any(n.startswith("loose_") for n in g) for g in groups_by_name),
+            "no loose photo slipped into a group",
+        )
+        check(
+            len(r.errors) == 1 and "rota.jpg" in r.errors[0][0],
+            "the corrupt image is reported as an error, it does not break the analysis",
+        )
 
         if beach_group:
             g = next(g for g in r.groups if "beach_original.png" in names(g))
-            check(Path(g.files[0].path).name == "beach_original.png",
-                  "the 'best' copy of beach is the original PNG (higher resolution)")
+            check(
+                Path(g.files[0].path).name == "beach_original.png",
+                "the 'best' copy of beach is the original PNG (higher resolution)",
+            )
             check(g.reclaimable_space > 0, "the group reports recoverable space")
 
     # --- optional real folder --------------------------------------
     if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
         threshold = int(sys.argv[2]) if len(sys.argv) > 2 else 10
         print(f"\n=== Real folder: {sys.argv[1]}  (threshold {threshold}) ===")
-        rr = analyze_folder(sys.argv[1], hamming_threshold=threshold,
-                              progress=lambda a, t, m: print(f"  {m}", end="\r"))
-        print(f"\n  {rr.total_images} images, {rr.total_groups} groups of similar ones, "
-              f"recoverable {format_size(rr.total_reclaimable_space)}")
+        rr = analyze_folder(
+            sys.argv[1],
+            hamming_threshold=threshold,
+            progress=lambda a, t, m: print(f"  {m}", end="\r"),
+        )
+        print(
+            f"\n  {rr.total_images} images, {rr.total_groups} groups of similar ones, "
+            f"recoverable {format_size(rr.total_reclaimable_space)}"
+        )
         for i, g in enumerate(rr.groups[:15], 1):
             print(f"\n  Group {i} ({g.count} photos):")
             for a, s in zip(g.files, g.similarity):

@@ -10,14 +10,12 @@ MESSAGES = {
     "breakdown.row_detail": "  {count} files   ·   {size}",
     "breakdown.title": "File types among the duplicates",
     "breakdown.title_added": "File types  ·  .{ext} added to the filter",
-
     # category
     "category.archives": "Archives",
     "category.audio": "Audio",
     "category.documents": "Documents",
     "category.images": "Images",
     "category.video": "Video",
-
     # common
     "common.all_files": "All files",
     "common.app_name": "Duplicate Finder",
@@ -47,7 +45,6 @@ MESSAGES = {
     "common.scan": "Scan",
     "common.tile_recoverable": "Recoverable space",
     "common.warning": "Warning",
-
     # csv
     "csv.action": "Action",
     "csv.date": "Date",
@@ -66,7 +63,6 @@ MESSAGES = {
     "csv.status_done": "done",
     "csv.status_error": "ERROR",
     "csv.status_moved": "moved",
-
     # exact
     "exact.all_kinds_placeholder": "empty = all file types are searched",
     "exact.cancelled": "Scan cancelled.",
@@ -88,8 +84,7 @@ MESSAGES = {
     ),
     "exact.defaults": "Default values",
     "exact.empty_detail": (
-        "Choose a folder above and press “Scan”. The groups of duplicate files "
-        "will appear here."
+        "Choose a folder above and press “Scan”. The groups of duplicate files will appear here."
     ),
     "exact.empty_title": "No results yet",
     "exact.error_msg": "A problem has occurred:\n\n{name}: {e}",
@@ -101,8 +96,7 @@ MESSAGES = {
     "exact.failed_note": "\n{failed} could not be moved (see the log CSV).",
     "exact.folders": "Folders:",
     "exact.hint_all_resolved": (
-        "Every group has exactly one copy marked to keep. You can now move to "
-        "quarantine."
+        "Every group has exactly one copy marked to keep. You can now move to quarantine."
     ),
     "exact.hint_main_kept": (
         "The app will keep the main copy of each group. Double-click a row to "
@@ -123,8 +117,7 @@ MESSAGES = {
     "exact.moved_summary": "{moved} file(s) moved ({size}).",
     "exact.moved_title": "Files moved to quarantine",
     "exact.moved_totals": (
-        "{moved} file(s) moved to quarantine. Scan again if you want to "
-        "continue."
+        "{moved} file(s) moved to quarantine. Scan again if you want to continue."
     ),
     "exact.moving": "Moving to quarantine…",
     "exact.names": "Names:",
@@ -176,7 +169,6 @@ MESSAGES = {
     "exact.totals_none": "{total_files} files reviewed{excl_text} · 0 duplicates.",
     "exact.unreadable": "  {count} file(s) could not be read.",
     "exact.view_kinds": "View file types",
-
     # gather
     "gather.action_copy": "Copy",
     "gather.action_label": "Action:",
@@ -210,8 +202,7 @@ MESSAGES = {
     "gather.infinitive_copy": "copy",
     "gather.infinitive_move": "move",
     "gather.intro": (
-        "Puts the photos scattered across a folder and its subfolders in a "
-        "single place."
+        "Puts the photos scattered across a folder and its subfolders in a single place."
     ),
     "gather.invalid_destination_title": "Invalid destination",
     "gather.invalid_folder_msg": "Choose a folder to review.",
@@ -243,7 +234,6 @@ MESSAGES = {
         "You can undo it from “History” (above, in Advanced view). Search "
         "again if you want to continue."
     ),
-
     # history
     "history.already_undone": "this operation was already undone",
     "history.gone_from_destination": "it is no longer in the destination",
@@ -251,7 +241,6 @@ MESSAGES = {
     "history.original_path_taken": "something already exists at the original path",
     "history.description_exact": "{count} exact duplicates",
     "history.description_similar": "{count} similar photos",
-
     # history_ui
     "history_ui.confirm_delete_copies": (
         "{n} copied file(s) in:\n\n{destination}\n\nwill be DELETED. These are "
@@ -259,8 +248,7 @@ MESSAGES = {
         "be undone.\n\nContinue?"
     ),
     "history_ui.confirm_return": (
-        "{n} file(s) will be returned to their original location (from "
-        "{destination}).\n\nContinue?"
+        "{n} file(s) will be returned to their original location (from {destination}).\n\nContinue?"
     ),
     "history_ui.empty": "No operations recorded yet.",
     "history_ui.failure_line": "· {name}: {m}",
@@ -283,19 +271,16 @@ MESSAGES = {
     "history_ui.undone": "{OK} undone",
     "history_ui.verb_copied": "copied",
     "history_ui.verb_moved": "moved",
-
     # kinds
     "kinds.apply": "Apply",
     "kinds.folder_name_placeholder": "folder name",
     "kinds.group": "Group",
     "kinds.intro": (
-        "These folders also contain files that are not images. Choose what to "
-        "do with each type:"
+        "These folders also contain files that are not images. Choose what to do with each type:"
     ),
     "kinds.leave": "Leave",
     "kinds.move": "Move",
     "kinds.title": "Files that are not images",
-
     # main
     "main.error_msg": (
         "An unexpected error has occurred ({name}: {val}).\n\n{where}\n\nYou "
@@ -315,8 +300,7 @@ MESSAGES = {
     "main.tab_gather": "Gather images",
     "main.tab_similar": "Similar photos",
     "main.tagline": (
-        "Finds repeated files and moves them to quarantine. Your originals are "
-        "never deleted."
+        "Finds repeated files and moves them to quarantine. Your originals are never deleted."
     ),
     "main.theme_auto": "Automatic",
     "main.theme_dark": "Dark",
@@ -324,11 +308,9 @@ MESSAGES = {
     "main.theme_light": "Light",
     "main.view_label": "View:",
     "main.window_title": "Duplicate Finder {version}",
-
     # moves
     "moves.inside_source": (
-        "The destination is inside the source folder. Choose a folder outside "
-        "it."
+        "The destination is inside the source folder. Choose a folder outside it."
     ),
     "moves.progress": "{verb} {i}/{total}: {basename}",
     "moves.same_folder": "The destination cannot be the same folder as the source.",
@@ -336,15 +318,12 @@ MESSAGES = {
         "Warning: the source folder is inside the destination. You can "
         "continue, but check that this is what you want."
     ),
-
     # perceptual
     "perceptual.analyzing": "Analyzing images… ({i}/{total})",
     "perceptual.finished": "Comparison finished.",
-
     # quarantine
     "quarantine.inside_scanned": (
-        "The quarantine folder is inside the scanned folder. Choose a folder "
-        "outside it."
+        "The quarantine folder is inside the scanned folder. Choose a folder outside it."
     ),
     "quarantine.progress": "Moving {i}/{total}: {basename}",
     "quarantine.same_as_scanned": "The quarantine folder cannot be the same as the scanned folder.",
@@ -356,19 +335,15 @@ MESSAGES = {
         "There are unresolved groups: each group must have exactly one copy "
         "marked to keep before moving."
     ),
-
     # report
     "report.group_label": "Group {number}",
-
     # scan
     "scan.finished": "Scan finished.",
     "scan.step_hashes": "Step 2/2: computing hashes... ({processed}/{total_candidates})",
     "scan.step_sizes": "Step 1/2: checking sizes... ({total_files} files)",
     "scan.step_verifying": (
-        "Step 2/2: verifying whole files... "
-        "({full_processed}/{total_finalists})"
+        "Step 2/2: verifying whole files... ({full_processed}/{total_finalists})"
     ),
-
     # similar
     "similar.analyze": "Analyze",
     "similar.analyzing": "Analyzing…",
@@ -407,15 +382,13 @@ MESSAGES = {
     "similar.moved_summary": "{count} photos were moved.",
     "similar.moved_title": "Photos moved to quarantine",
     "similar.moved_totals": (
-        "{count} photo(s) moved to quarantine. Analyze again if you want to "
-        "continue."
+        "{count} photo(s) moved to quarantine. Analyze again if you want to continue."
     ),
     "similar.next": "Next  ›",
     "similar.no_preview": "(no\npreview)",
     "similar.none_found": "No similar photos were found.",
     "similar.none_found_detail": (
-        "{total_images} images were compared. Try raising the sensitivity if "
-        "you expected more."
+        "{total_images} images were compared. Try raising the sensitivity if you expected more."
     ),
     "similar.none_found_title": "No similar photos found",
     "similar.normal": "normal",
@@ -435,14 +408,12 @@ MESSAGES = {
     "similar.tile_to_move": "Photos to move",
     "similar.tolerant": "tolerant",
     "similar.too_many_kept": (
-        "{count} group(s) with more than one photo marked to keep. Leave only "
-        "one in each group."
+        "{count} group(s) with more than one photo marked to keep. Leave only one in each group."
     ),
     "similar.totals_none": "{total_images} images analyzed{extra} · 0 groups.",
     "similar.unreadable_suffix": "  ·  {count} unreadable image(s)",
     "similar.very_strict": "very strict",
     "similar.very_tolerant": "very tolerant",
-
     # table
     "table.col_decision": "Decision",
     "table.col_group": "Group / File",
@@ -453,10 +424,8 @@ MESSAGES = {
     "table.reclaim": "frees {size}",
     "table.state_choose": "choose which to keep",
     "table.state_ready": "ready",
-
     # thumbs
     "thumbs.no_extension": "no ext.",
-
     # viewer
     "viewer.cannot_show": "This image cannot be shown.",
     "viewer.fit": "Fit",

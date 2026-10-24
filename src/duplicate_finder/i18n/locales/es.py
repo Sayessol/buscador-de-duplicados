@@ -10,14 +10,12 @@ MESSAGES = {
     "breakdown.row_detail": "    {count} archivos   ·   {size}",
     "breakdown.title": "Tipos de archivo entre los duplicados",
     "breakdown.title_added": "Tipos de archivo  ·  .{ext} añadido al filtro",
-
     # category
     "category.archives": "Comprimidos",
     "category.audio": "Audio",
     "category.documents": "Documentos",
     "category.images": "Imágenes",
     "category.video": "Vídeo",
-
     # common
     "common.all_files": "Todos los archivos",
     "common.app_name": "Buscador de duplicados",
@@ -47,7 +45,6 @@ MESSAGES = {
     "common.scan": "Escanear",
     "common.tile_recoverable": "Espacio recuperable",
     "common.warning": "Atención",
-
     # csv
     "csv.action": "Accion",
     "csv.date": "Fecha",
@@ -66,7 +63,6 @@ MESSAGES = {
     "csv.status_done": "hecho",
     "csv.status_error": "ERROR",
     "csv.status_moved": "movido",
-
     # exact
     "exact.all_kinds_placeholder": "vacío = se buscan todos los tipos",
     "exact.cancelled": "Escaneo cancelado.",
@@ -125,8 +121,7 @@ MESSAGES = {
     "exact.moved_summary": "Se han movido {moved} archivo(s) ({size}).",
     "exact.moved_title": "Archivos movidos a cuarentena",
     "exact.moved_totals": (
-        "{moved} archivo(s) movidos a cuarentena. Vuelve a escanear si quieres "
-        "continuar."
+        "{moved} archivo(s) movidos a cuarentena. Vuelve a escanear si quieres continuar."
     ),
     "exact.moving": "Moviendo a cuarentena…",
     "exact.names": "Nombres:",
@@ -150,8 +145,7 @@ MESSAGES = {
     "exact.pick_scan_folder": "Elige la carpeta a escanear",
     "exact.preferred_folder": "Carpeta preferida:",
     "exact.preferred_placeholder": (
-        "Las copias dentro de esta carpeta se conservan.  Ej.  "
-        "D:\\Fotos\\Organizado"
+        "Las copias dentro de esta carpeta se conservan.  Ej.  D:\\Fotos\\Organizado"
     ),
     "exact.preparing": "Preparando el escaneo…",
     "exact.preview_hint": "Selecciona un archivo\npara ver la vista previa",
@@ -177,13 +171,11 @@ MESSAGES = {
     "exact.tile_groups": "Grupos de duplicados",
     "exact.tile_to_move": "Archivos a mover",
     "exact.totals": (
-        "{total_groups} grupos · {total_files_duplicates} archivos "
-        "duplicados{excl_text}"
+        "{total_groups} grupos · {total_files_duplicates} archivos duplicados{excl_text}"
     ),
     "exact.totals_none": "{total_files} archivos revisados{excl_text} · 0 duplicados.",
     "exact.unreadable": "  {count} archivo(s) no se pudieron leer.",
     "exact.view_kinds": "Ver tipos de archivo",
-
     # gather
     "gather.action_copy": "Copiar",
     "gather.action_label": "Acción:",
@@ -217,8 +209,7 @@ MESSAGES = {
     "gather.infinitive_copy": "copiar",
     "gather.infinitive_move": "mover",
     "gather.intro": (
-        "Junta en un solo sitio las fotos que tengas repartidas por una "
-        "carpeta y sus subcarpetas."
+        "Junta en un solo sitio las fotos que tengas repartidas por una carpeta y sus subcarpetas."
     ),
     "gather.invalid_destination_title": "Destino no válido",
     "gather.invalid_folder_msg": "Elige una carpeta para revisar.",
@@ -250,7 +241,6 @@ MESSAGES = {
         "Puedes deshacerlo desde «Historial» (arriba, en modo Avanzada). "
         "Vuelve a buscar si quieres continuar."
     ),
-
     # history
     "history.already_undone": "esta operación ya se deshizo",
     "history.gone_from_destination": "ya no está en el destino",
@@ -258,7 +248,6 @@ MESSAGES = {
     "history.original_path_taken": "ya hay algo en la ruta original",
     "history.description_exact": "{count} duplicados exactos",
     "history.description_similar": "{count} fotos parecidas",
-
     # history_ui
     "history_ui.confirm_delete_copies": (
         "Se van a BORRAR {n} archivo(s) copiados en:\n\n{destination}\n\nSon "
@@ -290,19 +279,16 @@ MESSAGES = {
     "history_ui.undone": "{OK} deshecha",
     "history_ui.verb_copied": "copiados",
     "history_ui.verb_moved": "movidos",
-
     # kinds
     "kinds.apply": "Aplicar",
     "kinds.folder_name_placeholder": "nombre carpeta",
     "kinds.group": "Agrupar",
     "kinds.intro": (
-        "En esas carpetas también hay archivos que no son imágenes. Elige qué "
-        "hacer con cada tipo:"
+        "En esas carpetas también hay archivos que no son imágenes. Elige qué hacer con cada tipo:"
     ),
     "kinds.leave": "Dejar",
     "kinds.move": "Mover",
     "kinds.title": "Archivos que no son imágenes",
-
     # main
     "main.error_msg": (
         "Ha ocurrido un error inesperado ({name}: {val}).\n\n{where}\n\nPuedes "
@@ -322,8 +308,7 @@ MESSAGES = {
     "main.tab_gather": "Reunir imágenes",
     "main.tab_similar": "Fotos parecidas",
     "main.tagline": (
-        "Encuentra archivos repetidos y muévelos a cuarentena. Nunca se borran "
-        "tus originales."
+        "Encuentra archivos repetidos y muévelos a cuarentena. Nunca se borran tus originales."
     ),
     "main.theme_auto": "Automático",
     "main.theme_dark": "Oscuro",
@@ -331,11 +316,9 @@ MESSAGES = {
     "main.theme_light": "Claro",
     "main.view_label": "Vista:",
     "main.window_title": "Buscador de duplicados {version}",
-
     # moves
     "moves.inside_source": (
-        "El destino está dentro de la carpeta de origen. Elige una carpeta "
-        "fuera de ella."
+        "El destino está dentro de la carpeta de origen. Elige una carpeta fuera de ella."
     ),
     "moves.progress": "{verb} {i}/{total}: {basename}",
     "moves.same_folder": "El destino no puede ser la misma carpeta que el origen.",
@@ -343,11 +326,9 @@ MESSAGES = {
         "Atención: la carpeta de origen está dentro del destino. Se puede "
         "continuar, pero revisa que sea lo que quieres."
     ),
-
     # perceptual
     "perceptual.analyzing": "Analizando imágenes… ({i}/{total})",
     "perceptual.finished": "Comparación terminada.",
-
     # quarantine
     "quarantine.inside_scanned": (
         "La carpeta de cuarentena está dentro de la carpeta escaneada. Elige "
@@ -355,8 +336,7 @@ MESSAGES = {
     ),
     "quarantine.progress": "Moviendo {i}/{total}: {basename}",
     "quarantine.same_as_scanned": (
-        "La carpeta de cuarentena no puede ser la misma que la carpeta "
-        "escaneada."
+        "La carpeta de cuarentena no puede ser la misma que la carpeta escaneada."
     ),
     "quarantine.scanned_inside_quarantine": (
         "Atención: la carpeta escaneada está dentro de la carpeta de "
@@ -366,19 +346,15 @@ MESSAGES = {
         "Hay grupos sin resolver: cada grupo debe tener exactamente una copia "
         "marcada como conservar antes de mover."
     ),
-
     # report
     "report.group_label": "Grupo {number}",
-
     # scan
     "scan.finished": "Escaneo terminado.",
     "scan.step_hashes": "Paso 2/2: calculando hashes... ({processed}/{total_candidates})",
     "scan.step_sizes": "Paso 1/2: revisando tamaños... ({total_files} archivos)",
     "scan.step_verifying": (
-        "Paso 2/2: verificando archivos completos... "
-        "({full_processed}/{total_finalists})"
+        "Paso 2/2: verificando archivos completos... ({full_processed}/{total_finalists})"
     ),
-
     # similar
     "similar.analyze": "Analizar",
     "similar.analyzing": "Analizando…",
@@ -417,15 +393,13 @@ MESSAGES = {
     "similar.moved_summary": "Se han movido {count} fotos.",
     "similar.moved_title": "Fotos movidas a cuarentena",
     "similar.moved_totals": (
-        "{count} foto(s) movidas a cuarentena. Vuelve a analizar si quieres "
-        "continuar."
+        "{count} foto(s) movidas a cuarentena. Vuelve a analizar si quieres continuar."
     ),
     "similar.next": "Siguiente  ›",
     "similar.no_preview": "(sin\nvista previa)",
     "similar.none_found": "No se han encontrado fotos parecidas.",
     "similar.none_found_detail": (
-        "Se han comparado {total_images} imágenes. Prueba a subir la "
-        "sensibilidad si esperabas más."
+        "Se han comparado {total_images} imágenes. Prueba a subir la sensibilidad si esperabas más."
     ),
     "similar.none_found_title": "No se han encontrado fotos parecidas",
     "similar.normal": "normal",
@@ -445,14 +419,12 @@ MESSAGES = {
     "similar.tile_to_move": "Fotos a mover",
     "similar.tolerant": "tolerante",
     "similar.too_many_kept": (
-        "{count} grupo(s) con más de una foto marcada para conservar. Deja "
-        "solo una en cada grupo."
+        "{count} grupo(s) con más de una foto marcada para conservar. Deja solo una en cada grupo."
     ),
     "similar.totals_none": "{total_images} imágenes analizadas{extra} · 0 grupos.",
     "similar.unreadable_suffix": "  ·  {count} imagen(es) ilegibles",
     "similar.very_strict": "muy estricta",
     "similar.very_tolerant": "muy tolerante",
-
     # table
     "table.col_decision": "Decisión",
     "table.col_group": "Grupo / Archivo",
@@ -463,10 +435,8 @@ MESSAGES = {
     "table.reclaim": "libera {size}",
     "table.state_choose": "elige cuál conservar",
     "table.state_ready": "listo",
-
     # thumbs
     "thumbs.no_extension": "sin ext.",
-
     # viewer
     "viewer.cannot_show": "No se puede mostrar esta imagen.",
     "viewer.fit": "Ajustar",

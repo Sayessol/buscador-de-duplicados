@@ -3,6 +3,7 @@
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
+
 from duplicate_finder.domain.filters import NO_EXTENSION
 
 
@@ -18,9 +19,9 @@ class DuplicateFile:
 class DuplicateGroup:
     """Set of 2+ files with identical content."""
 
-    hash: str          # the hash they share (identifies the group)
-    size: int        # bytes of each copy (they all weigh the same)
-    files: list[DuplicateFile]   # the copies in the group
+    hash: str  # the hash they share (identifies the group)
+    size: int  # bytes of each copy (they all weigh the same)
+    files: list[DuplicateFile]  # the copies in the group
 
     @property
     def count(self) -> int:
@@ -61,7 +62,7 @@ class ScanResult:
                 acc[key][0] += 1
                 acc[key][1] += a.size
         rows = [(ext, c, b) for ext, (c, b) in acc.items()]
-        rows.sort(key=lambda f: (-f[2], f[0]))   # most bytes first; on a tie, alphabetical
+        rows.sort(key=lambda f: (-f[2], f[0]))  # most bytes first; on a tie, alphabetical
         return rows
 
     @property

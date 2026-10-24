@@ -40,8 +40,11 @@ def _backup_legacy(path: Path) -> None:
     backup = path.with_name(path.name + ".bak-1.0")
     try:
         old = json.loads(path.read_text(encoding="utf-8"))
-        if isinstance(old, dict) and any(key in old for key in _LEGACY_KEYS) \
-                and not backup.exists():
+        if (
+            isinstance(old, dict)
+            and any(key in old for key in _LEGACY_KEYS)
+            and not backup.exists()
+        ):
             shutil.copy2(path, backup)
     except (OSError, ValueError):
         pass
@@ -61,7 +64,6 @@ class JsonSettingsStore:
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             _backup_legacy(path)
-            path.write_text(json.dumps(data, indent=2, ensure_ascii=False),
-                            encoding="utf-8")
+            path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
         except OSError:
             log.warning("Could not save the configuration to %s", path, exc_info=True)

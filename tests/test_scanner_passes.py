@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from duplicate_finder.domain.filters import ScanFilter
 from duplicate_finder.application.scan_duplicates import ScanCancelled, ScanDuplicates
+from duplicate_finder.domain.filters import ScanFilter
 from duplicate_finder.infrastructure.hashing import PARTIAL_HASH_SIZE, Blake2Hasher
 from duplicate_finder.infrastructure.local_file_system import LocalFileSystem
 
 scanner = ScanDuplicates(LocalFileSystem(), Blake2Hasher())
 
-LARGE = PARTIAL_HASH_SIZE * 3            # over 64 KB: forces the full hash
+LARGE = PARTIAL_HASH_SIZE * 3  # over 64 KB: forces the full hash
 
 
 def _nothing(_progress):
@@ -32,9 +32,9 @@ def folder(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()
     (tmp_path / "a" / "photo.jpg").write_bytes(b"x" * 100)
-    (tmp_path / "b" / "photo copy.jpg").write_bytes(b"x" * 100)      # identical to the previous one
-    (tmp_path / "a" / "otro.txt").write_bytes(b"y" * 100)            # same size, other content
-    (tmp_path / "a" / "unico.png").write_bytes(b"z" * 7)             # unique size
+    (tmp_path / "b" / "photo copy.jpg").write_bytes(b"x" * 100)  # identical to the previous one
+    (tmp_path / "a" / "otro.txt").write_bytes(b"y" * 100)  # same size, other content
+    (tmp_path / "a" / "unico.png").write_bytes(b"z" * 7)  # unique size
     (tmp_path / "a" / "empty.log").write_bytes(b"")
     return tmp_path
 
@@ -42,16 +42,16 @@ def folder(tmp_path):
 def test_pass_1_groups_by_size(folder):
     errors = []
     by_size, total, excluded = scanner._size_pass(
-        str(folder), ScanFilter.no_filter(), _nothing, _dont_cancel, errors)
+        str(folder), ScanFilter.no_filter(), _nothing, _dont_cancel, errors
+    )
     assert total == 5 and excluded == 0 and errors == []
     assert len(by_size[100]) == 3 and len(by_size[7]) == 1 and len(by_size[0]) == 1
 
 
 def test_pass_1_respects_the_filter(folder):
     filter = ScanFilter(excluded_extensions={"log"}, min_size=10)
-    by_size, total, excluded = scanner._size_pass(
-        str(folder), filter, _nothing, _dont_cancel, [])
-    assert set(by_size) == {100}                   # the .log and the 7-byte one are left out
+    by_size, total, excluded = scanner._size_pass(str(folder), filter, _nothing, _dont_cancel, [])
+    assert set(by_size) == {100}  # the .log and the 7-byte one are left out
     assert total == 3 and excluded == 2
 
 
@@ -94,7 +94,7 @@ def test_pass_3_separates_those_that_only_differ_at_the_end(tmp_path):
     for path in equal:
         path.write_bytes(base)
     assert base[-1] != 0
-    different.write_bytes(base[:-1] + b"\x00")      # only the last byte changes
+    different.write_bytes(base[:-1] + b"\x00")  # only the last byte changes
     res = scanner(str(tmp_path))
     assert res.total_groups == 1
     assert sorted(a.path for a in res.groups[0].files) == sorted(str(r) for r in equal)

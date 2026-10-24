@@ -38,8 +38,8 @@ log.addHandler(logging.NullHandler())
 _MAX_SIZE = 512 * 1024
 _OLD_COPIES = 2
 
-_handler: RotatingFileHandler | None = None   # the one that writes to the file (None = not started)
-_path_file: Path | None = None               # path of the file, if it could be created
+_handler: RotatingFileHandler | None = None  # the one that writes to the file (None = not started)
+_path_file: Path | None = None  # path of the file, if it could be created
 
 
 def log_folder() -> Path:
@@ -68,15 +68,16 @@ def start() -> Path | None:
         folder.mkdir(parents=True, exist_ok=True)
         path = folder / "app.log"
         handler = RotatingFileHandler(
-            path, maxBytes=_MAX_SIZE, backupCount=_OLD_COPIES, encoding="utf-8")
+            path, maxBytes=_MAX_SIZE, backupCount=_OLD_COPIES, encoding="utf-8"
+        )
     except OSError:
-        return None          # no log: the app keeps working the same
-    handler.setFormatter(logging.Formatter(
-        "%(asctime)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S"))
+        return None  # no log: the app keeps working the same
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S")
+    )
     log.addHandler(handler)
     _handler, _path_file = handler, path
-    log.info("Starting Duplicate Finder %s (Python %s)",
-             __version__, sys.version.split()[0])
+    log.info("Starting Duplicate Finder %s (Python %s)", __version__, sys.version.split()[0])
     return path
 
 
@@ -94,16 +95,21 @@ def install_hooks() -> None:
     previous_primary = sys.excepthook
     previous_thread_hook = threading.excepthook
 
-    def primary(kind: type[BaseException], value: BaseException,
-                  trace: TracebackType | None) -> None:
+    def primary(
+        kind: type[BaseException], value: BaseException, trace: TracebackType | None
+    ) -> None:
         log.critical("Unhandled error", exc_info=(kind, value, trace))
         previous_primary(kind, value, trace)
 
     def threads(args: threading.ExceptHookArgs) -> None:
-        info = ((args.exc_type, args.exc_value, args.exc_traceback)
-                if args.exc_value is not None else None)
-        log.critical("Unhandled error in thread %s", getattr(args.thread, "name", "?"),
-                     exc_info=info)
+        info = (
+            (args.exc_type, args.exc_value, args.exc_traceback)
+            if args.exc_value is not None
+            else None
+        )
+        log.critical(
+            "Unhandled error in thread %s", getattr(args.thread, "name", "?"), exc_info=info
+        )
         previous_thread_hook(args)
 
     sys.excepthook = primary

@@ -75,8 +75,17 @@ class FileTransfers:
         for i, t in enumerate(transfers, start=1):
             if cancelled():
                 break
-            progress(i, total, tr("moves.progress", verb=verb, i=i, total=total,
-                                  basename=os.path.basename(t.source)))
+            progress(
+                i,
+                total,
+                tr(
+                    "moves.progress",
+                    verb=verb,
+                    i=i,
+                    total=total,
+                    basename=os.path.basename(t.source),
+                ),
+            )
             try:
                 if not self._fs.exists(t.source):
                     raise FileNotFoundError(tr("common.file_gone"))
@@ -94,19 +103,46 @@ class FileTransfers:
         return TransferResult(transfers=transfers, action=action)
 
     def write_log(
-        self, transfers: list[Transfer], destination_folder: str, prefix: str,
-        root_source: str, action: str,
+        self,
+        transfers: list[Transfer],
+        destination_folder: str,
+        prefix: str,
+        root_source: str,
+        action: str,
     ) -> str:
         """Writes the CSV log of a batch; returns its path ("" if it could not be written)."""
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         path = os.path.join(destination_folder, f"_log_{prefix}_{stamp}.csv")
         status_done, status_error = tr("csv.status_done"), tr("csv.status_error")
         now = datetime.now().isoformat(timespec="seconds")
-        rows: list[list[object]] = [[tr(key) for key in (
-            "csv.date", "csv.action", "csv.source_root", "csv.source", "csv.destination",
-            "csv.size_bytes", "csv.status", "csv.error")]]
-        rows += [[now, action, root_source, t.source, t.destination, t.size,
-                  status_done if t.ok else status_error, t.error] for t in transfers]
+        rows: list[list[object]] = [
+            [
+                tr(key)
+                for key in (
+                    "csv.date",
+                    "csv.action",
+                    "csv.source_root",
+                    "csv.source",
+                    "csv.destination",
+                    "csv.size_bytes",
+                    "csv.status",
+                    "csv.error",
+                )
+            ]
+        ]
+        rows += [
+            [
+                now,
+                action,
+                root_source,
+                t.source,
+                t.destination,
+                t.size,
+                status_done if t.ok else status_error,
+                t.error,
+            ]
+            for t in transfers
+        ]
         try:
             self._fs.make_dirs(destination_folder)
             self._fs.write_csv(path, rows)

@@ -26,8 +26,8 @@ import tempfile
 from pathlib import Path
 
 # --- project imports ------------------------------------------------
-APP_ROOT = Path(__file__).resolve().parents[1]          # root of the repo
-REPO_ROOT = APP_ROOT / "docs" / "origin"                 # the original script is here
+APP_ROOT = Path(__file__).resolve().parents[1]  # root of the repo
+REPO_ROOT = APP_ROOT / "docs" / "origin"  # the original script is here
 sys.path.insert(0, str(APP_ROOT))
 sys.path.insert(0, str(APP_ROOT / "src"))
 
@@ -60,10 +60,7 @@ def _norm(path):
 
 def new_core_groups(folder):
     result = scan(folder)
-    return {
-        frozenset(_norm(a.path) for a in g.files)
-        for g in result.groups
-    }, result
+    return {frozenset(_norm(a.path) for a in g.files) for g in result.groups}, result
 
 
 def original_script_groups(folder, orig):
@@ -88,8 +85,8 @@ def build_test_tree(base: Path):
     content_a = b"content identico A\n" * 10
     content_b = b"other thing totalmente distinta B\n" * 7
     large_1 = b"X" * 200_000 + b"final-1"
-    large_2 = b"X" * 200_000 + b"final-2"   # same size, differs at the end
-    large_3 = b"X" * 200_000 + b"final-1"   # real duplicate of large_1
+    large_2 = b"X" * 200_000 + b"final-2"  # same size, differs at the end
+    large_3 = b"X" * 200_000 + b"final-1"  # real duplicate of large_1
 
     # Duplicate group 1: 3 copies of the same content in different folders
     write("originals/doc.txt", content_a)
@@ -123,9 +120,11 @@ def compare_folder(folder, orig, label):
     new, result = new_core_groups(folder)
     old = original_script_groups(folder, orig)
 
-    print(f"    New core:        {len(new)} groups, "
-          f"{result.total_files_duplicates} duplicate files, "
-          f"recoverable {result.total_reclaimable_space} bytes")
+    print(
+        f"    New core:        {len(new)} groups, "
+        f"{result.total_files_duplicates} duplicate files, "
+        f"recoverable {result.total_reclaimable_space} bytes"
+    )
     print(f"    Original script: {len(old)} groups")
 
     if result.errors:

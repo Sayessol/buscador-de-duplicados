@@ -12,6 +12,7 @@ The table decides nothing by itself: it reads and writes on a
 `DuplicateSelection` handed to it by the main window.
 """
 
+import contextlib
 import logging
 import queue
 import threading
@@ -23,15 +24,16 @@ from PIL import ImageTk
 
 from duplicate_finder.domain.formatting import format_size
 from duplicate_finder.domain.selection import (
-    DuplicateSelection,
-    KEEP,
-    GROUP_OK,
-    GROUP_NOTHING_KEPT,
     GROUP_MULTIPLE,
+    GROUP_NOTHING_KEPT,
+    GROUP_OK,
+    KEEP,
+    DuplicateSelection,
 )
+from duplicate_finder.i18n import tr
+
 from . import styles
 from .thumbnails import thumbnail_or_placeholder
-from duplicate_finder.i18n import tr
 
 log = logging.getLogger(__name__)
 
@@ -57,9 +59,9 @@ class ResultsTable(ctk.CTkFrame):
         self._group_iid = {}
         self._file_iids = {}
 
-        self._img_refs = {}          # iid -> ImageTk.PhotoImage (they must be kept)
+        self._img_refs = {}  # iid -> ImageTk.PhotoImage (they must be kept)
         self._thumbs_queue = queue.Queue()
-        self._gen = 0                # generation: discards thumbnails from old scans
+        self._gen = 0  # generation: discards thumbnails from old scans
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -67,20 +69,20 @@ class ResultsTable(ctk.CTkFrame):
         self._configure_ttk_style()
 
         self.tree = ttk.Treeview(
-            self, columns=("decision", "size", "info"),
-            selectmode="browse", style="Duplicates.Treeview")
+            self,
+            columns=("decision", "size", "info"),
+            selectmode="browse",
+            style="Duplicates.Treeview",
+        )
         self.tree.heading("#0", text=tr("table.col_group"), anchor="w")
         self.tree.heading("decision", text=tr("table.col_decision"), anchor="w")
         self.tree.heading("size", text=tr("table.col_size"), anchor="e")
         self.tree.heading("info", text="", anchor="w")
 
         self.tree.column("#0", width=520, minwidth=260, stretch=True, anchor="w")
-        self.tree.column("decision", width=140, minwidth=110, stretch=False,
-                         anchor="w")
-        self.tree.column("size", width=100, minwidth=80, stretch=False,
-                         anchor="e")
-        self.tree.column("info", width=150, minwidth=100, stretch=False,
-                         anchor="w")
+        self.tree.column("decision", width=140, minwidth=110, stretch=False, anchor="w")
+        self.tree.column("size", width=100, minwidth=80, stretch=False, anchor="e")
+        self.tree.column("info", width=150, minwidth=100, stretch=False, anchor="w")
 
         vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
@@ -101,35 +103,45 @@ class ResultsTable(ctk.CTkFrame):
         # here each colour is resolved with styles.col(...) for the active theme.
         c = styles.col
         style = ttk.Style()
-        try:
+        with contextlib.suppress(tk.TclError):
             style.theme_use("clam")
-        except tk.TclError:
-            pass
         style.configure(
             "Duplicates.Treeview",
             background=c(styles.COLOR_TABLE_BACKGROUND),
             fieldbackground=c(styles.COLOR_TABLE_BACKGROUND),
             foreground=c(styles.COLOR_TEXT),
-            rowheight=_ROW_HEIGHT, font=styles.table_font(), borderwidth=0)
+            rowheight=_ROW_HEIGHT,
+            font=styles.table_font(),
+            borderwidth=0,
+        )
         style.configure(
             "Duplicates.Treeview.Heading",
-            background=c(styles.COLOR_HEADER), foreground=c(styles.COLOR_TEXT),
-            font=styles.table_heading_font(), relief="flat")
-        style.map("Duplicates.Treeview.Heading",
-                   background=[("active", c(styles.COLOR_HEADER))])
-        style.map("Duplicates.Treeview",
-                   background=[("selected", c(styles.COLOR_SELECTION))],
-                   foreground=[("selected", "#ffffff")])
+            background=c(styles.COLOR_HEADER),
+            foreground=c(styles.COLOR_TEXT),
+            font=styles.table_heading_font(),
+            relief="flat",
+        )
+        style.map("Duplicates.Treeview.Heading", background=[("active", c(styles.COLOR_HEADER))])
+        style.map(
+            "Duplicates.Treeview",
+            background=[("selected", c(styles.COLOR_SELECTION))],
+            foreground=[("selected", "#ffffff")],
+        )
 
     def _configure_tags(self):
         c = styles.col
-        self.tree.tag_configure("group", background=c(styles.COLOR_TABLE_BACKGROUND),
-                                foreground=c(styles.COLOR_TEXT),
-                                font=styles.table_heading_font())
-        self.tree.tag_configure("group_pending",
-                                background=c(styles.COLOR_PENDING_GROUP),
-                                foreground=c(styles.COLOR_TEXT),
-                                font=styles.table_heading_font())
+        self.tree.tag_configure(
+            "group",
+            background=c(styles.COLOR_TABLE_BACKGROUND),
+            foreground=c(styles.COLOR_TEXT),
+            font=styles.table_heading_font(),
+        )
+        self.tree.tag_configure(
+            "group_pending",
+            background=c(styles.COLOR_PENDING_GROUP),
+            foreground=c(styles.COLOR_TEXT),
+            font=styles.table_heading_font(),
+        )
         self.tree.tag_configure("keep", foreground=c(styles.COLOR_OK))
         self.tree.tag_configure("move", foreground=c(styles.COLOR_WARNING))
 
@@ -163,18 +175,23 @@ class ResultsTable(ctk.CTkFrame):
         pending_thumb = []
         for gi, group in enumerate(result.groups):
             group_id = self.tree.insert(
-                "", "end",
+                "",
+                "end",
                 text=tr("table.group_title", number=gi + 1, count=group.count),
-                values=("", format_size(group.size),
-                        tr("table.reclaim", size=format_size(group.reclaimable_space))),
-                open=True)
+                values=(
+                    "",
+                    format_size(group.size),
+                    tr("table.reclaim", size=format_size(group.reclaimable_space)),
+                ),
+                open=True,
+            )
             self._meta[group_id] = ("group", gi)
             self._group_iid[gi] = group_id
 
             for file in group.files:
                 iid = self.tree.insert(
-                    group_id, "end", text="  " + file.path,
-                    values=("", format_size(file.size), ""))
+                    group_id, "end", text="  " + file.path, values=("", format_size(file.size), "")
+                )
                 self._meta[iid] = ("file", gi, file.path)
                 self._file_iids[(gi, file.path)] = iid
                 pending_thumb.append((iid, file.path))
@@ -194,7 +211,7 @@ class ResultsTable(ctk.CTkFrame):
 
         def job():
             for iid, path in items:
-                if gen != self._gen:        # another scan arrived: give up
+                if gen != self._gen:  # another scan arrived: give up
                     return
                 try:
                     pil = thumbnail_or_placeholder(path, _MINI_SIDE)
@@ -209,15 +226,15 @@ class ResultsTable(ctk.CTkFrame):
     def _process_thumbs_queue(self):
         processed = 0
         try:
-            while processed < 40:          # at most 40 per tick, so as not to clog things up
+            while processed < 40:  # at most 40 per tick, so as not to clog things up
                 gen, iid, pil = self._thumbs_queue.get_nowait()
                 processed += 1
                 if gen != self._gen or pil is None:
                     continue
-                if not self.tree.exists(iid):   # the row no longer exists
+                if not self.tree.exists(iid):  # the row no longer exists
                     continue
                 photo = ImageTk.PhotoImage(pil)
-                self._img_refs[iid] = photo      # the reference must be kept!
+                self._img_refs[iid] = photo  # the reference must be kept!
                 self.tree.item(iid, image=photo)  # otherwise Python collects it and it disappears
         except queue.Empty:
             return
@@ -302,7 +319,7 @@ class ResultsTable(ctk.CTkFrame):
         self._refresh_group(gi)
         if self.on_change:
             self.on_change()
-        return "break"       # prevents Tk from also expanding/collapsing the node
+        return "break"  # prevents Tk from also expanding/collapsing the node
 
     def _on_selection(self, _event):
         if not self.on_selection:

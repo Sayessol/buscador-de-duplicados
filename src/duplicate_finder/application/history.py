@@ -41,7 +41,7 @@ class OperationHistory:
             "id": now.strftime("%Y%m%d%H%M%S%f"),
             "date": now.isoformat(timespec="seconds"),
             "kind": kind,
-            "action": action,          # "move" | "copy"
+            "action": action,  # "move" | "copy"
             "source_root": root_source,
             "destination": destination,
             "description": description,
@@ -76,7 +76,7 @@ class OperationHistory:
         if op.get("undone"):
             return {"reverted": 0, "failures": [("", tr("history.already_undone"))], "op": op}
 
-        op_moves = op["moves"]        # each one: {"source": ..., "destination": ...}
+        op_moves = op["moves"]  # each one: {"source": ..., "destination": ...}
         total = len(op_moves)
         ok = 0
         failures: list[tuple[str, str]] = []

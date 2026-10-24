@@ -1,6 +1,6 @@
 """Generates the code guide: 'guia-del-codigo.pdf' (Spanish) and 'code-guide.pdf' (English).
 
-    python docs/gen_code_guide.py [es|en|all]
+python docs/gen_code_guide.py [es|en|all]
 """
 
 import sys

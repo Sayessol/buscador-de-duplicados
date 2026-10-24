@@ -21,11 +21,23 @@ log = logging.getLogger(__name__)
 _MAX_OPERATIONS = 80
 
 # Spanish keys and values written by version 1.0.
-_LEGACY_KEYS = {"fecha": "date", "tipo": "kind", "accion": "action",
-                "origen_raiz": "source_root", "destino": "destination",
-                "descripcion": "description", "movimientos": "moves", "deshecha": "undone"}
-_LEGACY_VALUES = {"cuarentena": KIND_QUARANTINE, "reunir": KIND_GATHER,
-                  "reunir_carpeta": KIND_GATHER_FOLDER, "mover": "move", "copiar": "copy"}
+_LEGACY_KEYS = {
+    "fecha": "date",
+    "tipo": "kind",
+    "accion": "action",
+    "origen_raiz": "source_root",
+    "destino": "destination",
+    "descripcion": "description",
+    "movimientos": "moves",
+    "deshecha": "undone",
+}
+_LEGACY_VALUES = {
+    "cuarentena": KIND_QUARANTINE,
+    "reunir": KIND_GATHER,
+    "reunir_carpeta": KIND_GATHER_FOLDER,
+    "mover": "move",
+    "copiar": "copy",
+}
 
 
 def _path() -> Path:
@@ -47,17 +59,20 @@ def _upgrade(op: Any) -> dict[str, Any] | None:
     if not any(key in op for key in _LEGACY_KEYS):
         return op
     new: dict[str, Any] = {
-        _LEGACY_KEYS[key] if key in _LEGACY_KEYS else str(key): value
-        for key, value in op.items()}
+        _LEGACY_KEYS[key] if key in _LEGACY_KEYS else str(key): value for key, value in op.items()
+    }
     for field in ("kind", "action"):
         value = new.get(field)
         if isinstance(value, str):
             new[field] = _LEGACY_VALUES.get(value, value)
     moves = new.get("moves")
     new["moves"] = [
-        move if "source" in move
+        move
+        if "source" in move
         else {"source": move.get("origen"), "destination": move.get("destino")}
-        for move in (moves if isinstance(moves, list) else []) if isinstance(move, dict)]
+        for move in (moves if isinstance(moves, list) else [])
+        if isinstance(move, dict)
+    ]
     return new
 
 
@@ -84,6 +99,7 @@ class JsonHistoryStore:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(
                 json.dumps(operations[-_MAX_OPERATIONS:], indent=2, ensure_ascii=False),
-                encoding="utf-8")
+                encoding="utf-8",
+            )
         except OSError:
             log.warning("Could not save the history to %s", path, exc_info=True)

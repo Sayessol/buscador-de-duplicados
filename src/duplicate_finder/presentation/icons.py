@@ -12,30 +12,30 @@ import math
 import tkinter as tk
 
 # --- glyphs ---------------------------------------------------------------
-SEARCH = "\U0001F50D"      # 🔍  scan / app
-FOLDER = "\U0001F4C1"     # 📁  choose folder
-GEAR = "⚙"       # ⚙   options
-STAR = "⭐"        # ⭐  preferred folder
-AUTO = "✨"            # ✨  apply automatic rule
-CHART = "\U0001F4CA"     # 📊  view file kinds
-SAVE = "\U0001F4BE"     # 💾  export CSV
-SHIELD = "\U0001F6E1"      # 🛡   move to quarantine (safe zone, nothing is deleted)
-OK = "✔"              # ✔   validation passed
-WARNING = "⚠"           # ⚠   validation pending
-CROSS = "✕"            # ✕   cancel
-TRI_RIGHT = "▸"         # ▸   collapsed section
-TRI_DOWN = "▾"       # ▾   open section
-ARROW = "→"          # →   "move"
-RELOAD = "↻"         # ↻   rescan / undo
-GATHER = "\U0001F4E5"      # 📥  gather images
-HISTORY = "\U0001F553"   # 🕓  history of operations
+SEARCH = "\U0001f50d"  # 🔍  scan / app
+FOLDER = "\U0001f4c1"  # 📁  choose folder
+GEAR = "⚙"  # ⚙   options
+STAR = "⭐"  # ⭐  preferred folder
+AUTO = "✨"  # ✨  apply automatic rule
+CHART = "\U0001f4ca"  # 📊  view file kinds
+SAVE = "\U0001f4be"  # 💾  export CSV
+SHIELD = "\U0001f6e1"  # 🛡   move to quarantine (safe zone, nothing is deleted)
+OK = "✔"  # ✔   validation passed
+WARNING = "⚠"  # ⚠   validation pending
+CROSS = "✕"  # ✕   cancel
+TRI_RIGHT = "▸"  # ▸   collapsed section
+TRI_DOWN = "▾"  # ▾   open section
+ARROW = "→"  # →   "move"
+RELOAD = "↻"  # ↻   rescan / undo
+GATHER = "\U0001f4e5"  # 📥  gather images
+HISTORY = "\U0001f553"  # 🕓  history of operations
 
 # --- file kind categories -----------------------------------
-CAT_IMAGES = "\U0001F4F7"     # 📷
-CAT_AUDIO = "\U0001F3B5"        # 🎵
-CAT_VIDEO = "\U0001F3AC"        # 🎬
-CAT_DOCUMENTS = "\U0001F4C4"   # 📄
-CAT_ARCHIVES = "\U0001F4E6"  # 📦
+CAT_IMAGES = "\U0001f4f7"  # 📷
+CAT_AUDIO = "\U0001f3b5"  # 🎵
+CAT_VIDEO = "\U0001f3ac"  # 🎬
+CAT_DOCUMENTS = "\U0001f4c4"  # 📄
+CAT_ARCHIVES = "\U0001f4e6"  # 📦
 
 CATEGORY_ICON = {
     "images": CAT_IMAGES,

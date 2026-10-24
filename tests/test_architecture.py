@@ -31,19 +31,61 @@ ALLOWED = {
 # What a layer may not import from the standard library or from outside, because it would be
 # input/output or a graphical library in a place where there must be none.
 FORBIDDEN_MODULES = {
-    "domain": {"tkinter", "customtkinter", "PIL", "shutil", "csv", "json", "logging", "ctypes",
-               "threading", "subprocess", "socket", "pathlib"},
-    "application": {"tkinter", "customtkinter", "PIL", "shutil", "csv", "json", "ctypes",
-                    "subprocess", "socket"},
+    "domain": {
+        "tkinter",
+        "customtkinter",
+        "PIL",
+        "shutil",
+        "csv",
+        "json",
+        "logging",
+        "ctypes",
+        "threading",
+        "subprocess",
+        "socket",
+        "pathlib",
+    },
+    "application": {
+        "tkinter",
+        "customtkinter",
+        "PIL",
+        "shutil",
+        "csv",
+        "json",
+        "ctypes",
+        "subprocess",
+        "socket",
+    },
     "presentation": {"shutil", "csv", "json"},
 }
 
 # Calls that touch the disk: not allowed in the domain nor in the use cases (they use a port).
 DISK_CALLS = {
-    "os": {"walk", "listdir", "makedirs", "mkdir", "remove", "rename", "replace", "rmdir",
-           "scandir", "stat", "startfile", "unlink"},
-    "os.path": {"exists", "isfile", "isdir", "getsize", "getmtime", "getctime", "realpath",
-                "samefile", "islink"},
+    "os": {
+        "walk",
+        "listdir",
+        "makedirs",
+        "mkdir",
+        "remove",
+        "rename",
+        "replace",
+        "rmdir",
+        "scandir",
+        "stat",
+        "startfile",
+        "unlink",
+    },
+    "os.path": {
+        "exists",
+        "isfile",
+        "isdir",
+        "getsize",
+        "getmtime",
+        "getctime",
+        "realpath",
+        "samefile",
+        "islink",
+    },
 }
 
 
@@ -68,9 +110,12 @@ def _imports(source: str) -> list[tuple[int, str]]:
                 found.append((node.lineno, ".."))
             elif node.level == 0:
                 found.append((node.lineno, node.module or ""))
-                if node.module == NAME:     # `from duplicate_finder import i18n` is a submodule
-                    found += [(node.lineno, f"{NAME}.{alias.name}") for alias in node.names
-                              if alias.name in ALLOWED]
+                if node.module == NAME:  # `from duplicate_finder import i18n` is a submodule
+                    found += [
+                        (node.lineno, f"{NAME}.{alias.name}")
+                        for alias in node.names
+                        if alias.name in ALLOWED
+                    ]
     return found
 
 
@@ -105,8 +150,11 @@ def violations(source: str, layer: str) -> list[str]:
 
 
 def _modules():
-    return [(path, layer) for path in sorted(PACKAGE.rglob("*.py"))
-            if (layer := _layer_of(path)) is not None]
+    return [
+        (path, layer)
+        for path in sorted(PACKAGE.rglob("*.py"))
+        if (layer := _layer_of(path)) is not None
+    ]
 
 
 def test_every_module_sits_in_a_known_layer_or_is_the_composition_root():
@@ -122,32 +170,52 @@ def test_module_follows_the_layer_rules(path, layer):
 
 
 def test_only_the_composition_root_builds_the_adapters():
-    importers = [path.name for path, layer in _modules()
-                 if any(module.startswith(f"{NAME}.infrastructure")
-                        for _, module in _imports(path.read_text(encoding="utf-8")))
-                 and layer != "infrastructure"]
+    importers = [
+        path.name
+        for path, layer in _modules()
+        if any(
+            module.startswith(f"{NAME}.infrastructure")
+            for _, module in _imports(path.read_text(encoding="utf-8"))
+        )
+        and layer != "infrastructure"
+    ]
     assert importers == []
 
 
 # ---- the checker itself must notice a violation (otherwise the rules above prove nothing)
-@pytest.mark.parametrize("layer, source, expected", [
-    ("domain", "from duplicate_finder.infrastructure import hashing",
-     "must not import infrastructure"),
-    ("domain", "from duplicate_finder import i18n", "must not import i18n"),
-    ("domain", "import tkinter", "must not import tkinter"),
-    ("domain", "import os\nos.walk('.')", "touches the disk"),
-    ("application", "from duplicate_finder.presentation import styles",
-     "must not import presentation"),
-    ("presentation", "from ..infrastructure import settings", "climbs out"),
-    ("application", "import os\nos.path.exists('x')", "touches the disk"),
-    ("application", "open('x')", "opens a file"),
-    ("application", "import shutil", "must not import shutil"),
-    ("presentation", "from duplicate_finder.infrastructure.settings import JsonSettingsStore",
-     "must not import infrastructure"),
-    ("infrastructure", "from duplicate_finder.presentation import styles",
-     "must not import presentation"),
-    ("i18n", "from duplicate_finder.domain import filters", "must not import domain"),
-])
+@pytest.mark.parametrize(
+    "layer, source, expected",
+    [
+        (
+            "domain",
+            "from duplicate_finder.infrastructure import hashing",
+            "must not import infrastructure",
+        ),
+        ("domain", "from duplicate_finder import i18n", "must not import i18n"),
+        ("domain", "import tkinter", "must not import tkinter"),
+        ("domain", "import os\nos.walk('.')", "touches the disk"),
+        (
+            "application",
+            "from duplicate_finder.presentation import styles",
+            "must not import presentation",
+        ),
+        ("presentation", "from ..infrastructure import settings", "climbs out"),
+        ("application", "import os\nos.path.exists('x')", "touches the disk"),
+        ("application", "open('x')", "opens a file"),
+        ("application", "import shutil", "must not import shutil"),
+        (
+            "presentation",
+            "from duplicate_finder.infrastructure.settings import JsonSettingsStore",
+            "must not import infrastructure",
+        ),
+        (
+            "infrastructure",
+            "from duplicate_finder.presentation import styles",
+            "must not import presentation",
+        ),
+        ("i18n", "from duplicate_finder.domain import filters", "must not import domain"),
+    ],
+)
 def test_the_checker_catches_a_violation(layer, source, expected):
     assert any(expected in problem for problem in violations(source, layer))
 

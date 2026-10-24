@@ -5,6 +5,7 @@ user the same things in the same order; the questions live here so each tab only
 is specific to it.
 """
 
+import contextlib
 import os
 from tkinter import filedialog, messagebox
 
@@ -40,7 +41,5 @@ def choose_quarantine_folder(scanned_folder: str) -> str | None:
 def offer_to_open_folder(message: str, folder: str) -> None:
     """Says the operation is done and offers to open the folder where the files went."""
     if messagebox.askyesno(tr("common.done_title"), message):
-        try:
-            os.startfile(folder)  # noqa: S606 (Windows)
-        except OSError:
-            pass
+        with contextlib.suppress(OSError):
+            os.startfile(folder)

@@ -78,8 +78,8 @@ class SimilarGroup:
     """
 
     fingerprints: list[ImageFingerprint]
-    files: list[DuplicateFile]      # same order as fingerprints
-    similarity: list[float]          # 0..1 of each photo relative to the best one
+    files: list[DuplicateFile]  # same order as fingerprints
+    similarity: list[float]  # 0..1 of each photo relative to the best one
 
     @property
     def count(self) -> int:
@@ -100,7 +100,7 @@ class SimilarGroup:
 class SimilarResult:
     groups: list[SimilarGroup]
     total_images: int
-    errors: list[tuple[str, str]] = field(default_factory=list)   # (path, message)
+    errors: list[tuple[str, str]] = field(default_factory=list)  # (path, message)
     total_excluded: int = 0
 
     @property
@@ -139,7 +139,7 @@ def color_distance(c1: Sequence[Sequence[int]], c2: Sequence[Sequence[int]]) -> 
 # without comparing everything against everything. Each node stores a key (a dHash)
 # and its children are labelled with the exact distance to that node.
 # ----------------------------------------------------------------------
-type _Node = tuple[int, int, dict[int, _Node]]      # (key, index, {distance: subnode})
+type _Node = tuple[int, int, dict[int, _Node]]  # (key, index, {distance: subnode})
 
 
 class _BKTree:
@@ -158,7 +158,7 @@ class _BKTree:
                 # there is no child at that exact distance: the new one goes here
                 node[2][d] = (key, index, {})
                 return
-            node = child          # there was already one: we keep going down through it
+            node = child  # there was already one: we keep going down through it
 
     def neighbors(self, key: int, radius: int) -> list[int]:
         """Indices whose keys are within <= `radius` of `key`."""
@@ -187,7 +187,7 @@ class _BKTree:
 # ----------------------------------------------------------------------
 class _UnionFind:
     def __init__(self, n: int) -> None:
-        self._parent = list(range(n))   # at the start each one is its own group
+        self._parent = list(range(n))  # at the start each one is its own group
 
     def root(self, x: int) -> int:
         # goes up to the representative; along the way it "flattens" the chain so that
@@ -200,7 +200,7 @@ class _UnionFind:
     def join(self, a: int, b: int) -> None:
         ra, rb = self.root(a), self.root(b)
         if ra != rb:
-            self._parent[ra] = rb       # hangs one group from the other
+            self._parent[ra] = rb  # hangs one group from the other
 
     def groups(self) -> list[list[int]]:
         # groups the indices by their representative
@@ -248,19 +248,16 @@ def group_fingerprints(
         members = [fingerprints[i] for i in indices]
         # The "best" copy: most megapixels; on a tie, a lossless format
         # before JPEG; and on a tie, the largest file.
-        members.sort(
-            key=lambda h: (h.width * h.height, _is_lossless(h.path), h.size),
-            reverse=True)
+        members.sort(key=lambda h: (h.width * h.height, _is_lossless(h.path), h.size), reverse=True)
         best = members[0]
-        similarity = [
-            1.0 - hamming_distance(m.dhash, best.dhash) / 64.0
-            for m in members
-        ]
-        groups.append(SimilarGroup(
-            fingerprints=members,
-            files=[DuplicateFile(m.path, m.size) for m in members],
-            similarity=similarity,
-        ))
+        similarity = [1.0 - hamming_distance(m.dhash, best.dhash) / 64.0 for m in members]
+        groups.append(
+            SimilarGroup(
+                fingerprints=members,
+                files=[DuplicateFile(m.path, m.size) for m in members],
+                similarity=similarity,
+            )
+        )
 
     # The groups that free the most space, first.
     groups.sort(key=lambda g: -g.reclaimable_space)

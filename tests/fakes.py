@@ -18,7 +18,7 @@ class FakeFileSystem:
         self.folders: set[str] = set()
         self.mtimes: dict[str, float] = {}
         self.csv_files: dict[str, list[list[object]]] = {}
-        self.fail_moves_of: set[str] = set()     # moving these paths raises OSError
+        self.fail_moves_of: set[str] = set()  # moving these paths raises OSError
 
     # ---- queries
     def _all_folders(self) -> set[str]:
@@ -50,8 +50,11 @@ class FakeFileSystem:
 
     def list_dir(self, path: str) -> list[str]:
         base = _norm(path)
-        names = {os.path.basename(p) for p in list(self.files) + list(self._all_folders())
-                 if os.path.dirname(p) == base}
+        names = {
+            os.path.basename(p)
+            for p in list(self.files) + list(self._all_folders())
+            if os.path.dirname(p) == base
+        }
         return sorted(names)
 
     def walk(self, root: str) -> Iterator[tuple[str, list[str], list[str]]]:
@@ -60,7 +63,7 @@ class FakeFileSystem:
         subdirs = sorted(os.path.basename(f) for f in folders if os.path.dirname(f) == base)
         names = sorted(os.path.basename(p) for p in self.files if os.path.dirname(p) == base)
         yield base, subdirs, names
-        for sub in subdirs:                     # the caller may have pruned `subdirs`
+        for sub in subdirs:  # the caller may have pruned `subdirs`
             yield from self.walk(os.path.join(base, sub))
 
     # ---- changes
@@ -103,7 +106,7 @@ class FakeHasher:
         self._fs = fs
 
     def partial_hash(self, path: str) -> str:
-        return hashlib.md5(self._fs.files[_norm(path)][:self.partial_size]).hexdigest()
+        return hashlib.md5(self._fs.files[_norm(path)][: self.partial_size]).hexdigest()
 
     def full_hash(self, path: str) -> str:
         return hashlib.md5(self._fs.files[_norm(path)]).hexdigest()

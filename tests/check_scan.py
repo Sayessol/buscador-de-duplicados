@@ -16,8 +16,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.application.scan_duplicates import ScanCancelled  # noqa: E402
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.application.scan_duplicates import ScanCancelled
+from duplicate_finder.bootstrap import build_services
 
 SERVICES = build_services()
 scan = SERVICES.scan_duplicates
@@ -60,8 +60,10 @@ def main():
     print(f"Duplicate groups:              {result.total_groups}")
     print(f"Duplicate files in total:      {result.total_files_duplicates}")
     print(f"Copies that could be moved:    {result.extra_copies}")
-    print(f"Recoverable space:            {format_size(result.total_reclaimable_space)} "
-          f"({result.total_reclaimable_space} bytes)")
+    print(
+        f"Recoverable space:            {format_size(result.total_reclaimable_space)} "
+        f"({result.total_reclaimable_space} bytes)"
+    )
     if result.errors:
         print(f"Read warnings:                {len(result.errors)}")
     print(f"Time:                         {duration:.1f} s")
@@ -70,8 +72,10 @@ def main():
     print("=" * 55)
 
     for number, group in enumerate(result.groups[:10], start=1):
-        print(f"\nGroup {number}  ({group.count} copies, {format_size(group.size)} each, "
-              f"frees {format_size(group.reclaimable_space)}):")
+        print(
+            f"\nGroup {number}  ({group.count} copies, {format_size(group.size)} each, "
+            f"frees {format_size(group.reclaimable_space)}):"
+        )
         for file in group.files:
             print(f"    {file.path}")
     if result.total_groups > 10:

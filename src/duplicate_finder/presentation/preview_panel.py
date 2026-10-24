@@ -26,22 +26,35 @@ class PreviewPanel(ctk.CTkFrame):
         self.path = None
         self._ctk_image = None
         self.image_label = ctk.CTkLabel(
-            self, text=tr("exact.preview_hint"),
-            font=styles.base_font(12), text_color=styles.COLOR_MUTED_TEXT)
+            self,
+            text=tr("exact.preview_hint"),
+            font=styles.base_font(12),
+            text_color=styles.COLOR_MUTED_TEXT,
+        )
         self.image_label.grid(row=0, column=0, padx=12, pady=12)
         self.image_label.bind("<Button-1>", lambda _e: self._open_viewer())
         self.name_label = ctk.CTkLabel(
-            self, text="", font=styles.base_font(12, "bold"),
-            wraplength=262, justify="left", anchor="w")
+            self,
+            text="",
+            font=styles.base_font(12, "bold"),
+            wraplength=262,
+            justify="left",
+            anchor="w",
+        )
         self.name_label.grid(row=1, column=0, padx=12, pady=(0, 2), sticky="w")
         self.meta_label = ctk.CTkLabel(
-            self, text="", font=styles.base_font(11),
-            text_color=styles.COLOR_MUTED_TEXT, wraplength=262,
-            justify="left", anchor="w")
+            self,
+            text="",
+            font=styles.base_font(11),
+            text_color=styles.COLOR_MUTED_TEXT,
+            wraplength=262,
+            justify="left",
+            anchor="w",
+        )
         self.meta_label.grid(row=2, column=0, padx=12, pady=(0, 4), sticky="w")
         self.enlarge_label = ctk.CTkLabel(
-            self, text="", font=styles.base_font(11),
-            text_color=styles.COLOR_ACCENT, anchor="w")
+            self, text="", font=styles.base_font(11), text_color=styles.COLOR_ACCENT, anchor="w"
+        )
         self.enlarge_label.grid(row=3, column=0, padx=12, pady=(0, 12), sticky="w")
         self.enlarge_label.bind("<Button-1>", lambda _e: self._open_viewer())
 
@@ -76,8 +89,7 @@ class PreviewPanel(ctk.CTkFrame):
             log.warning("Could not show the preview of %s", path, exc_info=True)
             pil = None
         if pil is not None:
-            img = ctk.CTkImage(light_image=pil, dark_image=pil,
-                               size=(pil.width, pil.height))
+            img = ctk.CTkImage(light_image=pil, dark_image=pil, size=(pil.width, pil.height))
             self._ctk_image = img  # keep the reference
             self.image_label.configure(image=img, text="")
         else:
@@ -91,6 +103,7 @@ class PreviewPanel(ctk.CTkFrame):
         if ext in IMAGE_EXT:
             try:
                 from PIL import Image
+
                 with Image.open(path) as im:
                     data.append(f"{im.width}×{im.height}")
             except (OSError, ValueError):  # if it cannot be read, the resolution is omitted
@@ -98,13 +111,14 @@ class PreviewPanel(ctk.CTkFrame):
         try:
             st = os.stat(path)
             data.append(format_size(st.st_size))
-            data.append(datetime.datetime.fromtimestamp(
-                st.st_mtime).strftime(tr("common.date_format")))
+            data.append(
+                datetime.datetime.fromtimestamp(st.st_mtime).strftime(tr("common.date_format"))
+            )
         except OSError:
             pass
         if data:
             parts.append("   ·   ".join(data))
         self.meta_label.configure(text="\n".join(parts))
         self.enlarge_label.configure(
-            text=f"{icons.SEARCH}  {tr("exact.click_to_enlarge")}"
-            if can_be_displayed(path) else "")
+            text=f"{icons.SEARCH}  {tr('exact.click_to_enlarge')}" if can_be_displayed(path) else ""
+        )

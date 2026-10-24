@@ -10,11 +10,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from duplicate_finder.bootstrap import build_services  # noqa: E402
+from duplicate_finder.bootstrap import build_services
 
 SERVICES = build_services()
 scan = SERVICES.scan_duplicates
-from duplicate_finder.domain.filters import ScanFilter, CATEGORY_EXTENSIONS  # noqa: E402
+from duplicate_finder.domain.filters import CATEGORY_EXTENSIONS, ScanFilter  # noqa: E402
 
 failures = []
 
@@ -47,7 +47,7 @@ def build(base: Path):
     # Group inside node_modules (excluded by folder)
     write("proj/node_modules/x.txt", img_data)
     write("proj/node_modules/y.txt", img_data)
-    write("proj/src/z.txt", img_data)   # copy outside node_modules -> left without a match
+    write("proj/src/z.txt", img_data)  # copy outside node_modules -> left without a match
 
     # Duplicated Thumbs.db (excluded by name)
     write("a/Thumbs.db", b"thumbs\n")
@@ -67,10 +67,7 @@ def build(base: Path):
 
 
 def paths_by_group(result):
-    return sorted(
-        sorted(Path(a.path).name for a in g.files)
-        for g in result.groups
-    )
+    return sorted(sorted(Path(a.path).name for a in g.files) for g in result.groups)
 
 
 def main():
@@ -82,18 +79,21 @@ def main():
         r0 = scan(str(base))
         g0 = paths_by_group(r0)
         print("  groups:", g0)
-        check(len(r0.groups) == 7,
-              "no filter finds 7 groups (txt, tmp, node_modules, Thumbs.db, empties, jpg, mp3)")
+        check(
+            len(r0.groups) == 7,
+            "no filter finds 7 groups (txt, tmp, node_modules, Thumbs.db, empties, jpg, mp3)",
+        )
         check(r0.total_excluded == 0, "no filter excludes nothing")
 
         print("\n--- Default filter ---")
         r1 = scan(str(base), filter=ScanFilter.by_default())
         g1 = paths_by_group(r1)
         print("  groups:", g1)
-        check(g1 == [["doc.txt", "doc.txt"], ["img1.jpg", "img2.jpg"],
-                     ["song1.mp3", "song2.mp3"]],
-              "default filter keeps doc.txt, the photos and the audio "
-              "(typical junk does not include jpg/mp3)")
+        check(
+            g1 == [["doc.txt", "doc.txt"], ["img1.jpg", "img2.jpg"], ["song1.mp3", "song2.mp3"]],
+            "default filter keeps doc.txt, the photos and the audio "
+            "(typical junk does not include jpg/mp3)",
+        )
         check(r1.total_excluded > 0, "default filter reports excluded files")
 
         print("\n--- Filter: exclude .txt ---")
@@ -108,27 +108,31 @@ def main():
         r3 = scan(str(base), filter=f3)
         g3 = paths_by_group(r3)
         print("  groups:", g3)
-        check(g3 == [["img1.jpg", "img2.jpg"]],
-              "'images only' leaves just the photo group")
-        check(r3.total_excluded > 0,
-              "'images only' reports everything that is not an image as excluded")
+        check(g3 == [["img1.jpg", "img2.jpg"]], "'images only' leaves just the photo group")
+        check(
+            r3.total_excluded > 0,
+            "'images only' reports everything that is not an image as excluded",
+        )
 
         print("\n--- Allow list: images + audio ---")
-        combined = (CATEGORY_EXTENSIONS["images"]
-                     | CATEGORY_EXTENSIONS["audio"])
+        combined = CATEGORY_EXTENSIONS["images"] | CATEGORY_EXTENSIONS["audio"]
         f4 = ScanFilter(included_extensions=combined)
         r4 = scan(str(base), filter=f4)
         g4 = paths_by_group(r4)
         print("  groups:", g4)
-        check(g4 == [["img1.jpg", "img2.jpg"], ["song1.mp3", "song2.mp3"]],
-              "combining 'images' + 'audio' leaves photos and music, nothing else")
+        check(
+            g4 == [["img1.jpg", "img2.jpg"], ["song1.mp3", "song2.mp3"]],
+            "combining 'images' + 'audio' leaves photos and music, nothing else",
+        )
 
         print("\n--- Breakdown by extension (no filter) ---")
         for ext, c, b in r0.summary_by_extension():
             print(f"    {ext:15} {c} files  {b} bytes")
         exts0 = {e for e, _c, _b in r0.summary_by_extension()}
-        check({"txt", "tmp", "db", "jpg", "mp3"} <= exts0,
-              "the breakdown lists txt, tmp, db, jpg and mp3")
+        check(
+            {"txt", "tmp", "db", "jpg", "mp3"} <= exts0,
+            "the breakdown lists txt, tmp, db, jpg and mp3",
+        )
 
     print()
     if failures:

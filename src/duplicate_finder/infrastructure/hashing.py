@@ -2,7 +2,6 @@
 
 import hashlib
 
-
 # Read block size for the full hash (64 KB).
 BLOCK_SIZE = 65536
 
@@ -21,8 +20,8 @@ def partial_hash(file_path: str, nbytes: int = PARTIAL_HASH_SIZE) -> str:
     """
     h = hashlib.blake2b()
     with open(file_path, "rb") as f:
-        h.update(f.read(nbytes))     # a single read: the first nbytes
-    return h.hexdigest()             # the hash in hexadecimal (text)
+        h.update(f.read(nbytes))  # a single read: the first nbytes
+    return h.hexdigest()  # the hash in hexadecimal (text)
 
 
 def full_hash(file_path: str, block_size: int = BLOCK_SIZE) -> str:
@@ -34,10 +33,10 @@ def full_hash(file_path: str, block_size: int = BLOCK_SIZE) -> str:
     h = hashlib.blake2b()
     with open(file_path, "rb") as f:
         while True:
-            block = f.read(block_size)   # reads 64 KB at a time
-            if not block:                    # empty bytes = end of file
+            block = f.read(block_size)  # reads 64 KB at a time
+            if not block:  # empty bytes = end of file
                 break
-            h.update(block)                  # accumulates into the hash
+            h.update(block)  # accumulates into the hash
     return h.hexdigest()
 
 
